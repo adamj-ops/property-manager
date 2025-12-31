@@ -36,7 +36,7 @@ import { Link } from '~/components/ui/link'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '~/components/ui/select'
 import { Typography } from '~/components/ui/typography'
 import {
-  DataTable,
+  DataTableVirtual,
   DataTableColumnHeader,
   DataTableFacetedFilter,
   DataTableRowActions,
@@ -515,11 +515,17 @@ function TenantsListPage() {
       {/* Data Table */}
       <Card>
         <CardContent className='pt-6'>
-          <DataTable
+          <DataTableVirtual
             columns={columns}
             data={tenants}
             onDataChange={handleDataChange}
             enableColumnResizing
+            enableCellSelection
+            enableColumnPinning
+            enableClipboard
+            enableUndoRedo
+            maxUndoHistory={50}
+            initialColumnPinning={{ left: ['select', 'name'], right: ['actions'] }}
             toolbar={(table) => (
               <DataTableToolbar
                 table={table}
@@ -561,6 +567,21 @@ function TenantsListPage() {
           <li>Use faceted filters to filter by Property or Payment status</li>
           <li>Click column headers to sort</li>
           <li>Use the View button to toggle column visibility</li>
+          <li>
+            <strong>Multi-cell selection:</strong> Click a cell, then Shift+click another to select a range, or Ctrl/Cmd+click to toggle
+          </li>
+          <li>
+            <strong>Copy/Paste:</strong> Select cells then Ctrl/Cmd+C to copy, Ctrl/Cmd+V to paste
+          </li>
+          <li>
+            <strong>Undo/Redo:</strong> Ctrl/Cmd+Z to undo, Ctrl/Cmd+Shift+Z to redo
+          </li>
+          <li>
+            <strong>Column pinning:</strong> Name column pinned left, Actions pinned right (scroll to see effect)
+          </li>
+          <li>
+            <strong>Virtual scrolling:</strong> Optimized for large datasets (1000+ rows)
+          </li>
         </ul>
       </div>
     </div>
