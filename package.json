@@ -1,5 +1,5 @@
 {
-  "name": "tanstack-boilerplate",
+  "name": "everyday-property-manager",
   "type": "module",
   "scripts": {
     "dev": "pnpm clean && dotenv -e .env.development vinxi dev",

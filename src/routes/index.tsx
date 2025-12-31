@@ -1,5 +1,4 @@
 import { createFileRoute } from '@tanstack/react-router'
-import { BsGithub } from 'react-icons/bs'
 
 import { Button } from '~/components/ui/button'
 import { Link } from '~/components/ui/link'
@@ -16,12 +15,11 @@ function HomeRoute() {
         {import.meta.env.VITE_APP_NAME}
       </Typography.H1>
       <Typography.P>
-        A fully <strong>type-safe</strong> boilerplate with a focus on UX and DX, complete with multiple examples.
+        Modern property management made simple. Track properties, tenants, and finances in one place.
       </Typography.P>
       <Button asChild>
-        <Link to='https://github.com/nekochan0122/tanstack-boilerplate'>
-          <BsGithub />
-          View on GitHub
+        <Link to='/user/account-settings'>
+          Get Started
         </Link>
       </Button>
     </div>

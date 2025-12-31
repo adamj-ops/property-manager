@@ -3,6 +3,17 @@
 @tailwind utilities;
 
 @layer base {
+  /* 
+   * Property Management App Theme
+   * Derived from Rehab Planner Pro design system
+   * Using HSL color values for Tailwind v3 compatibility
+   */
+  
+  /* Base font size for data-dense dashboard optimization */
+  html {
+    font-size: 14px;
+  }
+
   /* Remove Arrows from Number Inputs */
   input::-webkit-outer-spin-button,
   input::-webkit-inner-spin-button {
@@ -12,5 +23,206 @@
 
   input[type=number] {
     -moz-appearance: textfield;
+  }
+
+  /* Global border and outline defaults */
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply antialiased bg-background text-foreground;
+    font-family: var(--font-sans);
+    line-height: 1.6;
+  }
+
+  /* Code elements use mono font */
+  code, pre, kbd, samp {
+    font-family: var(--font-mono);
+  }
+
+  /* Better placeholder contrast */
+  ::placeholder {
+    @apply text-muted-foreground opacity-60;
+  }
+}
+
+@layer components {
+  /* ============================================
+   * TRANSITION DEFAULTS
+   * ============================================ */
+  button, input, textarea, select {
+    @apply transition-all duration-200;
+  }
+
+  /* ============================================
+   * FOCUS STATES
+   * ============================================ */
+  input:focus, textarea:focus, select:focus {
+    @apply outline-none ring-2 ring-ring ring-offset-2 ring-offset-background;
+  }
+
+  /* ============================================
+   * DISABLED STATES
+   * ============================================ */
+  input:disabled, button:disabled {
+    @apply opacity-60 cursor-not-allowed;
+  }
+
+  /* ============================================
+   * DASHBOARD UTILITIES
+   * ============================================ */
+  
+  /* Compact mode for data-dense sections */
+  .compact {
+    font-size: 0.9em;
+    line-height: 1.4;
+  }
+
+  .compact * {
+    line-height: 1.4;
+  }
+
+  /* High-density table and list styles */
+  .data-dense {
+    @apply text-xs leading-tight;
+  }
+
+  /* Tighter spacing for dashboard cards */
+  .dashboard-card {
+    @apply space-y-2;
+  }
+
+  .dashboard-card * {
+    @apply leading-snug;
+  }
+
+  /* Card hover effect for interactive cards */
+  .card-hover {
+    @apply transition-shadow duration-200 hover:shadow-md;
+  }
+
+  /* Mira-style polished cards */
+  .mira-card {
+    @apply bg-card border border-border shadow-sm rounded-xl;
+  }
+
+  /* ============================================
+   * AUTH FORM STYLES
+   * ============================================ */
+  
+  /* Enhanced card shadows for auth forms */
+  .auth-card {
+    @apply shadow-2xl border-0;
+    box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+  }
+
+  /* Auth input focus animations */
+  .auth-input-focus {
+    @apply transition-all duration-200;
+  }
+
+  .auth-input-focus:focus-within {
+    @apply ring-2 ring-ring ring-offset-2 ring-offset-background;
+  }
+
+  /* Auth button hover effects */
+  .auth-btn-primary {
+    @apply transition-all duration-200;
+  }
+
+  .auth-btn-primary:hover:not(:disabled) {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  }
+
+  .auth-btn-primary:active:not(:disabled) {
+    transform: translateY(0);
+  }
+
+  /* ============================================
+   * SCROLLBAR UTILITIES
+   * ============================================ */
+  
+  .scrollbar-hide::-webkit-scrollbar {
+    display: none;
+  }
+
+  .scrollbar-hide {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+}
+
+/* ============================================
+ * ANIMATIONS
+ * ============================================ */
+
+/* Shimmer for loading states */
+@keyframes shimmer {
+  0% {
+    transform: translateX(-100%);
+  }
+  100% {
+    transform: translateX(200%);
+  }
+}
+
+.animate-shimmer {
+  animation: shimmer 1.5s ease-in-out;
+}
+
+/* Auth form fade-in animation */
+@keyframes auth-fade-in {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.auth-form-animate {
+  animation: auth-fade-in 0.4s ease-out;
+}
+
+/* Gradient shift for marketing backgrounds */
+@keyframes gradient-shift {
+  0%, 100% {
+    background-position: 0% 50%;
+  }
+  50% {
+    background-position: 100% 50%;
+  }
+}
+
+.auth-gradient-bg {
+  background-size: 200% 200%;
+  animation: gradient-shift 15s ease infinite;
+}
+
+/* Password strength indicator animations */
+@keyframes strength-fill {
+  from { width: 0%; }
+  to { width: 100%; }
+}
+
+.strength-bar {
+  animation: strength-fill 0.3s ease-in-out;
+}
+
+/* ============================================
+ * REDUCED MOTION SUPPORT
+ * ============================================ */
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
   }
 }

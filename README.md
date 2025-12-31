@@ -1,9 +1,16 @@
-> [!WARNING]
-> This boilerplate is still a work in progress and **should not be used in production**.
+# Everyday Property Manager
 
-# TanStack Boilerplate
+[![GitHub](https://img.shields.io/badge/GitHub-adamj--ops%2Fproperty--manager-blue?logo=github)](https://github.com/adamj-ops/property-manager)
 
-A fully **type-safe** boilerplate with a focus on UX and DX, complete with multiple examples.
+A modern, full-stack property management application built with TanStack Start.
+
+## Features
+
+- **Property Management** - Track and manage rental properties
+- **Tenant Management** - Manage tenant information and leases
+- **Financial Tracking** - Monitor rent collection and expenses
+- **Maintenance Requests** - Handle property maintenance workflows
+- **Dashboard Analytics** - Visual insights into your portfolio
 
 ## Tech Stack
 
@@ -22,43 +29,114 @@ A fully **type-safe** boilerplate with a focus on UX and DX, complete with multi
 - [next-intl core library](https://next-intl-docs.vercel.app/docs/environments/core-library)
 - [Nodemailer](https://nodemailer.com/) + [React Email](https://react.email/)
 
-## Utilities
+## Design System
 
-- Theme - A `next-themes`-like API that integrates seamlessly with TanStack Start.
-- Custom Logger - A visually appealing logger compatible with both browser and Node environments.
-- File Upload *(TODO)* - Supports file uploads to any object storage service with a S3-compatible API.
-- Environment Variable Validation - Type-safe, runtime validation of environment variables for a more secure configuration.
+The UI is built on a custom design system derived from [Rehab Planner Pro](https://github.com/adamj-ops/rehab-planner-pro) for visual consistency:
 
-## Issues or Pull Requests Tracking List
+- **Warm gray palette** with soft green and coral accents
+- **14px base font** optimized for data-dense dashboards
+- **Dark mode first** design with refined shadows
+- **Consistent component patterns** (Button, Card, Input variants)
 
-- Start
-  - HMR
-    - https://github.com/TanStack/router/pull/2316
-  - Server functions can't serialize error objects
-    - https://github.com/TanStack/router/issues/2535
-  - Start: createServerFn cannot return raw response objects
-    - https://github.com/TanStack/router/issues/2779
-  - Flash of Unstyled Content for quickstart plus a CSS file
-    - https://github.com/TanStack/router/issues/2700
-- Router
-  - Router optional params for i18n
-    - https://github.com/TanStack/router/discussions/146#discussioncomment-10917959
-- Virtual
-  - Compatibility with the React compiler
-    - https://github.com/TanStack/virtual/issues/736
-    - https://github.com/TanStack/virtual/pull/851
-- Vinxi
-  - Environment variables not loaded in production
-    - https://github.com/nksaraf/vinxi/issues/277
-    - https://github.com/unjs/nitro/issues/1492
-    - `node --env-file=.env .\.output\server\index.mjs`
-  - Auto reload dev server when `.env` changes
-    - https://github.com/nksaraf/vinxi/issues/345
-  - No valid compatibility date is specified
-    - https://github.com/solidjs/solid-start/issues/1670
-    - https://github.com/nitrojs/nitro/pull/2511
-    - https://github.com/unjs/compatx/blob/main/RFC.md
-- ESLint
-  - Tailwindcss Plugin
-    - no-multiple-whitespace rule
-      - https://github.com/francoismassart/eslint-plugin-tailwindcss/pull/370
+See `.cursor/docs/DESIGN_SYSTEM.md` for full documentation.
+
+## Getting Started
+
+### Prerequisites
+
+- Node.js 20+
+- pnpm
+- PostgreSQL database
+
+### Installation
+
+```bash
+# Install dependencies
+pnpm install
+
+# Set up environment variables
+cp .env.example .env.development
+cp .env.example .env.production
+
+# Push database schema
+pnpm db:push:d
+
+# Start development server
+pnpm dev
+```
+
+### Environment Variables
+
+Required environment variables:
+
+```env
+VITE_APP_NAME="Everyday Property Manager"
+VITE_APP_URL="http://localhost:3000"
+VITE_APP_EMAIL="noreply@example.com"
+
+DATABASE_URL="postgresql://..."
+
+BETTER_AUTH_SECRET="your-secret-key"
+```
+
+## Development
+
+```bash
+# Start dev server
+pnpm dev
+
+# Type checking
+pnpm typecheck
+
+# Linting
+pnpm lint
+pnpm lint:fix
+
+# Database
+pnpm db:push:d     # Push schema (development)
+pnpm db:studio:d   # Open Prisma Studio
+
+# Email preview
+pnpm email
+```
+
+## Project Structure
+
+```
+├── src/
+│   ├── components/     # UI components
+│   │   ├── layout/     # Layout components (sidebar, header)
+│   │   └── ui/         # Shadcn UI components
+│   ├── routes/         # File-based routing
+│   ├── services/       # API services and queries
+│   ├── server/         # Server-side code
+│   ├── libs/           # Utility libraries
+│   ├── hooks/          # React hooks
+│   └── styles/         # Global styles
+├── prisma/             # Database schema
+├── plugins/            # Tailwind plugins
+└── .cursor/            # Project documentation
+    ├── docs/           # Design system docs
+    ├── notes/          # Development notes
+    └── rules/          # Coding guidelines
+```
+
+## Documentation
+
+Comprehensive project documentation is available in the `.cursor/docs/` directory:
+
+| Document | Description |
+|----------|-------------|
+| [PROJECT_DOCUMENTATION.md](.cursor/docs/PROJECT_DOCUMENTATION.md) | Executive summary, product vision, system architecture |
+| [TECHNICAL_SPEC.md](.cursor/docs/TECHNICAL_SPEC.md) | Database schema, API design, authentication |
+| [FEATURE_ROADMAP.md](.cursor/docs/FEATURE_ROADMAP.md) | Phased implementation plan with sprint breakdown |
+| [DESIGN_SYSTEM.md](.cursor/docs/DESIGN_SYSTEM.md) | Visual design specification |
+
+### Reference Materials
+
+- [EPICS_AND_USER_STORIES.md](.cursor/reference/EPICS_AND_USER_STORIES.md) - Detailed feature specifications
+- [property-management-prototype.md](.cursor/reference/property-management-prototype.md) - ASCII wireframes and UX specs
+
+## License
+
+Private - All rights reserved

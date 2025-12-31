@@ -12,8 +12,8 @@ interface Options {
 }
 
 const defaultOptions: Required<Except<Options, 'theme'>> = {
-  color: 'zinc',
-  radius: '0.5',
+  color: 'property-management',
+  radius: '0.375',
 }
 
 function shadcnPreset(options?: Options): Preset {
@@ -52,6 +52,10 @@ function createShadcnPlugin(options?: Options) {
             md: 'calc(var(--radius) - 2px)',
             sm: 'calc(var(--radius) - 4px)',
           },
+          boxShadow: {
+            '2xs': 'var(--shadow-2xs)',
+            'xs': 'var(--shadow-xs)',
+          },
           colors: {
             background: 'hsl(var(--background))',
             foreground: 'hsl(var(--foreground))',
@@ -83,6 +87,10 @@ function createShadcnPlugin(options?: Options) {
               DEFAULT: 'hsl(var(--destructive))',
               foreground: 'hsl(var(--destructive-foreground))',
             },
+            success: {
+              DEFAULT: 'hsl(var(--success))',
+              foreground: 'hsl(var(--success-foreground))',
+            },
             border: 'hsl(var(--border))',
             input: 'hsl(var(--input))',
             ring: 'hsl(var(--ring))',
@@ -111,8 +119,8 @@ function createShadcnPlugin(options?: Options) {
 }
 
 type Theme = Record<Color, Record<ColorScheme, ColorVariables>>
-type Radius = '0' | '0.3' | '0.5' | '0.75' | '1'
-type Color = 'zinc' | 'slate' | 'stone' | 'gray' | 'neutral' | 'red' | 'rose' | 'orange' | 'green' | 'blue' | 'yellow' | 'violet'
+type Radius = '0' | '0.3' | '0.375' | '0.5' | '0.75' | '1'
+type Color = 'property-management' | 'zinc' | 'slate' | 'stone' | 'gray' | 'neutral' | 'red' | 'rose' | 'orange' | 'green' | 'blue' | 'yellow' | 'violet'
 type ColorScheme = 'light' | 'dark'
 type ColorValue = `${number} ${number}% ${number}%`
 type ColorVariables = {
@@ -132,6 +140,8 @@ type ColorVariables = {
   '--accent-foreground': ColorValue
   '--destructive': ColorValue
   '--destructive-foreground': ColorValue
+  '--success': ColorValue
+  '--success-foreground': ColorValue
   '--border': ColorValue
   '--input': ColorValue
   '--ring': ColorValue
@@ -148,9 +158,91 @@ type ColorVariables = {
   '--sidebar-accent-foreground': ColorValue
   '--sidebar-border': ColorValue
   '--sidebar-ring': ColorValue
+  '--shadow-2xs'?: string
+  '--shadow-xs'?: string
 }
 
 const theme: Theme = {
+  // Property Management Theme (derived from Rehab Planner Pro)
+  // Warm gray palette with soft green/coral accents
+  'property-management': {
+    light: {
+      '--background': '40 6% 96%',           // Warm off-white
+      '--foreground': '30 3% 14%',           // Warm charcoal
+      '--card': '0 0% 100%',                 // Pure white
+      '--card-foreground': '30 3% 14%',      // Warm charcoal
+      '--popover': '0 0% 100%',              // Pure white
+      '--popover-foreground': '30 3% 14%',   // Warm charcoal
+      '--primary': '30 3% 22%',              // Dark warm gray
+      '--primary-foreground': '40 6% 96%',   // Off-white
+      '--secondary': '40 4% 91%',            // Light warm gray
+      '--secondary-foreground': '30 3% 14%', // Warm charcoal
+      '--muted': '40 4% 91%',                // Light warm gray
+      '--muted-foreground': '30 2% 45%',     // Medium gray
+      '--accent': '130 31% 56%',             // Soft green (#90c695)
+      '--accent-foreground': '30 3% 14%',    // Warm charcoal
+      '--destructive': '0 100% 71%',         // Soft coral (#ff6b6b)
+      '--destructive-foreground': '40 6% 96%', // Off-white
+      '--success': '130 31% 56%',            // Soft green
+      '--success-foreground': '30 3% 14%',   // Warm charcoal
+      '--border': '30 4% 82%',               // Light warm gray border
+      '--input': '30 4% 82%',                // Match border
+      '--ring': '130 31% 56%',               // Soft green ring
+      '--chart-1': '130 31% 56%',            // Soft green
+      '--chart-2': '0 100% 71%',             // Soft coral
+      '--chart-3': '30 2% 45%',              // Medium gray
+      '--chart-4': '170 30% 45%',            // Teal accent
+      '--chart-5': '30 3% 22%',              // Dark warm gray
+      '--sidebar-background': '40 6% 96%',   // Warm off-white
+      '--sidebar-foreground': '30 3% 14%',   // Warm charcoal
+      '--sidebar-primary': '30 3% 22%',      // Dark warm gray
+      '--sidebar-primary-foreground': '40 6% 96%', // Off-white
+      '--sidebar-accent': '40 4% 94%',       // Light warm gray
+      '--sidebar-accent-foreground': '30 3% 14%', // Warm charcoal
+      '--sidebar-border': '30 4% 82%',       // Light border
+      '--sidebar-ring': '130 31% 56%',       // Soft green
+      '--shadow-2xs': '0 1px 2px 0 rgb(0 0 0 / 0.03)',
+      '--shadow-xs': '0 1px 2px 0 rgb(0 0 0 / 0.05)',
+    },
+    dark: {
+      '--background': '30 3% 14%',           // Warm charcoal (#262624)
+      '--foreground': '40 6% 94%',           // Off-white (#f0f0f0)
+      '--card': '30 2% 18%',                 // Elevated surface (#333333)
+      '--card-foreground': '40 6% 94%',      // Off-white
+      '--popover': '30 2% 18%',              // Match card
+      '--popover-foreground': '40 6% 94%',   // Off-white
+      '--primary': '40 6% 94%',              // Off-white text
+      '--primary-foreground': '30 3% 14%',   // Charcoal
+      '--secondary': '30 3% 16%',            // Sidebar tone (#30302e)
+      '--secondary-foreground': '40 6% 94%', // Off-white
+      '--muted': '30 3% 16%',                // Sidebar tone
+      '--muted-foreground': '30 2% 55%',     // Muted text (#999999)
+      '--accent': '130 31% 56%',             // Soft green (#90c695)
+      '--accent-foreground': '30 3% 14%',    // Charcoal
+      '--destructive': '0 100% 71%',         // Soft coral (#ff6b6b)
+      '--destructive-foreground': '40 6% 94%', // Off-white
+      '--success': '130 31% 56%',            // Soft green
+      '--success-foreground': '30 3% 14%',   // Charcoal
+      '--border': '30 2% 22%',               // Border (#3d3d3d)
+      '--input': '30 2% 22%',                // Match border
+      '--ring': '130 31% 56%',               // Soft green ring
+      '--chart-1': '130 31% 56%',            // Soft green
+      '--chart-2': '0 100% 71%',             // Soft coral
+      '--chart-3': '30 2% 55%',              // Medium gray
+      '--chart-4': '170 35% 40%',            // Teal accent
+      '--chart-5': '30 2% 35%',              // Darker gray
+      '--sidebar-background': '30 3% 16%',   // Sidebar (#30302e)
+      '--sidebar-foreground': '40 6% 94%',   // Off-white
+      '--sidebar-primary': '130 31% 56%',    // Soft green accent
+      '--sidebar-primary-foreground': '30 3% 14%', // Charcoal
+      '--sidebar-accent': '30 2% 22%',       // Slightly elevated
+      '--sidebar-accent-foreground': '40 6% 94%', // Off-white
+      '--sidebar-border': '30 2% 22%',       // Border (#3d3d3d)
+      '--sidebar-ring': '130 31% 56%',       // Soft green
+      '--shadow-2xs': '0 1px 2px 0 rgb(0 0 0 / 0.2)',
+      '--shadow-xs': '0 1px 2px 0 rgb(0 0 0 / 0.25)',
+    },
+  },
   zinc: {
     light: {
       '--background': '0 0% 100%',
@@ -169,6 +261,8 @@ const theme: Theme = {
       '--accent-foreground': '240 5.9% 10%',
       '--destructive': '0 84.2% 60.2%',
       '--destructive-foreground': '0 0% 98%',
+      '--success': '142 76% 36%',
+      '--success-foreground': '0 0% 98%',
       '--border': '240 5.9% 90%',
       '--input': '240 5.9% 90%',
       '--ring': '240 10% 3.9%',
@@ -203,6 +297,8 @@ const theme: Theme = {
       '--accent-foreground': '0 0% 98%',
       '--destructive': '0 84.2% 60.2%',
       '--destructive-foreground': '0 0% 98%',
+      '--success': '142 76% 36%',
+      '--success-foreground': '0 0% 98%',
       '--border': '240 3.7% 15.9%',
       '--input': '240 3.7% 15.9%',
       '--ring': '240 4.9% 83.9%',
@@ -239,6 +335,8 @@ const theme: Theme = {
       '--accent-foreground': '222.2 47.4% 11.2%',
       '--destructive': '0 84.2% 60.2%',
       '--destructive-foreground': '210 40% 98%',
+      '--success': '142 76% 36%',
+      '--success-foreground': '210 40% 98%',
       '--border': '214.3 31.8% 91.4%',
       '--input': '214.3 31.8% 91.4%',
       '--ring': '222.2 84% 4.9%',
@@ -273,6 +371,8 @@ const theme: Theme = {
       '--accent-foreground': '210 40% 98%',
       '--destructive': '0 62.8% 30.6%',
       '--destructive-foreground': '210 40% 98%',
+      '--success': '142 76% 36%',
+      '--success-foreground': '210 40% 98%',
       '--border': '217.2 32.6% 17.5%',
       '--input': '217.2 32.6% 17.5%',
       '--ring': '212.7 26.8% 83.9%',
@@ -309,6 +409,8 @@ const theme: Theme = {
       '--accent-foreground': '24 9.8% 10%',
       '--destructive': '0 84.2% 60.2%',
       '--destructive-foreground': '60 9.1% 97.8%',
+      '--success': '142 76% 36%',
+      '--success-foreground': '60 9.1% 97.8%',
       '--border': '20 5.9% 90%',
       '--input': '20 5.9% 90%',
       '--ring': '20 14.3% 4.1%',
@@ -343,6 +445,8 @@ const theme: Theme = {
       '--accent-foreground': '60 9.1% 97.8%',
       '--destructive': '0 62.8% 30.6%',
       '--destructive-foreground': '60 9.1% 97.8%',
+      '--success': '142 76% 36%',
+      '--success-foreground': '60 9.1% 97.8%',
       '--border': '12 6.5% 15.1%',
       '--input': '12 6.5% 15.1%',
       '--ring': '24 5.7% 82.9%',
@@ -379,6 +483,8 @@ const theme: Theme = {
       '--accent-foreground': '220.9 39.3% 11%',
       '--destructive': '0 84.2% 60.2%',
       '--destructive-foreground': '210 20% 98%',
+      '--success': '142 76% 36%',
+      '--success-foreground': '210 20% 98%',
       '--border': '220 13% 91%',
       '--input': '220 13% 91%',
       '--ring': '224 71.4% 4.1%',
@@ -413,6 +519,8 @@ const theme: Theme = {
       '--accent-foreground': '210 20% 98%',
       '--destructive': '0 62.8% 30.6%',
       '--destructive-foreground': '210 20% 98%',
+      '--success': '142 76% 36%',
+      '--success-foreground': '210 20% 98%',
       '--border': '215 27.9% 16.9%',
       '--input': '215 27.9% 16.9%',
       '--ring': '216 12.2% 83.9%',
@@ -449,6 +557,8 @@ const theme: Theme = {
       '--accent-foreground': '0 0% 9%',
       '--destructive': '0 84.2% 60.2%',
       '--destructive-foreground': '0 0% 98%',
+      '--success': '142 76% 36%',
+      '--success-foreground': '0 0% 98%',
       '--border': '0 0% 89.8%',
       '--input': '0 0% 89.8%',
       '--ring': '0 0% 3.9%',
@@ -483,6 +593,8 @@ const theme: Theme = {
       '--accent-foreground': '0 0% 98%',
       '--destructive': '0 62.8% 30.6%',
       '--destructive-foreground': '0 0% 98%',
+      '--success': '142 76% 36%',
+      '--success-foreground': '0 0% 98%',
       '--border': '0 0% 14.9%',
       '--input': '0 0% 14.9%',
       '--ring': '0 0% 83.1%',
@@ -519,6 +631,8 @@ const theme: Theme = {
       '--accent-foreground': '0 0% 9%',
       '--destructive': '0 84.2% 60.2%',
       '--destructive-foreground': '0 0% 98%',
+      '--success': '142 76% 36%',
+      '--success-foreground': '0 0% 98%',
       '--border': '0 0% 89.8%',
       '--input': '0 0% 89.8%',
       '--ring': '0 72.2% 50.6%',
@@ -553,6 +667,8 @@ const theme: Theme = {
       '--accent-foreground': '0 0% 98%',
       '--destructive': '0 62.8% 30.6%',
       '--destructive-foreground': '0 0% 98%',
+      '--success': '142 76% 36%',
+      '--success-foreground': '0 0% 98%',
       '--border': '0 0% 14.9%',
       '--input': '0 0% 14.9%',
       '--ring': '0 72.2% 50.6%',
@@ -589,6 +705,8 @@ const theme: Theme = {
       '--accent-foreground': '240 5.9% 10%',
       '--destructive': '0 84.2% 60.2%',
       '--destructive-foreground': '0 0% 98%',
+      '--success': '142 76% 36%',
+      '--success-foreground': '0 0% 98%',
       '--border': '240 5.9% 90%',
       '--input': '240 5.9% 90%',
       '--ring': '346.8 77.2% 49.8%',
@@ -623,6 +741,8 @@ const theme: Theme = {
       '--accent-foreground': '0 0% 98%',
       '--destructive': '0 62.8% 30.6%',
       '--destructive-foreground': '0 85.7% 97.3%',
+      '--success': '142 76% 36%',
+      '--success-foreground': '0 85.7% 97.3%',
       '--border': '240 3.7% 15.9%',
       '--input': '240 3.7% 15.9%',
       '--ring': '346.8 77.2% 49.8%',
@@ -659,6 +779,8 @@ const theme: Theme = {
       '--accent-foreground': '24 9.8% 10%',
       '--destructive': '0 84.2% 60.2%',
       '--destructive-foreground': '60 9.1% 97.8%',
+      '--success': '142 76% 36%',
+      '--success-foreground': '60 9.1% 97.8%',
       '--border': '20 5.9% 90%',
       '--input': '20 5.9% 90%',
       '--ring': '24.6 95% 53.1%',
@@ -693,6 +815,8 @@ const theme: Theme = {
       '--accent-foreground': '60 9.1% 97.8%',
       '--destructive': '0 72.2% 50.6%',
       '--destructive-foreground': '60 9.1% 97.8%',
+      '--success': '142 76% 36%',
+      '--success-foreground': '60 9.1% 97.8%',
       '--border': '12 6.5% 15.1%',
       '--input': '12 6.5% 15.1%',
       '--ring': '20.5 90.2% 48.2%',
@@ -729,6 +853,8 @@ const theme: Theme = {
       '--accent-foreground': '240 5.9% 10%',
       '--destructive': '0 84.2% 60.2%',
       '--destructive-foreground': '0 0% 98%',
+      '--success': '142 76% 36%',
+      '--success-foreground': '0 0% 98%',
       '--border': '240 5.9% 90%',
       '--input': '240 5.9% 90%',
       '--ring': '142.1 76.2% 36.3%',
@@ -763,6 +889,8 @@ const theme: Theme = {
       '--accent-foreground': '0 0% 98%',
       '--destructive': '0 62.8% 30.6%',
       '--destructive-foreground': '0 85.7% 97.3%',
+      '--success': '142 76% 36%',
+      '--success-foreground': '0 85.7% 97.3%',
       '--border': '240 3.7% 15.9%',
       '--input': '240 3.7% 15.9%',
       '--ring': '142.4 71.8% 29.2%',
@@ -799,6 +927,8 @@ const theme: Theme = {
       '--accent-foreground': '222.2 47.4% 11.2%',
       '--destructive': '0 84.2% 60.2%',
       '--destructive-foreground': '210 40% 98%',
+      '--success': '142 76% 36%',
+      '--success-foreground': '210 40% 98%',
       '--border': '214.3 31.8% 91.4%',
       '--input': '214.3 31.8% 91.4%',
       '--ring': '221.2 83.2% 53.3%',
@@ -833,6 +963,8 @@ const theme: Theme = {
       '--accent-foreground': '210 40% 98%',
       '--destructive': '0 62.8% 30.6%',
       '--destructive-foreground': '210 40% 98%',
+      '--success': '142 76% 36%',
+      '--success-foreground': '210 40% 98%',
       '--border': '217.2 32.6% 17.5%',
       '--input': '217.2 32.6% 17.5%',
       '--ring': '224.3 76.3% 48%',
@@ -869,6 +1001,8 @@ const theme: Theme = {
       '--accent-foreground': '24 9.8% 10%',
       '--destructive': '0 84.2% 60.2%',
       '--destructive-foreground': '60 9.1% 97.8%',
+      '--success': '142 76% 36%',
+      '--success-foreground': '60 9.1% 97.8%',
       '--border': '20 5.9% 90%',
       '--input': '20 5.9% 90%',
       '--ring': '20 14.3% 4.1%',
@@ -903,6 +1037,8 @@ const theme: Theme = {
       '--accent-foreground': '60 9.1% 97.8%',
       '--destructive': '0 62.8% 30.6%',
       '--destructive-foreground': '60 9.1% 97.8%',
+      '--success': '142 76% 36%',
+      '--success-foreground': '60 9.1% 97.8%',
       '--border': '12 6.5% 15.1%',
       '--input': '12 6.5% 15.1%',
       '--ring': '35.5 91.7% 32.9%',
@@ -939,6 +1075,8 @@ const theme: Theme = {
       '--accent-foreground': '220.9 39.3% 11%',
       '--destructive': '0 84.2% 60.2%',
       '--destructive-foreground': '210 20% 98%',
+      '--success': '142 76% 36%',
+      '--success-foreground': '210 20% 98%',
       '--border': '220 13% 91%',
       '--input': '220 13% 91%',
       '--ring': '262.1 83.3% 57.8%',
@@ -973,6 +1111,8 @@ const theme: Theme = {
       '--accent-foreground': '210 20% 98%',
       '--destructive': '0 62.8% 30.6%',
       '--destructive-foreground': '210 20% 98%',
+      '--success': '142 76% 36%',
+      '--success-foreground': '210 20% 98%',
       '--border': '215 27.9% 16.9%',
       '--input': '215 27.9% 16.9%',
       '--ring': '263.4 70% 50.4%',
