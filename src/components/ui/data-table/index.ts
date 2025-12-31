@@ -1,5 +1,8 @@
 export { DataTable } from './data-table'
+export { DataTableAddRow, AddRowButton } from './data-table-add-row'
 export { DataTableColumnHeader } from './data-table-column-header'
+export { EditableCell, EditableBadgeCell } from './data-table-editable-cell'
+export { DataTableFacetedFilter } from './data-table-faceted-filter'
 export { DataTablePagination } from './data-table-pagination'
 export { DataTableRowActions } from './data-table-row-actions'
 export { DataTableToolbar } from './data-table-toolbar'

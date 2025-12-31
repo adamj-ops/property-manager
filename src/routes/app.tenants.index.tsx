@@ -2,7 +2,19 @@
 
 import { createFileRoute } from '@tanstack/react-router'
 import { useState } from 'react'
-import { LuCalendar, LuDog, LuMail, LuPencil, LuPhone, LuPlus, LuTrash2, LuUser } from 'react-icons/lu'
+import {
+  LuBuilding2,
+  LuCalendar,
+  LuCircleCheck,
+  LuCircleX,
+  LuDog,
+  LuMail,
+  LuPencil,
+  LuPhone,
+  LuPlus,
+  LuTrash2,
+  LuUser,
+} from 'react-icons/lu'
 import type { ColumnDef } from '@tanstack/react-table'
 
 import { Badge } from '~/components/ui/badge'
@@ -26,8 +38,11 @@ import { Typography } from '~/components/ui/typography'
 import {
   DataTable,
   DataTableColumnHeader,
+  DataTableFacetedFilter,
   DataTableRowActions,
   DataTableToolbar,
+  EditableBadgeCell,
+  EditableCell,
 } from '~/components/ui/data-table'
 import {
   DropdownMenuItem,
@@ -58,7 +73,7 @@ interface Tenant {
 }
 
 // Mock data for tenants
-const tenants: Tenant[] = [
+const initialTenants: Tenant[] = [
   {
     id: '1',
     firstName: 'Sarah',
@@ -141,7 +156,34 @@ const tenants: Tenant[] = [
   },
 ]
 
-// Column definitions for the data table
+// Filter options
+const statusOptions = [
+  { label: 'Current', value: 'current', icon: LuCircleCheck },
+  { label: 'Past', value: 'past', icon: LuCircleX },
+  { label: 'Pending', value: 'pending', icon: LuCalendar },
+]
+
+const paymentStatusOptions = [
+  {
+    label: 'Current',
+    value: 'current',
+    variant: 'outline' as const,
+    className: 'border-green-500 text-green-700',
+  },
+  {
+    label: 'Past Due',
+    value: 'past_due',
+    variant: 'destructive' as const,
+  },
+]
+
+const propertyOptions = [
+  { label: 'Humboldt Court', value: 'Humboldt Court', icon: LuBuilding2 },
+  { label: 'Maple Grove', value: 'Maple Grove', icon: LuBuilding2 },
+  { label: 'Downtown Lofts', value: 'Downtown Lofts', icon: LuBuilding2 },
+]
+
+// Column definitions with editable cells
 const columns: ColumnDef<Tenant>[] = [
   {
     id: 'select',
@@ -162,18 +204,20 @@ const columns: ColumnDef<Tenant>[] = [
         aria-label='Select row'
       />
     ),
+    size: 40,
     enableSorting: false,
     enableHiding: false,
+    enableResizing: false,
   },
   {
     accessorKey: 'name',
     accessorFn: (row) => `${row.firstName} ${row.lastName}`,
-    header: ({ column }) => (
-      <DataTableColumnHeader column={column} title='Name' />
-    ),
+    header: ({ column }) => <DataTableColumnHeader column={column} title='Name' />,
+    size: 250,
     cell: ({ row }) => {
       const isPastDue = row.original.paymentStatus === 'past_due'
-      const isExpiringSoon = new Date(row.original.leaseEnd) <= new Date(Date.now() + 30 * 24 * 60 * 60 * 1000)
+      const isExpiringSoon =
+        new Date(row.original.leaseEnd) <= new Date(Date.now() + 30 * 24 * 60 * 60 * 1000)
 
       return (
         <div className='flex items-center gap-3'>
@@ -207,76 +251,100 @@ const columns: ColumnDef<Tenant>[] = [
   },
   {
     accessorKey: 'unit',
-    header: ({ column }) => (
-      <DataTableColumnHeader column={column} title='Unit' />
+    header: ({ column }) => <DataTableColumnHeader column={column} title='Unit' />,
+    size: 120,
+    cell: (props) => (
+      <EditableCell
+        {...props}
+        type='text'
+        className='font-medium'
+      />
     ),
-    cell: ({ row }) => (
-      <div>
-        <span className='font-medium'>Unit {row.original.unit}</span>
-        <p className='text-xs text-muted-foreground'>{row.original.property}</p>
-      </div>
+    filterFn: (row, id, value) => {
+      return value.includes(row.getValue(id))
+    },
+  },
+  {
+    accessorKey: 'property',
+    header: ({ column }) => <DataTableColumnHeader column={column} title='Property' />,
+    size: 150,
+    cell: (props) => (
+      <EditableCell
+        {...props}
+        type='select'
+        options={[
+          { label: 'Humboldt Court', value: 'Humboldt Court' },
+          { label: 'Maple Grove', value: 'Maple Grove' },
+          { label: 'Downtown Lofts', value: 'Downtown Lofts' },
+        ]}
+      />
     ),
+    filterFn: (row, id, value) => {
+      return value.includes(row.getValue(id))
+    },
   },
   {
     accessorKey: 'phone',
-    header: ({ column }) => (
-      <DataTableColumnHeader column={column} title='Contact' />
-    ),
-    cell: ({ row }) => (
-      <div className='flex items-center gap-1 text-sm'>
+    header: ({ column }) => <DataTableColumnHeader column={column} title='Phone' />,
+    size: 140,
+    cell: (props) => (
+      <div className='flex items-center gap-1'>
         <LuPhone className='size-3 text-muted-foreground' />
-        {row.original.phone}
+        <EditableCell {...props} type='phone' />
       </div>
     ),
   },
   {
     accessorKey: 'rent',
-    header: ({ column }) => (
-      <DataTableColumnHeader column={column} title='Rent' />
+    header: ({ column }) => <DataTableColumnHeader column={column} title='Rent' />,
+    size: 120,
+    cell: (props) => <EditableCell {...props} type='currency' />,
+  },
+  {
+    accessorKey: 'paymentStatus',
+    header: ({ column }) => <DataTableColumnHeader column={column} title='Payment' />,
+    size: 120,
+    cell: (props) => (
+      <EditableBadgeCell
+        {...props}
+        options={paymentStatusOptions}
+      />
     ),
-    cell: ({ row }) => {
-      const total = row.original.rent + row.original.petRent
-      return (
-        <div className='font-medium'>
-          ${total.toLocaleString()}
-          {row.original.petRent > 0 && (
-            <span className='ml-1 text-xs text-muted-foreground'>
-              (+${row.original.petRent} pet)
-            </span>
-          )}
-        </div>
-      )
+    filterFn: (row, id, value) => {
+      return value.includes(row.getValue(id))
     },
   },
   {
     accessorKey: 'leaseEnd',
-    header: ({ column }) => (
-      <DataTableColumnHeader column={column} title='Lease End' />
-    ),
-    cell: ({ row }) => (
-      <div className='flex items-center gap-1 text-sm'>
+    header: ({ column }) => <DataTableColumnHeader column={column} title='Lease End' />,
+    size: 130,
+    cell: (props) => (
+      <div className='flex items-center gap-1'>
         <LuCalendar className='size-3 text-muted-foreground' />
-        {new Date(row.original.leaseEnd).toLocaleDateString()}
+        <EditableCell {...props} type='date' />
       </div>
     ),
   },
   {
     accessorKey: 'pets',
     header: 'Pets',
+    size: 80,
     cell: ({ row }) => {
       const pets = row.original.pets
       if (pets.length === 0) return <span className='text-muted-foreground'>—</span>
       return (
         <div className='flex items-center gap-1 text-sm'>
           <LuDog className='size-3 text-muted-foreground' />
-          {pets.length} {pets.length === 1 ? 'pet' : 'pets'}
+          {pets.length}
         </div>
       )
     },
     enableSorting: false,
+    enableResizing: false,
   },
   {
     id: 'actions',
+    size: 50,
     cell: ({ row }) => (
       <DataTableRowActions row={row}>
         <DropdownMenuLabel>Actions</DropdownMenuLabel>
@@ -304,22 +372,30 @@ const columns: ColumnDef<Tenant>[] = [
         </DropdownMenuItem>
       </DataTableRowActions>
     ),
+    enableResizing: false,
   },
 ]
 
 function TenantsListPage() {
   const [dialogOpen, setDialogOpen] = useState(false)
+  const [tenants, setTenants] = useState(initialTenants)
 
-  const activeTenants = tenants.filter(t => t.status === 'current').length
-  const tenantsWithPets = tenants.filter(t => t.pets.length > 0).length
-  const pastDueTenants = tenants.filter(t => t.paymentStatus === 'past_due').length
+  const activeTenants = tenants.filter((t) => t.status === 'current').length
+  const tenantsWithPets = tenants.filter((t) => t.pets.length > 0).length
+  const pastDueTenants = tenants.filter((t) => t.paymentStatus === 'past_due').length
 
   const today = new Date()
   const thirtyDaysFromNow = new Date(today.getTime() + 30 * 24 * 60 * 60 * 1000)
-  const expiringLeases = tenants.filter(t => {
+  const expiringLeases = tenants.filter((t) => {
     const leaseEnd = new Date(t.leaseEnd)
     return leaseEnd <= thirtyDaysFromNow && leaseEnd >= today
   }).length
+
+  const handleDataChange = (newData: Tenant[]) => {
+    setTenants(newData)
+    // Here you would typically also save to the server
+    console.log('Data updated:', newData)
+  }
 
   return (
     <div className='w-full max-w-7xl space-y-6 py-6'>
@@ -442,25 +518,32 @@ function TenantsListPage() {
           <DataTable
             columns={columns}
             data={tenants}
+            onDataChange={handleDataChange}
+            enableColumnResizing
             toolbar={(table) => (
               <DataTableToolbar
                 table={table}
                 searchKey='name'
                 searchPlaceholder='Search tenants...'
-                actionComponent={
+                filterComponent={
                   <div className='flex gap-2'>
-                    <Button variant='outline' size='sm'>
-                      All
-                    </Button>
-                    <Button variant='ghost' size='sm'>
-                      Active
-                    </Button>
-                    <Button variant='ghost' size='sm'>
-                      Expiring
-                    </Button>
-                    <Button variant='ghost' size='sm'>
-                      Past Due
-                    </Button>
+                    {table.getColumn('property') && (
+                      <DataTableFacetedFilter
+                        column={table.getColumn('property')}
+                        title='Property'
+                        options={propertyOptions}
+                      />
+                    )}
+                    {table.getColumn('paymentStatus') && (
+                      <DataTableFacetedFilter
+                        column={table.getColumn('paymentStatus')}
+                        title='Payment'
+                        options={[
+                          { label: 'Current', value: 'current' },
+                          { label: 'Past Due', value: 'past_due' },
+                        ]}
+                      />
+                    )}
                   </div>
                 }
               />
@@ -468,6 +551,18 @@ function TenantsListPage() {
           />
         </CardContent>
       </Card>
+
+      {/* Tips */}
+      <div className='rounded-lg border border-dashed p-4 text-sm text-muted-foreground'>
+        <p className='font-medium text-foreground'>Airtable-like features:</p>
+        <ul className='mt-2 list-inside list-disc space-y-1'>
+          <li>Click any cell to edit inline (Unit, Property, Phone, Rent, Payment Status, Lease End)</li>
+          <li>Drag column borders to resize columns</li>
+          <li>Use faceted filters to filter by Property or Payment status</li>
+          <li>Click column headers to sort</li>
+          <li>Use the View button to toggle column visibility</li>
+        </ul>
+      </div>
     </div>
   )
 }
