@@ -524,6 +524,7 @@ function TenantsListPage() {
             enableColumnPinning
             enableClipboard
             enableUndoRedo
+            enableKeyboardNavigation
             maxUndoHistory={50}
             initialColumnPinning={{ left: ['select', 'name'], right: ['actions'] }}
             toolbar={(table) => (
@@ -568,7 +569,19 @@ function TenantsListPage() {
           <li>Click column headers to sort</li>
           <li>Use the View button to toggle column visibility</li>
           <li>
-            <strong>Multi-cell selection:</strong> Click a cell, then Shift+click another to select a range, or Ctrl/Cmd+click to toggle
+            <strong>Keyboard navigation:</strong> Arrow keys to move between cells, Tab/Shift+Tab for horizontal movement
+          </li>
+          <li>
+            <strong>Quick editing:</strong> Press Enter or double-click to edit a cell, Escape to cancel, Enter to confirm and move down
+          </li>
+          <li>
+            <strong>Type to edit:</strong> Start typing on a focused cell to enter edit mode immediately
+          </li>
+          <li>
+            <strong>Jump navigation:</strong> Home/End for row edges, Ctrl+Home/End for table corners, PageUp/PageDown to jump 10 rows
+          </li>
+          <li>
+            <strong>Multi-cell selection:</strong> Click a cell, then Shift+click or Shift+Arrow to select a range, Ctrl/Cmd+click to toggle
           </li>
           <li>
             <strong>Copy/Paste:</strong> Select cells then Ctrl/Cmd+C to copy, Ctrl/Cmd+V to paste
