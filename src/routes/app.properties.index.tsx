@@ -1,19 +1,74 @@
+'use client'
+
 import { createFileRoute } from '@tanstack/react-router'
-import { LuBuilding2, LuFilter, LuPlus, LuSearch } from 'react-icons/lu'
+import { useState } from 'react'
+import {
+  LuBuilding2,
+  LuDollarSign,
+  LuEye,
+  LuMapPin,
+  LuPencil,
+  LuPlus,
+  LuTrash2,
+  LuUsers,
+  LuWrench,
+} from 'react-icons/lu'
+import type { ColumnDef } from '@tanstack/react-table'
 
 import { Badge } from '~/components/ui/badge'
 import { Button } from '~/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '~/components/ui/card'
+import { Checkbox } from '~/components/ui/checkbox'
 import { Input } from '~/components/ui/input'
+import { Label } from '~/components/ui/label'
 import { Link } from '~/components/ui/link'
+import {
+  Sheet,
+  SheetContent,
+  SheetDescription,
+  SheetFooter,
+  SheetHeader,
+  SheetTitle,
+  SheetTrigger,
+} from '~/components/ui/sheet'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '~/components/ui/select'
 import { Typography } from '~/components/ui/typography'
+import {
+  DataTable,
+  DataTableColumnHeader,
+  DataTableRowActions,
+  DataTableToolbar,
+} from '~/components/ui/data-table'
+import {
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+} from '~/components/ui/dropdown-menu'
 
 export const Route = createFileRoute('/app/properties/')({
   component: PropertiesListPage,
 })
 
+// Property type
+interface Property {
+  id: string
+  name: string
+  address: string
+  city: string
+  state: string
+  zipCode: string
+  type: string
+  totalUnits: number
+  occupiedUnits: number
+  monthlyRevenue: number
+  expectedRevenue: number
+  yearBuilt: number
+  openWorkOrders: number
+  expiringLeases: number
+}
+
 // Mock data for properties
-const properties = [
+const properties: Property[] = [
   {
     id: '1',
     name: 'Humboldt Court Community',
@@ -64,7 +119,174 @@ const properties = [
   },
 ]
 
+// Column definitions for data table
+const columns: ColumnDef<Property>[] = [
+  {
+    id: 'select',
+    header: ({ table }) => (
+      <Checkbox
+        checked={
+          table.getIsAllPageRowsSelected() ||
+          (table.getIsSomePageRowsSelected() && 'indeterminate')
+        }
+        onCheckedChange={(value) => table.toggleAllPageRowsSelected(!!value)}
+        aria-label='Select all'
+      />
+    ),
+    cell: ({ row }) => (
+      <Checkbox
+        checked={row.getIsSelected()}
+        onCheckedChange={(value) => row.toggleSelected(!!value)}
+        aria-label='Select row'
+      />
+    ),
+    enableSorting: false,
+    enableHiding: false,
+  },
+  {
+    accessorKey: 'name',
+    header: ({ column }) => (
+      <DataTableColumnHeader column={column} title='Property' />
+    ),
+    cell: ({ row }) => (
+      <div className='flex items-center gap-3'>
+        <div className='flex size-10 items-center justify-center rounded-lg bg-primary/10'>
+          <LuBuilding2 className='size-5 text-primary' />
+        </div>
+        <div>
+          <Link
+            to='/app/properties/$propertyId'
+            params={{ propertyId: row.original.id }}
+            className='font-medium hover:underline'
+          >
+            {row.original.name}
+          </Link>
+          <div className='flex items-center gap-1 text-xs text-muted-foreground'>
+            <LuMapPin className='size-3' />
+            {row.original.city}, {row.original.state}
+          </div>
+        </div>
+      </div>
+    ),
+  },
+  {
+    accessorKey: 'occupancy',
+    accessorFn: (row) => `${row.occupiedUnits}/${row.totalUnits}`,
+    header: ({ column }) => (
+      <DataTableColumnHeader column={column} title='Occupancy' />
+    ),
+    cell: ({ row }) => {
+      const occupancyRate = Math.round(
+        (row.original.occupiedUnits / row.original.totalUnits) * 100
+      )
+      return (
+        <div>
+          <div className='font-medium'>
+            {row.original.occupiedUnits}/{row.original.totalUnits} units
+          </div>
+          <div className='flex items-center gap-2'>
+            <div className='h-2 w-16 overflow-hidden rounded-full bg-muted'>
+              <div
+                className='h-full bg-primary'
+                style={{ width: `${occupancyRate}%` }}
+              />
+            </div>
+            <span className='text-xs text-muted-foreground'>{occupancyRate}%</span>
+          </div>
+        </div>
+      )
+    },
+  },
+  {
+    accessorKey: 'monthlyRevenue',
+    header: ({ column }) => (
+      <DataTableColumnHeader column={column} title='Revenue' />
+    ),
+    cell: ({ row }) => {
+      const collectionRate = Math.round(
+        (row.original.monthlyRevenue / row.original.expectedRevenue) * 100
+      )
+      return (
+        <div>
+          <div className='font-medium'>
+            ${row.original.monthlyRevenue.toLocaleString()}
+          </div>
+          <span className='text-xs text-muted-foreground'>
+            {collectionRate}% collected
+          </span>
+        </div>
+      )
+    },
+  },
+  {
+    accessorKey: 'status',
+    header: 'Status',
+    cell: ({ row }) => {
+      const vacantUnits = row.original.totalUnits - row.original.occupiedUnits
+      const hasIssues = vacantUnits > 0 || row.original.openWorkOrders > 0 || row.original.expiringLeases > 0
+
+      return (
+        <div className='flex flex-wrap gap-1'>
+          {vacantUnits > 0 && (
+            <Badge variant='secondary' className='text-xs'>
+              {vacantUnits} vacant
+            </Badge>
+          )}
+          {row.original.openWorkOrders > 0 && (
+            <Badge variant='outline' className='border-yellow-500 text-yellow-600 text-xs'>
+              {row.original.openWorkOrders} WO
+            </Badge>
+          )}
+          {row.original.expiringLeases > 0 && (
+            <Badge variant='outline' className='border-orange-500 text-orange-600 text-xs'>
+              {row.original.expiringLeases} expiring
+            </Badge>
+          )}
+          {!hasIssues && (
+            <Badge variant='outline' className='border-green-500 text-green-600 text-xs'>
+              All good
+            </Badge>
+          )}
+        </div>
+      )
+    },
+    enableSorting: false,
+  },
+  {
+    id: 'actions',
+    cell: ({ row }) => (
+      <DataTableRowActions row={row}>
+        <DropdownMenuLabel>Actions</DropdownMenuLabel>
+        <DropdownMenuSeparator />
+        <DropdownMenuItem asChild>
+          <Link to='/app/properties/$propertyId' params={{ propertyId: row.original.id }}>
+            <LuEye className='mr-2 size-4' />
+            View details
+          </Link>
+        </DropdownMenuItem>
+        <DropdownMenuItem asChild>
+          <Link to='/app/properties/$propertyId/units' params={{ propertyId: row.original.id }}>
+            <LuUsers className='mr-2 size-4' />
+            View units
+          </Link>
+        </DropdownMenuItem>
+        <DropdownMenuItem>
+          <LuPencil className='mr-2 size-4' />
+          Edit property
+        </DropdownMenuItem>
+        <DropdownMenuSeparator />
+        <DropdownMenuItem className='text-destructive'>
+          <LuTrash2 className='mr-2 size-4' />
+          Delete property
+        </DropdownMenuItem>
+      </DataTableRowActions>
+    ),
+  },
+]
+
 function PropertiesListPage() {
+  const [sheetOpen, setSheetOpen] = useState(false)
+
   const totalUnits = properties.reduce((sum, p) => sum + p.totalUnits, 0)
   const totalOccupied = properties.reduce((sum, p) => sum + p.occupiedUnits, 0)
   const totalRevenue = properties.reduce((sum, p) => sum + p.monthlyRevenue, 0)
@@ -77,19 +299,106 @@ function PropertiesListPage() {
           <Typography.H2>Properties</Typography.H2>
           <Typography.Muted>Manage your property portfolio</Typography.Muted>
         </div>
-        <Button asChild>
-          <Link to='/app/properties/new'>
-            <LuPlus className='mr-2 size-4' />
-            Add Property
-          </Link>
-        </Button>
+        <Sheet open={sheetOpen} onOpenChange={setSheetOpen}>
+          <SheetTrigger asChild>
+            <Button>
+              <LuPlus className='mr-2 size-4' />
+              Add Property
+            </Button>
+          </SheetTrigger>
+          <SheetContent className='sm:max-w-[540px]'>
+            <SheetHeader>
+              <SheetTitle>Add New Property</SheetTitle>
+              <SheetDescription>
+                Add a new property to your portfolio. Fill in the details below.
+              </SheetDescription>
+            </SheetHeader>
+            <div className='grid gap-4 py-6'>
+              <div className='space-y-2'>
+                <Label htmlFor='propertyName'>Property Name</Label>
+                <Input id='propertyName' placeholder='e.g., Sunrise Apartments' />
+              </div>
+              <div className='space-y-2'>
+                <Label htmlFor='address'>Street Address</Label>
+                <Input id='address' placeholder='123 Main Street' />
+              </div>
+              <div className='grid grid-cols-3 gap-4'>
+                <div className='space-y-2'>
+                  <Label htmlFor='city'>City</Label>
+                  <Input id='city' placeholder='Minneapolis' />
+                </div>
+                <div className='space-y-2'>
+                  <Label htmlFor='state'>State</Label>
+                  <Select>
+                    <SelectTrigger id='state'>
+                      <SelectValue placeholder='State' />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value='MN'>Minnesota</SelectItem>
+                      <SelectItem value='WI'>Wisconsin</SelectItem>
+                      <SelectItem value='IA'>Iowa</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className='space-y-2'>
+                  <Label htmlFor='zip'>ZIP Code</Label>
+                  <Input id='zip' placeholder='55401' />
+                </div>
+              </div>
+              <div className='grid grid-cols-2 gap-4'>
+                <div className='space-y-2'>
+                  <Label htmlFor='type'>Property Type</Label>
+                  <Select>
+                    <SelectTrigger id='type'>
+                      <SelectValue placeholder='Select type' />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value='multi-family'>Multi-Family</SelectItem>
+                      <SelectItem value='single-family'>Single Family</SelectItem>
+                      <SelectItem value='commercial'>Commercial</SelectItem>
+                      <SelectItem value='mixed-use'>Mixed Use</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className='space-y-2'>
+                  <Label htmlFor='units'>Total Units</Label>
+                  <Input id='units' type='number' placeholder='0' />
+                </div>
+              </div>
+              <div className='grid grid-cols-2 gap-4'>
+                <div className='space-y-2'>
+                  <Label htmlFor='yearBuilt'>Year Built</Label>
+                  <Input id='yearBuilt' type='number' placeholder='2000' />
+                </div>
+                <div className='space-y-2'>
+                  <Label htmlFor='expectedRevenue'>Expected Monthly Revenue</Label>
+                  <div className='relative'>
+                    <span className='absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground'>
+                      $
+                    </span>
+                    <Input id='expectedRevenue' type='number' placeholder='0' className='pl-7' />
+                  </div>
+                </div>
+              </div>
+            </div>
+            <SheetFooter>
+              <Button variant='outline' onClick={() => setSheetOpen(false)}>
+                Cancel
+              </Button>
+              <Button onClick={() => setSheetOpen(false)}>Add Property</Button>
+            </SheetFooter>
+          </SheetContent>
+        </Sheet>
       </div>
 
       {/* Summary Stats */}
       <div className='grid gap-4 md:grid-cols-4'>
         <Card>
           <CardHeader className='pb-2'>
-            <CardTitle className='text-sm font-medium'>Total Properties</CardTitle>
+            <CardTitle className='flex items-center gap-2 text-sm font-medium'>
+              <LuBuilding2 className='size-4 text-muted-foreground' />
+              Total Properties
+            </CardTitle>
           </CardHeader>
           <CardContent>
             <div className='text-2xl font-bold'>{properties.length}</div>
@@ -97,7 +406,10 @@ function PropertiesListPage() {
         </Card>
         <Card>
           <CardHeader className='pb-2'>
-            <CardTitle className='text-sm font-medium'>Total Units</CardTitle>
+            <CardTitle className='flex items-center gap-2 text-sm font-medium'>
+              <LuUsers className='size-4 text-muted-foreground' />
+              Total Units
+            </CardTitle>
           </CardHeader>
           <CardContent>
             <div className='text-2xl font-bold'>{totalUnits}</div>
@@ -106,15 +418,23 @@ function PropertiesListPage() {
         </Card>
         <Card>
           <CardHeader className='pb-2'>
-            <CardTitle className='text-sm font-medium'>Occupancy Rate</CardTitle>
+            <CardTitle className='flex items-center gap-2 text-sm font-medium'>
+              <LuWrench className='size-4 text-muted-foreground' />
+              Occupancy Rate
+            </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className='text-2xl font-bold'>{Math.round((totalOccupied / totalUnits) * 100)}%</div>
+            <div className='text-2xl font-bold'>
+              {Math.round((totalOccupied / totalUnits) * 100)}%
+            </div>
           </CardContent>
         </Card>
         <Card>
           <CardHeader className='pb-2'>
-            <CardTitle className='text-sm font-medium'>Monthly Revenue</CardTitle>
+            <CardTitle className='flex items-center gap-2 text-sm font-medium'>
+              <LuDollarSign className='size-4 text-muted-foreground' />
+              Monthly Revenue
+            </CardTitle>
           </CardHeader>
           <CardContent>
             <div className='text-2xl font-bold'>${totalRevenue.toLocaleString()}</div>
@@ -122,106 +442,35 @@ function PropertiesListPage() {
         </Card>
       </div>
 
-      {/* Search and Filters */}
-      <div className='flex items-center gap-4'>
-        <div className='relative flex-1'>
-          <LuSearch className='absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground' />
-          <Input placeholder='Search properties...' className='pl-10' />
-        </div>
-        <Button variant='outline'>
-          <LuFilter className='mr-2 size-4' />
-          Filters
-        </Button>
-      </div>
-
-      {/* Property Cards */}
-      <div className='grid gap-6 md:grid-cols-2 lg:grid-cols-3'>
-        {properties.map(property => (
-          <PropertyCard key={property.id} property={property} />
-        ))}
-      </div>
+      {/* Data Table */}
+      <Card>
+        <CardContent className='pt-6'>
+          <DataTable
+            columns={columns}
+            data={properties}
+            toolbar={(table) => (
+              <DataTableToolbar
+                table={table}
+                searchKey='name'
+                searchPlaceholder='Search properties...'
+                actionComponent={
+                  <div className='flex gap-2'>
+                    <Button variant='outline' size='sm'>
+                      All
+                    </Button>
+                    <Button variant='ghost' size='sm'>
+                      Multi-Family
+                    </Button>
+                    <Button variant='ghost' size='sm'>
+                      Single Family
+                    </Button>
+                  </div>
+                }
+              />
+            )}
+          />
+        </CardContent>
+      </Card>
     </div>
-  )
-}
-
-interface PropertyCardProps {
-  property: (typeof properties)[0]
-}
-
-function PropertyCard({ property }: PropertyCardProps) {
-  const occupancyRate = Math.round((property.occupiedUnits / property.totalUnits) * 100)
-  const collectionRate = Math.round((property.monthlyRevenue / property.expectedRevenue) * 100)
-  const vacantUnits = property.totalUnits - property.occupiedUnits
-
-  return (
-    <Card className='hover:shadow-md transition-shadow'>
-      <CardHeader className='pb-3'>
-        <div className='flex items-start justify-between'>
-          <div className='flex items-center gap-3'>
-            <div className='flex size-10 items-center justify-center rounded-lg bg-primary/10'>
-              <LuBuilding2 className='size-5 text-primary' />
-            </div>
-            <div>
-              <CardTitle className='text-base'>{property.name}</CardTitle>
-              <p className='text-sm text-muted-foreground'>
-                {property.city}, {property.state}
-              </p>
-            </div>
-          </div>
-        </div>
-      </CardHeader>
-      <CardContent className='space-y-4'>
-        <div className='grid grid-cols-2 gap-4 text-sm'>
-          <div>
-            <p className='text-muted-foreground'>Units</p>
-            <p className='font-medium'>
-              {property.occupiedUnits}/{property.totalUnits}
-              <span className='ml-1 text-muted-foreground'>({occupancyRate}%)</span>
-            </p>
-          </div>
-          <div>
-            <p className='text-muted-foreground'>Revenue</p>
-            <p className='font-medium'>${property.monthlyRevenue.toLocaleString()}/mo</p>
-          </div>
-        </div>
-
-        {/* Status badges */}
-        <div className='flex flex-wrap gap-2'>
-          {vacantUnits > 0 && (
-            <Badge variant='secondary'>
-              {vacantUnits} vacant
-            </Badge>
-          )}
-          {property.openWorkOrders > 0 && (
-            <Badge variant='outline' className='border-yellow-500 text-yellow-600'>
-              {property.openWorkOrders} work orders
-            </Badge>
-          )}
-          {property.expiringLeases > 0 && (
-            <Badge variant='outline' className='border-orange-500 text-orange-600'>
-              {property.expiringLeases} expiring
-            </Badge>
-          )}
-          {vacantUnits === 0 && property.openWorkOrders === 0 && property.expiringLeases === 0 && (
-            <Badge variant='outline' className='border-green-500 text-green-600'>
-              All good
-            </Badge>
-          )}
-        </div>
-
-        <div className='flex gap-2 pt-2'>
-          <Button variant='outline' size='sm' className='flex-1' asChild>
-            <Link to='/app/properties/$propertyId' params={{ propertyId: property.id }}>
-              View Details
-            </Link>
-          </Button>
-          <Button variant='outline' size='sm' asChild>
-            <Link to='/app/properties/$propertyId/units' params={{ propertyId: property.id }}>
-              Units
-            </Link>
-          </Button>
-        </div>
-      </CardContent>
-    </Card>
   )
 }

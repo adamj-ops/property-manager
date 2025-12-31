@@ -1,19 +1,64 @@
+'use client'
+
 import { createFileRoute } from '@tanstack/react-router'
-import { LuCalendar, LuDog, LuFilter, LuMail, LuPhone, LuPlus, LuSearch, LuUser } from 'react-icons/lu'
+import { useState } from 'react'
+import { LuCalendar, LuDog, LuMail, LuPencil, LuPhone, LuPlus, LuTrash2, LuUser } from 'react-icons/lu'
+import type { ColumnDef } from '@tanstack/react-table'
 
 import { Badge } from '~/components/ui/badge'
 import { Button } from '~/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '~/components/ui/card'
+import { Checkbox } from '~/components/ui/checkbox'
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from '~/components/ui/dialog'
 import { Input } from '~/components/ui/input'
+import { Label } from '~/components/ui/label'
 import { Link } from '~/components/ui/link'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '~/components/ui/select'
 import { Typography } from '~/components/ui/typography'
+import {
+  DataTable,
+  DataTableColumnHeader,
+  DataTableRowActions,
+  DataTableToolbar,
+} from '~/components/ui/data-table'
+import {
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+} from '~/components/ui/dropdown-menu'
 
 export const Route = createFileRoute('/app/tenants/')({
   component: TenantsListPage,
 })
 
+// Tenant type definition
+interface Tenant {
+  id: string
+  firstName: string
+  lastName: string
+  email: string
+  phone: string
+  unit: string
+  property: string
+  rent: number
+  petRent: number
+  leaseStart: string
+  leaseEnd: string
+  status: 'current' | 'past' | 'pending'
+  paymentStatus: 'current' | 'past_due'
+  pets: { name: string; type: string; breed: string }[]
+}
+
 // Mock data for tenants
-const tenants = [
+const tenants: Tenant[] = [
   {
     id: '1',
     firstName: 'Sarah',
@@ -96,12 +141,179 @@ const tenants = [
   },
 ]
 
+// Column definitions for the data table
+const columns: ColumnDef<Tenant>[] = [
+  {
+    id: 'select',
+    header: ({ table }) => (
+      <Checkbox
+        checked={
+          table.getIsAllPageRowsSelected() ||
+          (table.getIsSomePageRowsSelected() && 'indeterminate')
+        }
+        onCheckedChange={(value) => table.toggleAllPageRowsSelected(!!value)}
+        aria-label='Select all'
+      />
+    ),
+    cell: ({ row }) => (
+      <Checkbox
+        checked={row.getIsSelected()}
+        onCheckedChange={(value) => row.toggleSelected(!!value)}
+        aria-label='Select row'
+      />
+    ),
+    enableSorting: false,
+    enableHiding: false,
+  },
+  {
+    accessorKey: 'name',
+    accessorFn: (row) => `${row.firstName} ${row.lastName}`,
+    header: ({ column }) => (
+      <DataTableColumnHeader column={column} title='Name' />
+    ),
+    cell: ({ row }) => {
+      const isPastDue = row.original.paymentStatus === 'past_due'
+      const isExpiringSoon = new Date(row.original.leaseEnd) <= new Date(Date.now() + 30 * 24 * 60 * 60 * 1000)
+
+      return (
+        <div className='flex items-center gap-3'>
+          <div className='flex size-8 items-center justify-center rounded-full bg-primary/10'>
+            <LuUser className='size-4 text-primary' />
+          </div>
+          <div>
+            <div className='flex items-center gap-2'>
+              <Link
+                to='/app/tenants/$tenantId'
+                params={{ tenantId: row.original.id }}
+                className='font-medium hover:underline'
+              >
+                {row.original.firstName} {row.original.lastName}
+              </Link>
+              {isPastDue && <Badge variant='destructive'>Past Due</Badge>}
+              {isExpiringSoon && !isPastDue && (
+                <Badge variant='secondary' className='bg-orange-100 text-orange-700'>
+                  Expiring
+                </Badge>
+              )}
+            </div>
+            <div className='flex items-center gap-2 text-xs text-muted-foreground'>
+              <LuMail className='size-3' />
+              {row.original.email}
+            </div>
+          </div>
+        </div>
+      )
+    },
+  },
+  {
+    accessorKey: 'unit',
+    header: ({ column }) => (
+      <DataTableColumnHeader column={column} title='Unit' />
+    ),
+    cell: ({ row }) => (
+      <div>
+        <span className='font-medium'>Unit {row.original.unit}</span>
+        <p className='text-xs text-muted-foreground'>{row.original.property}</p>
+      </div>
+    ),
+  },
+  {
+    accessorKey: 'phone',
+    header: ({ column }) => (
+      <DataTableColumnHeader column={column} title='Contact' />
+    ),
+    cell: ({ row }) => (
+      <div className='flex items-center gap-1 text-sm'>
+        <LuPhone className='size-3 text-muted-foreground' />
+        {row.original.phone}
+      </div>
+    ),
+  },
+  {
+    accessorKey: 'rent',
+    header: ({ column }) => (
+      <DataTableColumnHeader column={column} title='Rent' />
+    ),
+    cell: ({ row }) => {
+      const total = row.original.rent + row.original.petRent
+      return (
+        <div className='font-medium'>
+          ${total.toLocaleString()}
+          {row.original.petRent > 0 && (
+            <span className='ml-1 text-xs text-muted-foreground'>
+              (+${row.original.petRent} pet)
+            </span>
+          )}
+        </div>
+      )
+    },
+  },
+  {
+    accessorKey: 'leaseEnd',
+    header: ({ column }) => (
+      <DataTableColumnHeader column={column} title='Lease End' />
+    ),
+    cell: ({ row }) => (
+      <div className='flex items-center gap-1 text-sm'>
+        <LuCalendar className='size-3 text-muted-foreground' />
+        {new Date(row.original.leaseEnd).toLocaleDateString()}
+      </div>
+    ),
+  },
+  {
+    accessorKey: 'pets',
+    header: 'Pets',
+    cell: ({ row }) => {
+      const pets = row.original.pets
+      if (pets.length === 0) return <span className='text-muted-foreground'>—</span>
+      return (
+        <div className='flex items-center gap-1 text-sm'>
+          <LuDog className='size-3 text-muted-foreground' />
+          {pets.length} {pets.length === 1 ? 'pet' : 'pets'}
+        </div>
+      )
+    },
+    enableSorting: false,
+  },
+  {
+    id: 'actions',
+    cell: ({ row }) => (
+      <DataTableRowActions row={row}>
+        <DropdownMenuLabel>Actions</DropdownMenuLabel>
+        <DropdownMenuSeparator />
+        <DropdownMenuItem asChild>
+          <Link to='/app/tenants/$tenantId' params={{ tenantId: row.original.id }}>
+            <LuUser className='mr-2 size-4' />
+            View details
+          </Link>
+        </DropdownMenuItem>
+        <DropdownMenuItem>
+          <LuPencil className='mr-2 size-4' />
+          Edit tenant
+        </DropdownMenuItem>
+        <DropdownMenuItem asChild>
+          <Link to='/app/communications'>
+            <LuMail className='mr-2 size-4' />
+            Send message
+          </Link>
+        </DropdownMenuItem>
+        <DropdownMenuSeparator />
+        <DropdownMenuItem className='text-destructive'>
+          <LuTrash2 className='mr-2 size-4' />
+          Delete tenant
+        </DropdownMenuItem>
+      </DataTableRowActions>
+    ),
+  },
+]
+
 function TenantsListPage() {
+  const [dialogOpen, setDialogOpen] = useState(false)
+
   const activeTenants = tenants.filter(t => t.status === 'current').length
   const tenantsWithPets = tenants.filter(t => t.pets.length > 0).length
   const pastDueTenants = tenants.filter(t => t.paymentStatus === 'past_due').length
 
-  // Calculate expiring leases
   const today = new Date()
   const thirtyDaysFromNow = new Date(today.getTime() + 30 * 24 * 60 * 60 * 1000)
   const expiringLeases = tenants.filter(t => {
@@ -117,12 +329,75 @@ function TenantsListPage() {
           <Typography.H2>Tenants</Typography.H2>
           <Typography.Muted>Manage your tenant relationships</Typography.Muted>
         </div>
-        <Button asChild>
-          <Link to='/app/tenants/new'>
-            <LuPlus className='mr-2 size-4' />
-            Add Tenant
-          </Link>
-        </Button>
+        <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
+          <DialogTrigger asChild>
+            <Button>
+              <LuPlus className='mr-2 size-4' />
+              Add Tenant
+            </Button>
+          </DialogTrigger>
+          <DialogContent className='sm:max-w-[500px]'>
+            <DialogHeader>
+              <DialogTitle>Add New Tenant</DialogTitle>
+              <DialogDescription>
+                Add a new tenant to your property. Fill in the basic information to get started.
+              </DialogDescription>
+            </DialogHeader>
+            <div className='grid gap-4 py-4'>
+              <div className='grid grid-cols-2 gap-4'>
+                <div className='space-y-2'>
+                  <Label htmlFor='firstName'>First Name</Label>
+                  <Input id='firstName' placeholder='John' />
+                </div>
+                <div className='space-y-2'>
+                  <Label htmlFor='lastName'>Last Name</Label>
+                  <Input id='lastName' placeholder='Doe' />
+                </div>
+              </div>
+              <div className='space-y-2'>
+                <Label htmlFor='email'>Email</Label>
+                <Input id='email' type='email' placeholder='john.doe@email.com' />
+              </div>
+              <div className='space-y-2'>
+                <Label htmlFor='phone'>Phone</Label>
+                <Input id='phone' type='tel' placeholder='(612) 555-0123' />
+              </div>
+              <div className='grid grid-cols-2 gap-4'>
+                <div className='space-y-2'>
+                  <Label htmlFor='property'>Property</Label>
+                  <Select>
+                    <SelectTrigger id='property'>
+                      <SelectValue placeholder='Select property' />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value='humboldt'>Humboldt Court</SelectItem>
+                      <SelectItem value='maple'>Maple Grove Apartments</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className='space-y-2'>
+                  <Label htmlFor='unit'>Unit</Label>
+                  <Select>
+                    <SelectTrigger id='unit'>
+                      <SelectValue placeholder='Select unit' />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value='101'>Unit 101</SelectItem>
+                      <SelectItem value='102'>Unit 102</SelectItem>
+                      <SelectItem value='103'>Unit 103</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+            </div>
+            <DialogFooter>
+              <Button variant='outline' onClick={() => setDialogOpen(false)}>
+                Cancel
+              </Button>
+              <Button onClick={() => setDialogOpen(false)}>Add Tenant</Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
       </div>
 
       {/* Stats */}
@@ -161,134 +436,38 @@ function TenantsListPage() {
         </Card>
       </div>
 
-      {/* Search and Filters */}
-      <div className='flex flex-wrap items-center gap-4'>
-        <div className='relative flex-1 min-w-64'>
-          <LuSearch className='absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground' />
-          <Input placeholder='Search tenants, units, or lease details...' className='pl-10' />
-        </div>
-        <div className='flex gap-2'>
-          <Button variant='outline' size='sm'>
-            All
-          </Button>
-          <Button variant='ghost' size='sm'>
-            Active
-          </Button>
-          <Button variant='ghost' size='sm'>
-            Expiring Soon
-          </Button>
-          <Button variant='ghost' size='sm'>
-            Past Due
-          </Button>
-        </div>
-        <Button variant='outline'>
-          <LuFilter className='mr-2 size-4' />
-          Filters
-        </Button>
-      </div>
-
-      {/* Tenants List */}
-      <div className='space-y-4'>
-        {tenants.map(tenant => (
-          <TenantCard key={tenant.id} tenant={tenant} />
-        ))}
-      </div>
+      {/* Data Table */}
+      <Card>
+        <CardContent className='pt-6'>
+          <DataTable
+            columns={columns}
+            data={tenants}
+            toolbar={(table) => (
+              <DataTableToolbar
+                table={table}
+                searchKey='name'
+                searchPlaceholder='Search tenants...'
+                actionComponent={
+                  <div className='flex gap-2'>
+                    <Button variant='outline' size='sm'>
+                      All
+                    </Button>
+                    <Button variant='ghost' size='sm'>
+                      Active
+                    </Button>
+                    <Button variant='ghost' size='sm'>
+                      Expiring
+                    </Button>
+                    <Button variant='ghost' size='sm'>
+                      Past Due
+                    </Button>
+                  </div>
+                }
+              />
+            )}
+          />
+        </CardContent>
+      </Card>
     </div>
-  )
-}
-
-interface TenantCardProps {
-  tenant: (typeof tenants)[0]
-}
-
-function TenantCard({ tenant }: TenantCardProps) {
-  const isExpiringSoon = new Date(tenant.leaseEnd) <= new Date(Date.now() + 30 * 24 * 60 * 60 * 1000)
-  const isPastDue = tenant.paymentStatus === 'past_due'
-
-  return (
-    <Card className={`hover:shadow-md transition-shadow ${isPastDue ? 'border-destructive/50' : ''}`}>
-      <CardContent className='p-6'>
-        <div className='flex flex-col gap-4 md:flex-row md:items-center md:justify-between'>
-          {/* Tenant Info */}
-          <div className='flex items-start gap-4'>
-            <div className='flex size-12 items-center justify-center rounded-full bg-primary/10'>
-              <LuUser className='size-6 text-primary' />
-            </div>
-            <div className='space-y-1'>
-              <div className='flex items-center gap-2'>
-                <h3 className='font-semibold'>
-                  {tenant.firstName} {tenant.lastName}
-                </h3>
-                {isExpiringSoon && (
-                  <Badge variant='secondary' className='bg-orange-100 text-orange-700'>
-                    Expiring Soon
-                  </Badge>
-                )}
-                {isPastDue && <Badge variant='destructive'>Past Due</Badge>}
-              </div>
-              <p className='text-sm text-muted-foreground'>
-                Unit {tenant.unit} • {tenant.property}
-              </p>
-              <div className='flex items-center gap-4 text-sm text-muted-foreground'>
-                <span className='flex items-center gap-1'>
-                  <LuMail className='size-3' />
-                  {tenant.email}
-                </span>
-                <span className='flex items-center gap-1'>
-                  <LuPhone className='size-3' />
-                  {tenant.phone}
-                </span>
-              </div>
-            </div>
-          </div>
-
-          {/* Lease & Payment Info */}
-          <div className='flex flex-wrap items-center gap-6'>
-            <div className='text-sm'>
-              <p className='text-muted-foreground'>Monthly Rent</p>
-              <p className='font-medium'>
-                ${tenant.rent + tenant.petRent}
-                {tenant.petRent > 0 && (
-                  <span className='text-muted-foreground'> (+ ${tenant.petRent} pet)</span>
-                )}
-              </p>
-            </div>
-            <div className='text-sm'>
-              <p className='text-muted-foreground'>Lease End</p>
-              <p className='flex items-center gap-1 font-medium'>
-                <LuCalendar className='size-3' />
-                {new Date(tenant.leaseEnd).toLocaleDateString()}
-              </p>
-            </div>
-            {tenant.pets.length > 0 && (
-              <div className='text-sm'>
-                <p className='text-muted-foreground'>Pets</p>
-                <p className='flex items-center gap-1 font-medium'>
-                  <LuDog className='size-3' />
-                  {tenant.pets.length} {tenant.pets.length === 1 ? 'pet' : 'pets'}
-                </p>
-              </div>
-            )}
-          </div>
-
-          {/* Actions */}
-          <div className='flex gap-2'>
-            <Button variant='outline' size='sm' asChild>
-              <Link to='/app/communications'>Message</Link>
-            </Button>
-            <Button variant='outline' size='sm' asChild>
-              <Link to='/app/tenants/$tenantId' params={{ tenantId: tenant.id }}>
-                View Details
-              </Link>
-            </Button>
-            {isExpiringSoon && (
-              <Button size='sm' asChild>
-                <Link to='/app/leases/new'>Renew</Link>
-              </Button>
-            )}
-          </div>
-        </div>
-      </CardContent>
-    </Card>
   )
 }

@@ -1,19 +1,75 @@
+'use client'
+
 import { createFileRoute } from '@tanstack/react-router'
-import { LuTriangleAlert, LuCalendar, LuClock, LuFilter, LuList, LuPlus, LuSearch, LuWrench } from 'react-icons/lu'
+import { useState } from 'react'
+import {
+  LuCalendar,
+  LuClock,
+  LuEye,
+  LuList,
+  LuPencil,
+  LuPlus,
+  LuTrash2,
+  LuTriangleAlert,
+  LuUser,
+  LuWrench,
+} from 'react-icons/lu'
+import type { ColumnDef } from '@tanstack/react-table'
 
 import { Badge } from '~/components/ui/badge'
 import { Button } from '~/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '~/components/ui/card'
+import { Checkbox } from '~/components/ui/checkbox'
+import {
+  Drawer,
+  DrawerClose,
+  DrawerContent,
+  DrawerDescription,
+  DrawerFooter,
+  DrawerHeader,
+  DrawerTitle,
+} from '~/components/ui/drawer'
 import { Input } from '~/components/ui/input'
+import { Label } from '~/components/ui/label'
 import { Link } from '~/components/ui/link'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '~/components/ui/select'
+import { Textarea } from '~/components/ui/textarea'
 import { Typography } from '~/components/ui/typography'
+import {
+  DataTable,
+  DataTableColumnHeader,
+  DataTableRowActions,
+  DataTableToolbar,
+} from '~/components/ui/data-table'
+import {
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+} from '~/components/ui/dropdown-menu'
 
 export const Route = createFileRoute('/app/maintenance/')({
   component: MaintenanceListPage,
 })
 
+// Work order type
+interface WorkOrder {
+  id: string
+  title: string
+  description: string
+  unit: string
+  property: string
+  tenant: string
+  category: string
+  priority: 'emergency' | 'high' | 'medium' | 'low'
+  status: 'open' | 'in_progress' | 'scheduled' | 'overdue' | 'completed'
+  createdAt: string
+  assignedTo: string | null
+  eta: string | null
+  completedAt?: string
+}
+
 // Mock data for work orders
-const workOrders = [
+const workOrders: WorkOrder[] = [
   {
     id: '2891',
     title: 'No heat in unit',
@@ -83,10 +139,182 @@ const workOrders = [
     createdAt: '2024-11-15T09:00:00',
     assignedTo: "Mike's HVAC Service",
     completedAt: '2024-11-16T11:30:00',
+    eta: null,
+  },
+]
+
+// Priority and status configs
+const priorityConfig = {
+  emergency: { label: 'Emergency', variant: 'destructive' as const },
+  high: { label: 'High', variant: 'destructive' as const },
+  medium: { label: 'Medium', variant: 'secondary' as const },
+  low: { label: 'Low', variant: 'outline' as const },
+}
+
+const statusConfig = {
+  open: { label: 'Open', className: 'bg-gray-100 text-gray-800' },
+  in_progress: { label: 'In Progress', className: 'bg-blue-100 text-blue-800' },
+  scheduled: { label: 'Scheduled', className: 'bg-yellow-100 text-yellow-800' },
+  overdue: { label: 'Overdue', className: 'bg-red-100 text-red-800' },
+  completed: { label: 'Completed', className: 'bg-green-100 text-green-800' },
+}
+
+// Column definitions for data table
+const columns: ColumnDef<WorkOrder>[] = [
+  {
+    id: 'select',
+    header: ({ table }) => (
+      <Checkbox
+        checked={
+          table.getIsAllPageRowsSelected() ||
+          (table.getIsSomePageRowsSelected() && 'indeterminate')
+        }
+        onCheckedChange={(value) => table.toggleAllPageRowsSelected(!!value)}
+        aria-label='Select all'
+      />
+    ),
+    cell: ({ row }) => (
+      <Checkbox
+        checked={row.getIsSelected()}
+        onCheckedChange={(value) => row.toggleSelected(!!value)}
+        aria-label='Select row'
+      />
+    ),
+    enableSorting: false,
+    enableHiding: false,
+  },
+  {
+    accessorKey: 'title',
+    header: ({ column }) => (
+      <DataTableColumnHeader column={column} title='Work Order' />
+    ),
+    cell: ({ row }) => {
+      const priority = priorityConfig[row.original.priority]
+      const status = statusConfig[row.original.status]
+
+      return (
+        <div className='flex items-center gap-3'>
+          <div
+            className={`flex size-10 items-center justify-center rounded-lg ${
+              row.original.priority === 'emergency' ? 'bg-destructive/10' : 'bg-muted'
+            }`}
+          >
+            {row.original.priority === 'emergency' ? (
+              <LuTriangleAlert className='size-5 text-destructive' />
+            ) : (
+              <LuWrench className='size-5 text-muted-foreground' />
+            )}
+          </div>
+          <div>
+            <div className='flex items-center gap-2'>
+              <span className='text-xs text-muted-foreground'>#{row.original.id}</span>
+              <Badge variant={priority.variant} className='text-xs'>
+                {priority.label}
+              </Badge>
+              <Badge className={`text-xs ${status.className}`}>{status.label}</Badge>
+            </div>
+            <Link
+              to='/app/maintenance/$workOrderId'
+              params={{ workOrderId: row.original.id }}
+              className='font-medium hover:underline'
+            >
+              {row.original.title}
+            </Link>
+          </div>
+        </div>
+      )
+    },
+  },
+  {
+    accessorKey: 'unit',
+    header: ({ column }) => (
+      <DataTableColumnHeader column={column} title='Location' />
+    ),
+    cell: ({ row }) => (
+      <div>
+        <div className='font-medium'>Unit {row.original.unit}</div>
+        <div className='text-xs text-muted-foreground'>{row.original.property}</div>
+      </div>
+    ),
+  },
+  {
+    accessorKey: 'tenant',
+    header: ({ column }) => (
+      <DataTableColumnHeader column={column} title='Tenant' />
+    ),
+    cell: ({ row }) => (
+      <div className='flex items-center gap-2'>
+        <LuUser className='size-3 text-muted-foreground' />
+        <span className='text-sm'>{row.original.tenant}</span>
+      </div>
+    ),
+  },
+  {
+    accessorKey: 'category',
+    header: ({ column }) => (
+      <DataTableColumnHeader column={column} title='Category' />
+    ),
+    cell: ({ row }) => (
+      <Badge variant='outline'>{row.original.category}</Badge>
+    ),
+  },
+  {
+    accessorKey: 'assignedTo',
+    header: 'Assigned To',
+    cell: ({ row }) =>
+      row.original.assignedTo ? (
+        <span className='text-sm'>{row.original.assignedTo}</span>
+      ) : (
+        <span className='text-sm text-muted-foreground'>Unassigned</span>
+      ),
+    enableSorting: false,
+  },
+  {
+    accessorKey: 'createdAt',
+    header: ({ column }) => (
+      <DataTableColumnHeader column={column} title='Created' />
+    ),
+    cell: ({ row }) => (
+      <div className='text-sm'>
+        <div>{new Date(row.original.createdAt).toLocaleDateString()}</div>
+        <div className='text-xs text-muted-foreground'>
+          {new Date(row.original.createdAt).toLocaleTimeString([], {
+            hour: '2-digit',
+            minute: '2-digit',
+          })}
+        </div>
+      </div>
+    ),
+  },
+  {
+    id: 'actions',
+    cell: ({ row }) => (
+      <DataTableRowActions row={row}>
+        <DropdownMenuLabel>Actions</DropdownMenuLabel>
+        <DropdownMenuSeparator />
+        <DropdownMenuItem asChild>
+          <Link to='/app/maintenance/$workOrderId' params={{ workOrderId: row.original.id }}>
+            <LuEye className='mr-2 size-4' />
+            View details
+          </Link>
+        </DropdownMenuItem>
+        <DropdownMenuItem>
+          <LuPencil className='mr-2 size-4' />
+          Edit work order
+        </DropdownMenuItem>
+        <DropdownMenuSeparator />
+        <DropdownMenuItem className='text-destructive'>
+          <LuTrash2 className='mr-2 size-4' />
+          Delete
+        </DropdownMenuItem>
+      </DataTableRowActions>
+    ),
   },
 ]
 
 function MaintenanceListPage() {
+  const [drawerOpen, setDrawerOpen] = useState(false)
+
   const openOrders = workOrders.filter(w => w.status === 'open').length
   const inProgressOrders = workOrders.filter(w => w.status === 'in_progress').length
   const scheduledOrders = workOrders.filter(w => w.status === 'scheduled').length
@@ -100,19 +328,125 @@ function MaintenanceListPage() {
           <Typography.H2>Maintenance</Typography.H2>
           <Typography.Muted>Manage work orders and maintenance requests</Typography.Muted>
         </div>
-        <Button asChild>
-          <Link to='/app/maintenance/new'>
-            <LuPlus className='mr-2 size-4' />
-            New Work Order
-          </Link>
+        <Button onClick={() => setDrawerOpen(true)}>
+          <LuPlus className='mr-2 size-4' />
+          New Work Order
         </Button>
       </div>
+
+      {/* Drawer for New Work Order */}
+      <Drawer open={drawerOpen} onOpenChange={setDrawerOpen}>
+        <DrawerContent>
+          <div className='mx-auto w-full max-w-lg'>
+            <DrawerHeader>
+              <DrawerTitle>Create Work Order</DrawerTitle>
+              <DrawerDescription>
+                Submit a new maintenance request. Fill in the details below.
+              </DrawerDescription>
+            </DrawerHeader>
+            <div className='grid gap-4 px-4 pb-4'>
+              <div className='space-y-2'>
+                <Label htmlFor='wo-title'>Title</Label>
+                <Input id='wo-title' placeholder='Brief description of the issue' />
+              </div>
+              <div className='grid grid-cols-2 gap-4'>
+                <div className='space-y-2'>
+                  <Label htmlFor='wo-property'>Property</Label>
+                  <Select>
+                    <SelectTrigger id='wo-property'>
+                      <SelectValue placeholder='Select property' />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value='humboldt'>Humboldt Court</SelectItem>
+                      <SelectItem value='maple'>Maple Grove</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className='space-y-2'>
+                  <Label htmlFor='wo-unit'>Unit</Label>
+                  <Select>
+                    <SelectTrigger id='wo-unit'>
+                      <SelectValue placeholder='Select unit' />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value='101'>Unit 101</SelectItem>
+                      <SelectItem value='102'>Unit 102</SelectItem>
+                      <SelectItem value='204'>Unit 204</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+              <div className='grid grid-cols-2 gap-4'>
+                <div className='space-y-2'>
+                  <Label htmlFor='wo-category'>Category</Label>
+                  <Select>
+                    <SelectTrigger id='wo-category'>
+                      <SelectValue placeholder='Category' />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value='plumbing'>Plumbing</SelectItem>
+                      <SelectItem value='hvac'>HVAC</SelectItem>
+                      <SelectItem value='electrical'>Electrical</SelectItem>
+                      <SelectItem value='appliance'>Appliance</SelectItem>
+                      <SelectItem value='general'>General</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className='space-y-2'>
+                  <Label htmlFor='wo-priority'>Priority</Label>
+                  <Select>
+                    <SelectTrigger id='wo-priority'>
+                      <SelectValue placeholder='Priority' />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value='emergency'>Emergency</SelectItem>
+                      <SelectItem value='high'>High</SelectItem>
+                      <SelectItem value='medium'>Medium</SelectItem>
+                      <SelectItem value='low'>Low</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+              <div className='space-y-2'>
+                <Label htmlFor='wo-description'>Description</Label>
+                <Textarea
+                  id='wo-description'
+                  placeholder='Detailed description of the issue...'
+                  className='min-h-24'
+                />
+              </div>
+              <div className='space-y-2'>
+                <Label htmlFor='wo-assignee'>Assign To (Optional)</Label>
+                <Select>
+                  <SelectTrigger id='wo-assignee'>
+                    <SelectValue placeholder='Select vendor' />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value='mikes'>Mike's HVAC Service</SelectItem>
+                    <SelectItem value='city'>City Plumbing Co.</SelectItem>
+                    <SelectItem value='electric'>Electric Pros</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+            <DrawerFooter>
+              <Button onClick={() => setDrawerOpen(false)}>Create Work Order</Button>
+              <DrawerClose asChild>
+                <Button variant='outline'>Cancel</Button>
+              </DrawerClose>
+            </DrawerFooter>
+          </div>
+        </DrawerContent>
+      </Drawer>
 
       {/* Stats */}
       <div className='grid gap-4 md:grid-cols-5'>
         <Card>
           <CardHeader className='pb-2'>
-            <CardTitle className='text-sm font-medium'>Open</CardTitle>
+            <CardTitle className='flex items-center gap-2 text-sm font-medium'>
+              <LuList className='size-4 text-muted-foreground' />
+              Open
+            </CardTitle>
           </CardHeader>
           <CardContent>
             <div className='text-2xl font-bold'>{openOrders}</div>
@@ -120,7 +454,10 @@ function MaintenanceListPage() {
         </Card>
         <Card>
           <CardHeader className='pb-2'>
-            <CardTitle className='text-sm font-medium'>In Progress</CardTitle>
+            <CardTitle className='flex items-center gap-2 text-sm font-medium'>
+              <LuWrench className='size-4 text-blue-600' />
+              In Progress
+            </CardTitle>
           </CardHeader>
           <CardContent>
             <div className='text-2xl font-bold text-blue-600'>{inProgressOrders}</div>
@@ -128,7 +465,10 @@ function MaintenanceListPage() {
         </Card>
         <Card>
           <CardHeader className='pb-2'>
-            <CardTitle className='text-sm font-medium'>Scheduled</CardTitle>
+            <CardTitle className='flex items-center gap-2 text-sm font-medium'>
+              <LuCalendar className='size-4 text-yellow-600' />
+              Scheduled
+            </CardTitle>
           </CardHeader>
           <CardContent>
             <div className='text-2xl font-bold text-yellow-600'>{scheduledOrders}</div>
@@ -136,7 +476,10 @@ function MaintenanceListPage() {
         </Card>
         <Card>
           <CardHeader className='pb-2'>
-            <CardTitle className='text-sm font-medium'>Overdue</CardTitle>
+            <CardTitle className='flex items-center gap-2 text-sm font-medium'>
+              <LuTriangleAlert className='size-4 text-destructive' />
+              Overdue
+            </CardTitle>
           </CardHeader>
           <CardContent>
             <div className='text-2xl font-bold text-destructive'>{overdueOrders}</div>
@@ -144,7 +487,10 @@ function MaintenanceListPage() {
         </Card>
         <Card>
           <CardHeader className='pb-2'>
-            <CardTitle className='text-sm font-medium'>Avg. Response</CardTitle>
+            <CardTitle className='flex items-center gap-2 text-sm font-medium'>
+              <LuClock className='size-4 text-muted-foreground' />
+              Avg. Response
+            </CardTitle>
           </CardHeader>
           <CardContent>
             <div className='text-2xl font-bold'>1.2 hrs</div>
@@ -152,152 +498,47 @@ function MaintenanceListPage() {
         </Card>
       </div>
 
-      {/* Search and Filters */}
-      <div className='flex flex-wrap items-center gap-4'>
-        <div className='relative flex-1 min-w-64'>
-          <LuSearch className='absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground' />
-          <Input placeholder='Search work orders...' className='pl-10' />
-        </div>
-        <div className='flex gap-2'>
-          <Button variant='outline' size='sm'>
-            <LuList className='mr-2 size-4' />
-            List
-          </Button>
-          <Button variant='ghost' size='sm'>
-            <LuCalendar className='mr-2 size-4' />
-            Calendar
-          </Button>
-        </div>
-        <div className='flex gap-2'>
-          <Button variant='outline' size='sm'>
-            All
-          </Button>
-          <Button variant='ghost' size='sm'>
-            Open
-          </Button>
-          <Button variant='ghost' size='sm'>
-            In Progress
-          </Button>
-          <Button variant='ghost' size='sm'>
-            Completed
-          </Button>
-        </div>
-        <Button variant='outline'>
-          <LuFilter className='mr-2 size-4' />
-          Filters
-        </Button>
-      </div>
-
-      {/* Work Orders List */}
-      <div className='space-y-4'>
-        {workOrders.filter(w => w.status !== 'completed').map(order => (
-          <WorkOrderCard key={order.id} order={order} />
-        ))}
-      </div>
-
-      {/* Completed Section */}
+      {/* Data Table */}
       <Card>
-        <CardHeader>
-          <CardTitle>Recently Completed</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className='space-y-4'>
-            {workOrders.filter(w => w.status === 'completed').map(order => (
-              <WorkOrderCard key={order.id} order={order} />
-            ))}
-          </div>
+        <CardContent className='pt-6'>
+          <DataTable
+            columns={columns}
+            data={workOrders}
+            toolbar={(table) => (
+              <DataTableToolbar
+                table={table}
+                searchKey='title'
+                searchPlaceholder='Search work orders...'
+                actionComponent={
+                  <div className='flex gap-2'>
+                    <Button variant='outline' size='sm'>
+                      <LuList className='mr-2 size-4' />
+                      List
+                    </Button>
+                    <Button variant='ghost' size='sm'>
+                      <LuCalendar className='mr-2 size-4' />
+                      Calendar
+                    </Button>
+                    <div className='border-l mx-2' />
+                    <Button variant='outline' size='sm'>
+                      All
+                    </Button>
+                    <Button variant='ghost' size='sm'>
+                      Open
+                    </Button>
+                    <Button variant='ghost' size='sm'>
+                      In Progress
+                    </Button>
+                    <Button variant='ghost' size='sm'>
+                      Completed
+                    </Button>
+                  </div>
+                }
+              />
+            )}
+          />
         </CardContent>
       </Card>
     </div>
-  )
-}
-
-interface WorkOrderCardProps {
-  order: (typeof workOrders)[0]
-}
-
-function WorkOrderCard({ order }: WorkOrderCardProps) {
-  const priorityConfig = {
-    emergency: { label: 'Emergency', variant: 'destructive' as const },
-    high: { label: 'High', variant: 'destructive' as const },
-    medium: { label: 'Medium', variant: 'secondary' as const },
-    low: { label: 'Low', variant: 'outline' as const },
-  }
-
-  const statusConfig = {
-    open: { label: 'Open', className: 'bg-gray-100 text-gray-800' },
-    in_progress: { label: 'In Progress', className: 'bg-blue-100 text-blue-800' },
-    scheduled: { label: 'Scheduled', className: 'bg-yellow-100 text-yellow-800' },
-    overdue: { label: 'Overdue', className: 'bg-red-100 text-red-800' },
-    completed: { label: 'Completed', className: 'bg-green-100 text-green-800' },
-  }
-
-  const priority = priorityConfig[order.priority]
-  const status = statusConfig[order.status]
-
-  return (
-    <Card className={`hover:shadow-md transition-shadow ${order.status === 'overdue' ? 'border-destructive/50' : ''}`}>
-      <CardContent className='p-6'>
-        <div className='flex flex-col gap-4 md:flex-row md:items-start md:justify-between'>
-          {/* Order Info */}
-          <div className='flex items-start gap-4'>
-            <div
-              className={`flex size-10 items-center justify-center rounded-lg ${
-                order.priority === 'emergency' ? 'bg-destructive/10' : 'bg-muted'
-              }`}
-            >
-              {order.priority === 'emergency' ? (
-                <LuTriangleAlert className='size-5 text-destructive' />
-              ) : (
-                <LuWrench className='size-5 text-muted-foreground' />
-              )}
-            </div>
-            <div className='space-y-1'>
-              <div className='flex items-center gap-2'>
-                <span className='text-sm text-muted-foreground'>#{order.id}</span>
-                <Badge variant={priority.variant}>{priority.label}</Badge>
-                <Badge className={status.className}>{status.label}</Badge>
-              </div>
-              <h3 className='font-semibold'>{order.title}</h3>
-              <p className='text-sm text-muted-foreground'>
-                Unit {order.unit} • {order.property} • {order.tenant}
-              </p>
-              <p className='text-sm text-muted-foreground'>{order.description}</p>
-            </div>
-          </div>
-
-          {/* Details & Actions */}
-          <div className='flex flex-col items-end gap-2'>
-            <div className='text-right text-sm'>
-              <p className='text-muted-foreground'>Category</p>
-              <p className='font-medium'>{order.category}</p>
-            </div>
-            {order.assignedTo && (
-              <div className='text-right text-sm'>
-                <p className='text-muted-foreground'>Assigned To</p>
-                <p className='font-medium'>{order.assignedTo}</p>
-              </div>
-            )}
-            {order.eta && (
-              <div className='text-right text-sm'>
-                <p className='text-muted-foreground flex items-center gap-1 justify-end'>
-                  <LuClock className='size-3' />
-                  ETA
-                </p>
-                <p className='font-medium'>{new Date(order.eta).toLocaleString()}</p>
-              </div>
-            )}
-            <div className='flex gap-2 mt-2'>
-              <Button variant='outline' size='sm' asChild>
-                <Link to='/app/maintenance/$workOrderId' params={{ workOrderId: order.id }}>
-                  View
-                </Link>
-              </Button>
-              {order.status !== 'completed' && <Button size='sm'>Update Status</Button>}
-            </div>
-          </div>
-        </div>
-      </CardContent>
-    </Card>
   )
 }
