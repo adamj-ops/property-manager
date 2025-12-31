@@ -1,4 +1,20 @@
-import { LuKeyRound, LuLaptop, LuMoon, LuShapes, LuShieldCheck, LuSun, LuUser } from 'react-icons/lu'
+import {
+  LuBuilding2,
+  LuDollarSign,
+  LuFileText,
+  LuHouse,
+  LuKeyRound,
+  LuLaptop,
+  LuLayoutDashboard,
+  LuMessageSquare,
+  LuMoon,
+  LuShapes,
+  LuShieldCheck,
+  LuSun,
+  LuUser,
+  LuUsers,
+  LuWrench,
+} from 'react-icons/lu'
 import type { IconType } from 'react-icons'
 import type { Country } from 'react-phone-number-input'
 
@@ -31,7 +47,61 @@ export const themeOptions: readonly ThemeOption[] = [
 export const navigation: readonly NavItem[] = [
   {
     type: 'group',
-    name: 'navigation.playground',
+    name: 'navigation.property-management',
+    items: [
+      {
+        type: 'link',
+        name: 'navigation.dashboard',
+        icon: LuLayoutDashboard,
+        link: '/app/dashboard',
+      },
+      {
+        type: 'link',
+        name: 'navigation.properties',
+        icon: LuBuilding2,
+        link: '/app/properties',
+      },
+      {
+        type: 'link',
+        name: 'navigation.tenants',
+        icon: LuUsers,
+        link: '/app/tenants',
+      },
+      {
+        type: 'link',
+        name: 'navigation.leases',
+        icon: LuHouse,
+        link: '/app/leases',
+      },
+      {
+        type: 'link',
+        name: 'navigation.maintenance',
+        icon: LuWrench,
+        link: '/app/maintenance',
+      },
+      {
+        type: 'link',
+        name: 'navigation.financials',
+        icon: LuDollarSign,
+        link: '/app/financials',
+      },
+      {
+        type: 'link',
+        name: 'navigation.communications',
+        icon: LuMessageSquare,
+        link: '/app/communications',
+      },
+      {
+        type: 'link',
+        name: 'navigation.documents',
+        icon: LuFileText,
+        link: '/app/documents',
+      },
+    ],
+  },
+  {
+    type: 'group',
+    name: 'navigation.account',
     items: [
       {
         type: 'menu',
@@ -84,7 +154,7 @@ export const navigation: readonly NavItem[] = [
         items: [
           {
             type: 'link',
-            name: 'navigation.dashboard',
+            name: 'navigation.admin-dashboard',
             link: '/admin/dashboard',
           },
           {

@@ -13,6 +13,7 @@
 import { Route as rootRoute } from './routes/__root'
 import { Route as UserImport } from './routes/user'
 import { Route as AuthImport } from './routes/auth'
+import { Route as AppImport } from './routes/app'
 import { Route as AdminImport } from './routes/admin'
 import { Route as IndexImport } from './routes/index'
 import { Route as UserEmailVerificationImport } from './routes/user.email-verification'
@@ -21,9 +22,34 @@ import { Route as UserChangeEmailImport } from './routes/user.change-email'
 import { Route as UserAccountSettingsImport } from './routes/user.account-settings'
 import { Route as AuthSignUpImport } from './routes/auth.sign-up'
 import { Route as AuthSignInImport } from './routes/auth.sign-in'
+import { Route as AppTenantsImport } from './routes/app.tenants'
+import { Route as AppPropertiesImport } from './routes/app.properties'
+import { Route as AppMaintenanceImport } from './routes/app.maintenance'
+import { Route as AppLeasesImport } from './routes/app.leases'
+import { Route as AppFinancialsImport } from './routes/app.financials'
+import { Route as AppDocumentsImport } from './routes/app.documents'
+import { Route as AppDashboardImport } from './routes/app.dashboard'
+import { Route as AppCommunicationsImport } from './routes/app.communications'
 import { Route as AdminUserManagementImport } from './routes/admin.user-management'
 import { Route as AdminDashboardImport } from './routes/admin.dashboard'
 import { Route as examplesExampleFormImport } from './routes/(examples)/example-form'
+import { Route as AppTenantsIndexImport } from './routes/app.tenants.index'
+import { Route as AppPropertiesIndexImport } from './routes/app.properties.index'
+import { Route as AppMaintenanceIndexImport } from './routes/app.maintenance.index'
+import { Route as AppLeasesIndexImport } from './routes/app.leases.index'
+import { Route as AppFinancialsIndexImport } from './routes/app.financials.index'
+import { Route as AppTenantsNewImport } from './routes/app.tenants.new'
+import { Route as AppTenantsTenantIdImport } from './routes/app.tenants.$tenantId'
+import { Route as AppPropertiesNewImport } from './routes/app.properties.new'
+import { Route as AppPropertiesPropertyIdImport } from './routes/app.properties.$propertyId'
+import { Route as AppMaintenanceNewImport } from './routes/app.maintenance.new'
+import { Route as AppMaintenanceWorkOrderIdImport } from './routes/app.maintenance.$workOrderId'
+import { Route as AppLeasesNewImport } from './routes/app.leases.new'
+import { Route as AppLeasesLeaseIdImport } from './routes/app.leases.$leaseId'
+import { Route as AppFinancialsPaymentsImport } from './routes/app.financials.payments'
+import { Route as AppFinancialsExpensesImport } from './routes/app.financials.expenses'
+import { Route as AppPropertiesPropertyIdIndexImport } from './routes/app.properties.$propertyId.index'
+import { Route as AppPropertiesPropertyIdUnitsImport } from './routes/app.properties.$propertyId.units'
 
 // Create/Update Routes
 
@@ -36,6 +62,12 @@ const UserRoute = UserImport.update({
 const AuthRoute = AuthImport.update({
   id: '/auth',
   path: '/auth',
+  getParentRoute: () => rootRoute,
+} as any)
+
+const AppRoute = AppImport.update({
+  id: '/app',
+  path: '/app',
   getParentRoute: () => rootRoute,
 } as any)
 
@@ -87,6 +119,54 @@ const AuthSignInRoute = AuthSignInImport.update({
   getParentRoute: () => AuthRoute,
 } as any)
 
+const AppTenantsRoute = AppTenantsImport.update({
+  id: '/tenants',
+  path: '/tenants',
+  getParentRoute: () => AppRoute,
+} as any)
+
+const AppPropertiesRoute = AppPropertiesImport.update({
+  id: '/properties',
+  path: '/properties',
+  getParentRoute: () => AppRoute,
+} as any)
+
+const AppMaintenanceRoute = AppMaintenanceImport.update({
+  id: '/maintenance',
+  path: '/maintenance',
+  getParentRoute: () => AppRoute,
+} as any)
+
+const AppLeasesRoute = AppLeasesImport.update({
+  id: '/leases',
+  path: '/leases',
+  getParentRoute: () => AppRoute,
+} as any)
+
+const AppFinancialsRoute = AppFinancialsImport.update({
+  id: '/financials',
+  path: '/financials',
+  getParentRoute: () => AppRoute,
+} as any)
+
+const AppDocumentsRoute = AppDocumentsImport.update({
+  id: '/documents',
+  path: '/documents',
+  getParentRoute: () => AppRoute,
+} as any)
+
+const AppDashboardRoute = AppDashboardImport.update({
+  id: '/dashboard',
+  path: '/dashboard',
+  getParentRoute: () => AppRoute,
+} as any)
+
+const AppCommunicationsRoute = AppCommunicationsImport.update({
+  id: '/communications',
+  path: '/communications',
+  getParentRoute: () => AppRoute,
+} as any)
+
 const AdminUserManagementRoute = AdminUserManagementImport.update({
   id: '/user-management',
   path: '/user-management',
@@ -105,6 +185,110 @@ const examplesExampleFormRoute = examplesExampleFormImport.update({
   getParentRoute: () => rootRoute,
 } as any)
 
+const AppTenantsIndexRoute = AppTenantsIndexImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => AppTenantsRoute,
+} as any)
+
+const AppPropertiesIndexRoute = AppPropertiesIndexImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => AppPropertiesRoute,
+} as any)
+
+const AppMaintenanceIndexRoute = AppMaintenanceIndexImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => AppMaintenanceRoute,
+} as any)
+
+const AppLeasesIndexRoute = AppLeasesIndexImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => AppLeasesRoute,
+} as any)
+
+const AppFinancialsIndexRoute = AppFinancialsIndexImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => AppFinancialsRoute,
+} as any)
+
+const AppTenantsNewRoute = AppTenantsNewImport.update({
+  id: '/new',
+  path: '/new',
+  getParentRoute: () => AppTenantsRoute,
+} as any)
+
+const AppTenantsTenantIdRoute = AppTenantsTenantIdImport.update({
+  id: '/$tenantId',
+  path: '/$tenantId',
+  getParentRoute: () => AppTenantsRoute,
+} as any)
+
+const AppPropertiesNewRoute = AppPropertiesNewImport.update({
+  id: '/new',
+  path: '/new',
+  getParentRoute: () => AppPropertiesRoute,
+} as any)
+
+const AppPropertiesPropertyIdRoute = AppPropertiesPropertyIdImport.update({
+  id: '/$propertyId',
+  path: '/$propertyId',
+  getParentRoute: () => AppPropertiesRoute,
+} as any)
+
+const AppMaintenanceNewRoute = AppMaintenanceNewImport.update({
+  id: '/new',
+  path: '/new',
+  getParentRoute: () => AppMaintenanceRoute,
+} as any)
+
+const AppMaintenanceWorkOrderIdRoute = AppMaintenanceWorkOrderIdImport.update({
+  id: '/$workOrderId',
+  path: '/$workOrderId',
+  getParentRoute: () => AppMaintenanceRoute,
+} as any)
+
+const AppLeasesNewRoute = AppLeasesNewImport.update({
+  id: '/new',
+  path: '/new',
+  getParentRoute: () => AppLeasesRoute,
+} as any)
+
+const AppLeasesLeaseIdRoute = AppLeasesLeaseIdImport.update({
+  id: '/$leaseId',
+  path: '/$leaseId',
+  getParentRoute: () => AppLeasesRoute,
+} as any)
+
+const AppFinancialsPaymentsRoute = AppFinancialsPaymentsImport.update({
+  id: '/payments',
+  path: '/payments',
+  getParentRoute: () => AppFinancialsRoute,
+} as any)
+
+const AppFinancialsExpensesRoute = AppFinancialsExpensesImport.update({
+  id: '/expenses',
+  path: '/expenses',
+  getParentRoute: () => AppFinancialsRoute,
+} as any)
+
+const AppPropertiesPropertyIdIndexRoute =
+  AppPropertiesPropertyIdIndexImport.update({
+    id: '/',
+    path: '/',
+    getParentRoute: () => AppPropertiesPropertyIdRoute,
+  } as any)
+
+const AppPropertiesPropertyIdUnitsRoute =
+  AppPropertiesPropertyIdUnitsImport.update({
+    id: '/units',
+    path: '/units',
+    getParentRoute: () => AppPropertiesPropertyIdRoute,
+  } as any)
+
 // Populate the FileRoutesByPath interface
 
 declare module '@tanstack/react-router' {
@@ -121,6 +305,13 @@ declare module '@tanstack/react-router' {
       path: '/admin'
       fullPath: '/admin'
       preLoaderRoute: typeof AdminImport
+      parentRoute: typeof rootRoute
+    }
+    '/app': {
+      id: '/app'
+      path: '/app'
+      fullPath: '/app'
+      preLoaderRoute: typeof AppImport
       parentRoute: typeof rootRoute
     }
     '/auth': {
@@ -157,6 +348,62 @@ declare module '@tanstack/react-router' {
       fullPath: '/admin/user-management'
       preLoaderRoute: typeof AdminUserManagementImport
       parentRoute: typeof AdminImport
+    }
+    '/app/communications': {
+      id: '/app/communications'
+      path: '/communications'
+      fullPath: '/app/communications'
+      preLoaderRoute: typeof AppCommunicationsImport
+      parentRoute: typeof AppImport
+    }
+    '/app/dashboard': {
+      id: '/app/dashboard'
+      path: '/dashboard'
+      fullPath: '/app/dashboard'
+      preLoaderRoute: typeof AppDashboardImport
+      parentRoute: typeof AppImport
+    }
+    '/app/documents': {
+      id: '/app/documents'
+      path: '/documents'
+      fullPath: '/app/documents'
+      preLoaderRoute: typeof AppDocumentsImport
+      parentRoute: typeof AppImport
+    }
+    '/app/financials': {
+      id: '/app/financials'
+      path: '/financials'
+      fullPath: '/app/financials'
+      preLoaderRoute: typeof AppFinancialsImport
+      parentRoute: typeof AppImport
+    }
+    '/app/leases': {
+      id: '/app/leases'
+      path: '/leases'
+      fullPath: '/app/leases'
+      preLoaderRoute: typeof AppLeasesImport
+      parentRoute: typeof AppImport
+    }
+    '/app/maintenance': {
+      id: '/app/maintenance'
+      path: '/maintenance'
+      fullPath: '/app/maintenance'
+      preLoaderRoute: typeof AppMaintenanceImport
+      parentRoute: typeof AppImport
+    }
+    '/app/properties': {
+      id: '/app/properties'
+      path: '/properties'
+      fullPath: '/app/properties'
+      preLoaderRoute: typeof AppPropertiesImport
+      parentRoute: typeof AppImport
+    }
+    '/app/tenants': {
+      id: '/app/tenants'
+      path: '/tenants'
+      fullPath: '/app/tenants'
+      preLoaderRoute: typeof AppTenantsImport
+      parentRoute: typeof AppImport
     }
     '/auth/sign-in': {
       id: '/auth/sign-in'
@@ -200,6 +447,125 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof UserEmailVerificationImport
       parentRoute: typeof UserImport
     }
+    '/app/financials/expenses': {
+      id: '/app/financials/expenses'
+      path: '/expenses'
+      fullPath: '/app/financials/expenses'
+      preLoaderRoute: typeof AppFinancialsExpensesImport
+      parentRoute: typeof AppFinancialsImport
+    }
+    '/app/financials/payments': {
+      id: '/app/financials/payments'
+      path: '/payments'
+      fullPath: '/app/financials/payments'
+      preLoaderRoute: typeof AppFinancialsPaymentsImport
+      parentRoute: typeof AppFinancialsImport
+    }
+    '/app/leases/$leaseId': {
+      id: '/app/leases/$leaseId'
+      path: '/$leaseId'
+      fullPath: '/app/leases/$leaseId'
+      preLoaderRoute: typeof AppLeasesLeaseIdImport
+      parentRoute: typeof AppLeasesImport
+    }
+    '/app/leases/new': {
+      id: '/app/leases/new'
+      path: '/new'
+      fullPath: '/app/leases/new'
+      preLoaderRoute: typeof AppLeasesNewImport
+      parentRoute: typeof AppLeasesImport
+    }
+    '/app/maintenance/$workOrderId': {
+      id: '/app/maintenance/$workOrderId'
+      path: '/$workOrderId'
+      fullPath: '/app/maintenance/$workOrderId'
+      preLoaderRoute: typeof AppMaintenanceWorkOrderIdImport
+      parentRoute: typeof AppMaintenanceImport
+    }
+    '/app/maintenance/new': {
+      id: '/app/maintenance/new'
+      path: '/new'
+      fullPath: '/app/maintenance/new'
+      preLoaderRoute: typeof AppMaintenanceNewImport
+      parentRoute: typeof AppMaintenanceImport
+    }
+    '/app/properties/$propertyId': {
+      id: '/app/properties/$propertyId'
+      path: '/$propertyId'
+      fullPath: '/app/properties/$propertyId'
+      preLoaderRoute: typeof AppPropertiesPropertyIdImport
+      parentRoute: typeof AppPropertiesImport
+    }
+    '/app/properties/new': {
+      id: '/app/properties/new'
+      path: '/new'
+      fullPath: '/app/properties/new'
+      preLoaderRoute: typeof AppPropertiesNewImport
+      parentRoute: typeof AppPropertiesImport
+    }
+    '/app/tenants/$tenantId': {
+      id: '/app/tenants/$tenantId'
+      path: '/$tenantId'
+      fullPath: '/app/tenants/$tenantId'
+      preLoaderRoute: typeof AppTenantsTenantIdImport
+      parentRoute: typeof AppTenantsImport
+    }
+    '/app/tenants/new': {
+      id: '/app/tenants/new'
+      path: '/new'
+      fullPath: '/app/tenants/new'
+      preLoaderRoute: typeof AppTenantsNewImport
+      parentRoute: typeof AppTenantsImport
+    }
+    '/app/financials/': {
+      id: '/app/financials/'
+      path: '/'
+      fullPath: '/app/financials/'
+      preLoaderRoute: typeof AppFinancialsIndexImport
+      parentRoute: typeof AppFinancialsImport
+    }
+    '/app/leases/': {
+      id: '/app/leases/'
+      path: '/'
+      fullPath: '/app/leases/'
+      preLoaderRoute: typeof AppLeasesIndexImport
+      parentRoute: typeof AppLeasesImport
+    }
+    '/app/maintenance/': {
+      id: '/app/maintenance/'
+      path: '/'
+      fullPath: '/app/maintenance/'
+      preLoaderRoute: typeof AppMaintenanceIndexImport
+      parentRoute: typeof AppMaintenanceImport
+    }
+    '/app/properties/': {
+      id: '/app/properties/'
+      path: '/'
+      fullPath: '/app/properties/'
+      preLoaderRoute: typeof AppPropertiesIndexImport
+      parentRoute: typeof AppPropertiesImport
+    }
+    '/app/tenants/': {
+      id: '/app/tenants/'
+      path: '/'
+      fullPath: '/app/tenants/'
+      preLoaderRoute: typeof AppTenantsIndexImport
+      parentRoute: typeof AppTenantsImport
+    }
+    '/app/properties/$propertyId/units': {
+      id: '/app/properties/$propertyId/units'
+      path: '/units'
+      fullPath: '/app/properties/$propertyId/units'
+      preLoaderRoute: typeof AppPropertiesPropertyIdUnitsImport
+      parentRoute: typeof AppPropertiesPropertyIdImport
+    }
+    '/app/properties/$propertyId/': {
+      id: '/app/properties/$propertyId/'
+      path: '/'
+      fullPath: '/app/properties/$propertyId/'
+      preLoaderRoute: typeof AppPropertiesPropertyIdIndexImport
+      parentRoute: typeof AppPropertiesPropertyIdImport
+    }
   }
 }
 
@@ -216,6 +582,126 @@ const AdminRouteChildren: AdminRouteChildren = {
 }
 
 const AdminRouteWithChildren = AdminRoute._addFileChildren(AdminRouteChildren)
+
+interface AppFinancialsRouteChildren {
+  AppFinancialsExpensesRoute: typeof AppFinancialsExpensesRoute
+  AppFinancialsPaymentsRoute: typeof AppFinancialsPaymentsRoute
+  AppFinancialsIndexRoute: typeof AppFinancialsIndexRoute
+}
+
+const AppFinancialsRouteChildren: AppFinancialsRouteChildren = {
+  AppFinancialsExpensesRoute: AppFinancialsExpensesRoute,
+  AppFinancialsPaymentsRoute: AppFinancialsPaymentsRoute,
+  AppFinancialsIndexRoute: AppFinancialsIndexRoute,
+}
+
+const AppFinancialsRouteWithChildren = AppFinancialsRoute._addFileChildren(
+  AppFinancialsRouteChildren,
+)
+
+interface AppLeasesRouteChildren {
+  AppLeasesLeaseIdRoute: typeof AppLeasesLeaseIdRoute
+  AppLeasesNewRoute: typeof AppLeasesNewRoute
+  AppLeasesIndexRoute: typeof AppLeasesIndexRoute
+}
+
+const AppLeasesRouteChildren: AppLeasesRouteChildren = {
+  AppLeasesLeaseIdRoute: AppLeasesLeaseIdRoute,
+  AppLeasesNewRoute: AppLeasesNewRoute,
+  AppLeasesIndexRoute: AppLeasesIndexRoute,
+}
+
+const AppLeasesRouteWithChildren = AppLeasesRoute._addFileChildren(
+  AppLeasesRouteChildren,
+)
+
+interface AppMaintenanceRouteChildren {
+  AppMaintenanceWorkOrderIdRoute: typeof AppMaintenanceWorkOrderIdRoute
+  AppMaintenanceNewRoute: typeof AppMaintenanceNewRoute
+  AppMaintenanceIndexRoute: typeof AppMaintenanceIndexRoute
+}
+
+const AppMaintenanceRouteChildren: AppMaintenanceRouteChildren = {
+  AppMaintenanceWorkOrderIdRoute: AppMaintenanceWorkOrderIdRoute,
+  AppMaintenanceNewRoute: AppMaintenanceNewRoute,
+  AppMaintenanceIndexRoute: AppMaintenanceIndexRoute,
+}
+
+const AppMaintenanceRouteWithChildren = AppMaintenanceRoute._addFileChildren(
+  AppMaintenanceRouteChildren,
+)
+
+interface AppPropertiesPropertyIdRouteChildren {
+  AppPropertiesPropertyIdUnitsRoute: typeof AppPropertiesPropertyIdUnitsRoute
+  AppPropertiesPropertyIdIndexRoute: typeof AppPropertiesPropertyIdIndexRoute
+}
+
+const AppPropertiesPropertyIdRouteChildren: AppPropertiesPropertyIdRouteChildren =
+  {
+    AppPropertiesPropertyIdUnitsRoute: AppPropertiesPropertyIdUnitsRoute,
+    AppPropertiesPropertyIdIndexRoute: AppPropertiesPropertyIdIndexRoute,
+  }
+
+const AppPropertiesPropertyIdRouteWithChildren =
+  AppPropertiesPropertyIdRoute._addFileChildren(
+    AppPropertiesPropertyIdRouteChildren,
+  )
+
+interface AppPropertiesRouteChildren {
+  AppPropertiesPropertyIdRoute: typeof AppPropertiesPropertyIdRouteWithChildren
+  AppPropertiesNewRoute: typeof AppPropertiesNewRoute
+  AppPropertiesIndexRoute: typeof AppPropertiesIndexRoute
+}
+
+const AppPropertiesRouteChildren: AppPropertiesRouteChildren = {
+  AppPropertiesPropertyIdRoute: AppPropertiesPropertyIdRouteWithChildren,
+  AppPropertiesNewRoute: AppPropertiesNewRoute,
+  AppPropertiesIndexRoute: AppPropertiesIndexRoute,
+}
+
+const AppPropertiesRouteWithChildren = AppPropertiesRoute._addFileChildren(
+  AppPropertiesRouteChildren,
+)
+
+interface AppTenantsRouteChildren {
+  AppTenantsTenantIdRoute: typeof AppTenantsTenantIdRoute
+  AppTenantsNewRoute: typeof AppTenantsNewRoute
+  AppTenantsIndexRoute: typeof AppTenantsIndexRoute
+}
+
+const AppTenantsRouteChildren: AppTenantsRouteChildren = {
+  AppTenantsTenantIdRoute: AppTenantsTenantIdRoute,
+  AppTenantsNewRoute: AppTenantsNewRoute,
+  AppTenantsIndexRoute: AppTenantsIndexRoute,
+}
+
+const AppTenantsRouteWithChildren = AppTenantsRoute._addFileChildren(
+  AppTenantsRouteChildren,
+)
+
+interface AppRouteChildren {
+  AppCommunicationsRoute: typeof AppCommunicationsRoute
+  AppDashboardRoute: typeof AppDashboardRoute
+  AppDocumentsRoute: typeof AppDocumentsRoute
+  AppFinancialsRoute: typeof AppFinancialsRouteWithChildren
+  AppLeasesRoute: typeof AppLeasesRouteWithChildren
+  AppMaintenanceRoute: typeof AppMaintenanceRouteWithChildren
+  AppPropertiesRoute: typeof AppPropertiesRouteWithChildren
+  AppTenantsRoute: typeof AppTenantsRouteWithChildren
+}
+
+const AppRouteChildren: AppRouteChildren = {
+  AppCommunicationsRoute: AppCommunicationsRoute,
+  AppDashboardRoute: AppDashboardRoute,
+  AppDocumentsRoute: AppDocumentsRoute,
+  AppFinancialsRoute: AppFinancialsRouteWithChildren,
+  AppLeasesRoute: AppLeasesRouteWithChildren,
+  AppMaintenanceRoute: AppMaintenanceRouteWithChildren,
+  AppPropertiesRoute: AppPropertiesRouteWithChildren,
+  AppTenantsRoute: AppTenantsRouteWithChildren,
+}
+
+const AppRouteWithChildren = AppRoute._addFileChildren(AppRouteChildren)
 
 interface AuthRouteChildren {
   AuthSignInRoute: typeof AuthSignInRoute
@@ -248,50 +734,122 @@ const UserRouteWithChildren = UserRoute._addFileChildren(UserRouteChildren)
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/admin': typeof AdminRouteWithChildren
+  '/app': typeof AppRouteWithChildren
   '/auth': typeof AuthRouteWithChildren
   '/user': typeof UserRouteWithChildren
   '/example-form': typeof examplesExampleFormRoute
   '/admin/dashboard': typeof AdminDashboardRoute
   '/admin/user-management': typeof AdminUserManagementRoute
+  '/app/communications': typeof AppCommunicationsRoute
+  '/app/dashboard': typeof AppDashboardRoute
+  '/app/documents': typeof AppDocumentsRoute
+  '/app/financials': typeof AppFinancialsRouteWithChildren
+  '/app/leases': typeof AppLeasesRouteWithChildren
+  '/app/maintenance': typeof AppMaintenanceRouteWithChildren
+  '/app/properties': typeof AppPropertiesRouteWithChildren
+  '/app/tenants': typeof AppTenantsRouteWithChildren
   '/auth/sign-in': typeof AuthSignInRoute
   '/auth/sign-up': typeof AuthSignUpRoute
   '/user/account-settings': typeof UserAccountSettingsRoute
   '/user/change-email': typeof UserChangeEmailRoute
   '/user/change-password': typeof UserChangePasswordRoute
   '/user/email-verification': typeof UserEmailVerificationRoute
+  '/app/financials/expenses': typeof AppFinancialsExpensesRoute
+  '/app/financials/payments': typeof AppFinancialsPaymentsRoute
+  '/app/leases/$leaseId': typeof AppLeasesLeaseIdRoute
+  '/app/leases/new': typeof AppLeasesNewRoute
+  '/app/maintenance/$workOrderId': typeof AppMaintenanceWorkOrderIdRoute
+  '/app/maintenance/new': typeof AppMaintenanceNewRoute
+  '/app/properties/$propertyId': typeof AppPropertiesPropertyIdRouteWithChildren
+  '/app/properties/new': typeof AppPropertiesNewRoute
+  '/app/tenants/$tenantId': typeof AppTenantsTenantIdRoute
+  '/app/tenants/new': typeof AppTenantsNewRoute
+  '/app/financials/': typeof AppFinancialsIndexRoute
+  '/app/leases/': typeof AppLeasesIndexRoute
+  '/app/maintenance/': typeof AppMaintenanceIndexRoute
+  '/app/properties/': typeof AppPropertiesIndexRoute
+  '/app/tenants/': typeof AppTenantsIndexRoute
+  '/app/properties/$propertyId/units': typeof AppPropertiesPropertyIdUnitsRoute
+  '/app/properties/$propertyId/': typeof AppPropertiesPropertyIdIndexRoute
 }
 
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/admin': typeof AdminRouteWithChildren
+  '/app': typeof AppRouteWithChildren
   '/auth': typeof AuthRouteWithChildren
   '/user': typeof UserRouteWithChildren
   '/example-form': typeof examplesExampleFormRoute
   '/admin/dashboard': typeof AdminDashboardRoute
   '/admin/user-management': typeof AdminUserManagementRoute
+  '/app/communications': typeof AppCommunicationsRoute
+  '/app/dashboard': typeof AppDashboardRoute
+  '/app/documents': typeof AppDocumentsRoute
   '/auth/sign-in': typeof AuthSignInRoute
   '/auth/sign-up': typeof AuthSignUpRoute
   '/user/account-settings': typeof UserAccountSettingsRoute
   '/user/change-email': typeof UserChangeEmailRoute
   '/user/change-password': typeof UserChangePasswordRoute
   '/user/email-verification': typeof UserEmailVerificationRoute
+  '/app/financials/expenses': typeof AppFinancialsExpensesRoute
+  '/app/financials/payments': typeof AppFinancialsPaymentsRoute
+  '/app/leases/$leaseId': typeof AppLeasesLeaseIdRoute
+  '/app/leases/new': typeof AppLeasesNewRoute
+  '/app/maintenance/$workOrderId': typeof AppMaintenanceWorkOrderIdRoute
+  '/app/maintenance/new': typeof AppMaintenanceNewRoute
+  '/app/properties/new': typeof AppPropertiesNewRoute
+  '/app/tenants/$tenantId': typeof AppTenantsTenantIdRoute
+  '/app/tenants/new': typeof AppTenantsNewRoute
+  '/app/financials': typeof AppFinancialsIndexRoute
+  '/app/leases': typeof AppLeasesIndexRoute
+  '/app/maintenance': typeof AppMaintenanceIndexRoute
+  '/app/properties': typeof AppPropertiesIndexRoute
+  '/app/tenants': typeof AppTenantsIndexRoute
+  '/app/properties/$propertyId/units': typeof AppPropertiesPropertyIdUnitsRoute
+  '/app/properties/$propertyId': typeof AppPropertiesPropertyIdIndexRoute
 }
 
 export interface FileRoutesById {
   __root__: typeof rootRoute
   '/': typeof IndexRoute
   '/admin': typeof AdminRouteWithChildren
+  '/app': typeof AppRouteWithChildren
   '/auth': typeof AuthRouteWithChildren
   '/user': typeof UserRouteWithChildren
   '/(examples)/example-form': typeof examplesExampleFormRoute
   '/admin/dashboard': typeof AdminDashboardRoute
   '/admin/user-management': typeof AdminUserManagementRoute
+  '/app/communications': typeof AppCommunicationsRoute
+  '/app/dashboard': typeof AppDashboardRoute
+  '/app/documents': typeof AppDocumentsRoute
+  '/app/financials': typeof AppFinancialsRouteWithChildren
+  '/app/leases': typeof AppLeasesRouteWithChildren
+  '/app/maintenance': typeof AppMaintenanceRouteWithChildren
+  '/app/properties': typeof AppPropertiesRouteWithChildren
+  '/app/tenants': typeof AppTenantsRouteWithChildren
   '/auth/sign-in': typeof AuthSignInRoute
   '/auth/sign-up': typeof AuthSignUpRoute
   '/user/account-settings': typeof UserAccountSettingsRoute
   '/user/change-email': typeof UserChangeEmailRoute
   '/user/change-password': typeof UserChangePasswordRoute
   '/user/email-verification': typeof UserEmailVerificationRoute
+  '/app/financials/expenses': typeof AppFinancialsExpensesRoute
+  '/app/financials/payments': typeof AppFinancialsPaymentsRoute
+  '/app/leases/$leaseId': typeof AppLeasesLeaseIdRoute
+  '/app/leases/new': typeof AppLeasesNewRoute
+  '/app/maintenance/$workOrderId': typeof AppMaintenanceWorkOrderIdRoute
+  '/app/maintenance/new': typeof AppMaintenanceNewRoute
+  '/app/properties/$propertyId': typeof AppPropertiesPropertyIdRouteWithChildren
+  '/app/properties/new': typeof AppPropertiesNewRoute
+  '/app/tenants/$tenantId': typeof AppTenantsTenantIdRoute
+  '/app/tenants/new': typeof AppTenantsNewRoute
+  '/app/financials/': typeof AppFinancialsIndexRoute
+  '/app/leases/': typeof AppLeasesIndexRoute
+  '/app/maintenance/': typeof AppMaintenanceIndexRoute
+  '/app/properties/': typeof AppPropertiesIndexRoute
+  '/app/tenants/': typeof AppTenantsIndexRoute
+  '/app/properties/$propertyId/units': typeof AppPropertiesPropertyIdUnitsRoute
+  '/app/properties/$propertyId/': typeof AppPropertiesPropertyIdIndexRoute
 }
 
 export interface FileRouteTypes {
@@ -299,53 +857,126 @@ export interface FileRouteTypes {
   fullPaths:
     | '/'
     | '/admin'
+    | '/app'
     | '/auth'
     | '/user'
     | '/example-form'
     | '/admin/dashboard'
     | '/admin/user-management'
+    | '/app/communications'
+    | '/app/dashboard'
+    | '/app/documents'
+    | '/app/financials'
+    | '/app/leases'
+    | '/app/maintenance'
+    | '/app/properties'
+    | '/app/tenants'
     | '/auth/sign-in'
     | '/auth/sign-up'
     | '/user/account-settings'
     | '/user/change-email'
     | '/user/change-password'
     | '/user/email-verification'
+    | '/app/financials/expenses'
+    | '/app/financials/payments'
+    | '/app/leases/$leaseId'
+    | '/app/leases/new'
+    | '/app/maintenance/$workOrderId'
+    | '/app/maintenance/new'
+    | '/app/properties/$propertyId'
+    | '/app/properties/new'
+    | '/app/tenants/$tenantId'
+    | '/app/tenants/new'
+    | '/app/financials/'
+    | '/app/leases/'
+    | '/app/maintenance/'
+    | '/app/properties/'
+    | '/app/tenants/'
+    | '/app/properties/$propertyId/units'
+    | '/app/properties/$propertyId/'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
     | '/admin'
+    | '/app'
     | '/auth'
     | '/user'
     | '/example-form'
     | '/admin/dashboard'
     | '/admin/user-management'
+    | '/app/communications'
+    | '/app/dashboard'
+    | '/app/documents'
     | '/auth/sign-in'
     | '/auth/sign-up'
     | '/user/account-settings'
     | '/user/change-email'
     | '/user/change-password'
     | '/user/email-verification'
+    | '/app/financials/expenses'
+    | '/app/financials/payments'
+    | '/app/leases/$leaseId'
+    | '/app/leases/new'
+    | '/app/maintenance/$workOrderId'
+    | '/app/maintenance/new'
+    | '/app/properties/new'
+    | '/app/tenants/$tenantId'
+    | '/app/tenants/new'
+    | '/app/financials'
+    | '/app/leases'
+    | '/app/maintenance'
+    | '/app/properties'
+    | '/app/tenants'
+    | '/app/properties/$propertyId/units'
+    | '/app/properties/$propertyId'
   id:
     | '__root__'
     | '/'
     | '/admin'
+    | '/app'
     | '/auth'
     | '/user'
     | '/(examples)/example-form'
     | '/admin/dashboard'
     | '/admin/user-management'
+    | '/app/communications'
+    | '/app/dashboard'
+    | '/app/documents'
+    | '/app/financials'
+    | '/app/leases'
+    | '/app/maintenance'
+    | '/app/properties'
+    | '/app/tenants'
     | '/auth/sign-in'
     | '/auth/sign-up'
     | '/user/account-settings'
     | '/user/change-email'
     | '/user/change-password'
     | '/user/email-verification'
+    | '/app/financials/expenses'
+    | '/app/financials/payments'
+    | '/app/leases/$leaseId'
+    | '/app/leases/new'
+    | '/app/maintenance/$workOrderId'
+    | '/app/maintenance/new'
+    | '/app/properties/$propertyId'
+    | '/app/properties/new'
+    | '/app/tenants/$tenantId'
+    | '/app/tenants/new'
+    | '/app/financials/'
+    | '/app/leases/'
+    | '/app/maintenance/'
+    | '/app/properties/'
+    | '/app/tenants/'
+    | '/app/properties/$propertyId/units'
+    | '/app/properties/$propertyId/'
   fileRoutesById: FileRoutesById
 }
 
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AdminRoute: typeof AdminRouteWithChildren
+  AppRoute: typeof AppRouteWithChildren
   AuthRoute: typeof AuthRouteWithChildren
   UserRoute: typeof UserRouteWithChildren
   examplesExampleFormRoute: typeof examplesExampleFormRoute
@@ -354,6 +985,7 @@ export interface RootRouteChildren {
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AdminRoute: AdminRouteWithChildren,
+  AppRoute: AppRouteWithChildren,
   AuthRoute: AuthRouteWithChildren,
   UserRoute: UserRouteWithChildren,
   examplesExampleFormRoute: examplesExampleFormRoute,
@@ -371,6 +1003,7 @@ export const routeTree = rootRoute
       "children": [
         "/",
         "/admin",
+        "/app",
         "/auth",
         "/user",
         "/(examples)/example-form"
@@ -384,6 +1017,19 @@ export const routeTree = rootRoute
       "children": [
         "/admin/dashboard",
         "/admin/user-management"
+      ]
+    },
+    "/app": {
+      "filePath": "app.tsx",
+      "children": [
+        "/app/communications",
+        "/app/dashboard",
+        "/app/documents",
+        "/app/financials",
+        "/app/leases",
+        "/app/maintenance",
+        "/app/properties",
+        "/app/tenants"
       ]
     },
     "/auth": {
@@ -413,6 +1059,63 @@ export const routeTree = rootRoute
       "filePath": "admin.user-management.tsx",
       "parent": "/admin"
     },
+    "/app/communications": {
+      "filePath": "app.communications.tsx",
+      "parent": "/app"
+    },
+    "/app/dashboard": {
+      "filePath": "app.dashboard.tsx",
+      "parent": "/app"
+    },
+    "/app/documents": {
+      "filePath": "app.documents.tsx",
+      "parent": "/app"
+    },
+    "/app/financials": {
+      "filePath": "app.financials.tsx",
+      "parent": "/app",
+      "children": [
+        "/app/financials/expenses",
+        "/app/financials/payments",
+        "/app/financials/"
+      ]
+    },
+    "/app/leases": {
+      "filePath": "app.leases.tsx",
+      "parent": "/app",
+      "children": [
+        "/app/leases/$leaseId",
+        "/app/leases/new",
+        "/app/leases/"
+      ]
+    },
+    "/app/maintenance": {
+      "filePath": "app.maintenance.tsx",
+      "parent": "/app",
+      "children": [
+        "/app/maintenance/$workOrderId",
+        "/app/maintenance/new",
+        "/app/maintenance/"
+      ]
+    },
+    "/app/properties": {
+      "filePath": "app.properties.tsx",
+      "parent": "/app",
+      "children": [
+        "/app/properties/$propertyId",
+        "/app/properties/new",
+        "/app/properties/"
+      ]
+    },
+    "/app/tenants": {
+      "filePath": "app.tenants.tsx",
+      "parent": "/app",
+      "children": [
+        "/app/tenants/$tenantId",
+        "/app/tenants/new",
+        "/app/tenants/"
+      ]
+    },
     "/auth/sign-in": {
       "filePath": "auth.sign-in.tsx",
       "parent": "/auth"
@@ -436,6 +1139,78 @@ export const routeTree = rootRoute
     "/user/email-verification": {
       "filePath": "user.email-verification.tsx",
       "parent": "/user"
+    },
+    "/app/financials/expenses": {
+      "filePath": "app.financials.expenses.tsx",
+      "parent": "/app/financials"
+    },
+    "/app/financials/payments": {
+      "filePath": "app.financials.payments.tsx",
+      "parent": "/app/financials"
+    },
+    "/app/leases/$leaseId": {
+      "filePath": "app.leases.$leaseId.tsx",
+      "parent": "/app/leases"
+    },
+    "/app/leases/new": {
+      "filePath": "app.leases.new.tsx",
+      "parent": "/app/leases"
+    },
+    "/app/maintenance/$workOrderId": {
+      "filePath": "app.maintenance.$workOrderId.tsx",
+      "parent": "/app/maintenance"
+    },
+    "/app/maintenance/new": {
+      "filePath": "app.maintenance.new.tsx",
+      "parent": "/app/maintenance"
+    },
+    "/app/properties/$propertyId": {
+      "filePath": "app.properties.$propertyId.tsx",
+      "parent": "/app/properties",
+      "children": [
+        "/app/properties/$propertyId/units",
+        "/app/properties/$propertyId/"
+      ]
+    },
+    "/app/properties/new": {
+      "filePath": "app.properties.new.tsx",
+      "parent": "/app/properties"
+    },
+    "/app/tenants/$tenantId": {
+      "filePath": "app.tenants.$tenantId.tsx",
+      "parent": "/app/tenants"
+    },
+    "/app/tenants/new": {
+      "filePath": "app.tenants.new.tsx",
+      "parent": "/app/tenants"
+    },
+    "/app/financials/": {
+      "filePath": "app.financials.index.tsx",
+      "parent": "/app/financials"
+    },
+    "/app/leases/": {
+      "filePath": "app.leases.index.tsx",
+      "parent": "/app/leases"
+    },
+    "/app/maintenance/": {
+      "filePath": "app.maintenance.index.tsx",
+      "parent": "/app/maintenance"
+    },
+    "/app/properties/": {
+      "filePath": "app.properties.index.tsx",
+      "parent": "/app/properties"
+    },
+    "/app/tenants/": {
+      "filePath": "app.tenants.index.tsx",
+      "parent": "/app/tenants"
+    },
+    "/app/properties/$propertyId/units": {
+      "filePath": "app.properties.$propertyId.units.tsx",
+      "parent": "/app/properties/$propertyId"
+    },
+    "/app/properties/$propertyId/": {
+      "filePath": "app.properties.$propertyId.index.tsx",
+      "parent": "/app/properties/$propertyId"
     }
   }
 }
