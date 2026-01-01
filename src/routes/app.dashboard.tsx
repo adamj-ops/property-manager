@@ -160,61 +160,21 @@ function DashboardPage() {
       {/* Charts Section */}
       <div className='space-y-6'>
         <Typography.H3>Analytics</Typography.H3>
+        <Typography.Muted className='-mt-4'>
+          Click on chart elements to view detailed breakdowns. Use the controls to filter, expand, or export charts.
+        </Typography.Muted>
 
         {/* Revenue and Occupancy Charts */}
         <div className='grid gap-6 lg:grid-cols-2'>
-          <Card>
-            <CardHeader>
-              <CardTitle>Revenue Trend</CardTitle>
-              <CardDescription>Monthly revenue over the past 6 months</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <RevenueChart />
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader>
-              <CardTitle>Occupancy by Property</CardTitle>
-              <CardDescription>Current occupancy rates across properties</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <OccupancyChart />
-            </CardContent>
-          </Card>
+          <RevenueChart />
+          <OccupancyChart />
         </div>
 
         {/* Maintenance, Lease, and Collection Charts */}
         <div className='grid gap-6 lg:grid-cols-3'>
-          <Card>
-            <CardHeader>
-              <CardTitle>Work Orders</CardTitle>
-              <CardDescription>Status breakdown</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <MaintenanceChart />
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader>
-              <CardTitle>Lease Expirations</CardTitle>
-              <CardDescription>Upcoming renewals by month</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <LeaseExpirationChart />
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader>
-              <CardTitle>Collection Rate</CardTitle>
-              <CardDescription>Payment collection by property</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <CollectionChart />
-            </CardContent>
-          </Card>
+          <MaintenanceChart />
+          <LeaseExpirationChart />
+          <CollectionChart />
         </div>
       </div>
 
