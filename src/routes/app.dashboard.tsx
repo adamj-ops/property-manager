@@ -1,6 +1,13 @@
 import { createFileRoute } from '@tanstack/react-router'
 import { LuCircleAlert, LuArrowUpRight, LuBuilding2, LuDollarSign, LuTrendingUp, LuUsers, LuWrench } from 'react-icons/lu'
 
+import {
+  CollectionChart,
+  LeaseExpirationChart,
+  MaintenanceChart,
+  OccupancyChart,
+  RevenueChart,
+} from '~/components/dashboard/charts'
 import { Badge } from '~/components/ui/badge'
 import { Button } from '~/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '~/components/ui/card'
@@ -148,6 +155,67 @@ function DashboardPage() {
             </div>
           </CardContent>
         </Card>
+      </div>
+
+      {/* Charts Section */}
+      <div className='space-y-6'>
+        <Typography.H3>Analytics</Typography.H3>
+
+        {/* Revenue and Occupancy Charts */}
+        <div className='grid gap-6 lg:grid-cols-2'>
+          <Card>
+            <CardHeader>
+              <CardTitle>Revenue Trend</CardTitle>
+              <CardDescription>Monthly revenue over the past 6 months</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <RevenueChart />
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader>
+              <CardTitle>Occupancy by Property</CardTitle>
+              <CardDescription>Current occupancy rates across properties</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <OccupancyChart />
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* Maintenance, Lease, and Collection Charts */}
+        <div className='grid gap-6 lg:grid-cols-3'>
+          <Card>
+            <CardHeader>
+              <CardTitle>Work Orders</CardTitle>
+              <CardDescription>Status breakdown</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <MaintenanceChart />
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader>
+              <CardTitle>Lease Expirations</CardTitle>
+              <CardDescription>Upcoming renewals by month</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <LeaseExpirationChart />
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader>
+              <CardTitle>Collection Rate</CardTitle>
+              <CardDescription>Payment collection by property</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <CollectionChart />
+            </CardContent>
+          </Card>
+        </div>
       </div>
 
       {/* Recent Activity */}
