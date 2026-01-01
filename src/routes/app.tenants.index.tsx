@@ -1,13 +1,14 @@
 'use client'
 
 import { createFileRoute } from '@tanstack/react-router'
-import { useState } from 'react'
+import { useCallback, useState } from 'react'
 import {
   LuBuilding2,
   LuCalendar,
   LuCircleCheck,
   LuCircleX,
   LuDog,
+  LuDownload,
   LuMail,
   LuPencil,
   LuPhone,
@@ -15,7 +16,7 @@ import {
   LuTrash2,
   LuUser,
 } from 'react-icons/lu'
-import type { ColumnDef } from '@tanstack/react-table'
+import type { ColumnDef, Row } from '@tanstack/react-table'
 
 import { Badge } from '~/components/ui/badge'
 import { Button } from '~/components/ui/button'
@@ -37,12 +38,16 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '~
 import { Typography } from '~/components/ui/typography'
 import {
   DataTableVirtual,
+  DataTableBulkActionsFloating,
   DataTableColumnHeader,
   DataTableFacetedFilter,
   DataTableRowActions,
+  DataTableRowExpansion,
   DataTableToolbar,
   EditableBadgeCell,
   EditableCell,
+  FieldDisplay,
+  FieldGroup,
 } from '~/components/ui/data-table'
 import {
   DropdownMenuItem,
@@ -380,6 +385,13 @@ function TenantsListPage() {
   const [dialogOpen, setDialogOpen] = useState(false)
   const [tenants, setTenants] = useState(initialTenants)
 
+  // Row expansion state
+  const [expandedRow, setExpandedRow] = useState<Row<Tenant> | null>(null)
+  const [expansionOpen, setExpansionOpen] = useState(false)
+
+  // Table ref for bulk actions
+  const [tableInstance, setTableInstance] = useState<any>(null)
+
   const activeTenants = tenants.filter((t) => t.status === 'current').length
   const tenantsWithPets = tenants.filter((t) => t.pets.length > 0).length
   const pastDueTenants = tenants.filter((t) => t.paymentStatus === 'past_due').length
@@ -396,6 +408,57 @@ function TenantsListPage() {
     // Here you would typically also save to the server
     console.log('Data updated:', newData)
   }
+
+  // Row click handler for expansion
+  const handleRowClick = useCallback((row: Row<Tenant>) => {
+    setExpandedRow(row)
+    setExpansionOpen(true)
+  }, [])
+
+  // Navigate between rows in expansion panel
+  const handlePreviousRow = useCallback(() => {
+    if (!expandedRow || !tableInstance) return
+    const rows = tableInstance.getRowModel().rows
+    const currentIndex = rows.findIndex((r: Row<Tenant>) => r.id === expandedRow.id)
+    if (currentIndex > 0) {
+      setExpandedRow(rows[currentIndex - 1])
+    }
+  }, [expandedRow, tableInstance])
+
+  const handleNextRow = useCallback(() => {
+    if (!expandedRow || !tableInstance) return
+    const rows = tableInstance.getRowModel().rows
+    const currentIndex = rows.findIndex((r: Row<Tenant>) => r.id === expandedRow.id)
+    if (currentIndex < rows.length - 1) {
+      setExpandedRow(rows[currentIndex + 1])
+    }
+  }, [expandedRow, tableInstance])
+
+  // Bulk action handlers
+  const handleBulkDelete = useCallback((rows: Tenant[]) => {
+    const idsToDelete = new Set(rows.map((r) => r.id))
+    setTenants((prev) => prev.filter((t) => !idsToDelete.has(t.id)))
+    tableInstance?.resetRowSelection()
+  }, [tableInstance])
+
+  const handleBulkExport = useCallback((rows: Tenant[]) => {
+    // Export as CSV
+    const headers = ['First Name', 'Last Name', 'Email', 'Phone', 'Unit', 'Property', 'Rent', 'Lease End']
+    const csvContent = [
+      headers.join(','),
+      ...rows.map((t) =>
+        [t.firstName, t.lastName, t.email, t.phone, t.unit, t.property, t.rent, t.leaseEnd].join(',')
+      ),
+    ].join('\n')
+
+    const blob = new Blob([csvContent], { type: 'text/csv' })
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url
+    a.download = `tenants-export-${new Date().toISOString().split('T')[0]}.csv`
+    a.click()
+    URL.revokeObjectURL(url)
+  }, [])
 
   return (
     <div className='w-full max-w-7xl space-y-6 py-6'>
@@ -519,6 +582,7 @@ function TenantsListPage() {
             columns={columns}
             data={tenants}
             onDataChange={handleDataChange}
+            onRowClick={handleRowClick}
             enableColumnResizing
             enableCellSelection
             enableColumnPinning
@@ -527,34 +591,38 @@ function TenantsListPage() {
             enableKeyboardNavigation
             maxUndoHistory={50}
             initialColumnPinning={{ left: ['select', 'name'], right: ['actions'] }}
-            toolbar={(table) => (
-              <DataTableToolbar
-                table={table}
-                searchKey='name'
-                searchPlaceholder='Search tenants...'
-                filterComponent={
-                  <div className='flex gap-2'>
-                    {table.getColumn('property') && (
-                      <DataTableFacetedFilter
-                        column={table.getColumn('property')}
-                        title='Property'
-                        options={propertyOptions}
-                      />
-                    )}
-                    {table.getColumn('paymentStatus') && (
-                      <DataTableFacetedFilter
-                        column={table.getColumn('paymentStatus')}
-                        title='Payment'
-                        options={[
-                          { label: 'Current', value: 'current' },
-                          { label: 'Past Due', value: 'past_due' },
-                        ]}
-                      />
-                    )}
-                  </div>
-                }
-              />
-            )}
+            toolbar={(table) => {
+              // Store table instance for bulk actions
+              if (!tableInstance) setTableInstance(table)
+              return (
+                <DataTableToolbar
+                  table={table}
+                  searchKey='name'
+                  searchPlaceholder='Search tenants...'
+                  filterComponent={
+                    <div className='flex gap-2'>
+                      {table.getColumn('property') && (
+                        <DataTableFacetedFilter
+                          column={table.getColumn('property')}
+                          title='Property'
+                          options={propertyOptions}
+                        />
+                      )}
+                      {table.getColumn('paymentStatus') && (
+                        <DataTableFacetedFilter
+                          column={table.getColumn('paymentStatus')}
+                          title='Payment'
+                          options={[
+                            { label: 'Current', value: 'current' },
+                            { label: 'Past Due', value: 'past_due' },
+                          ]}
+                        />
+                      )}
+                    </div>
+                  }
+                />
+              )
+            }}
           />
         </CardContent>
       </Card>
@@ -568,6 +636,12 @@ function TenantsListPage() {
           <li>Use faceted filters to filter by Property or Payment status</li>
           <li>Click column headers to sort</li>
           <li>Use the View button to toggle column visibility</li>
+          <li>
+            <strong>Row expansion:</strong> Click a row to open the detail panel on the right
+          </li>
+          <li>
+            <strong>Bulk actions:</strong> Select multiple rows with checkboxes to see the bulk action bar
+          </li>
           <li>
             <strong>Keyboard navigation:</strong> Arrow keys to move between cells, Tab/Shift+Tab for horizontal movement
           </li>
@@ -597,6 +671,112 @@ function TenantsListPage() {
           </li>
         </ul>
       </div>
+
+      {/* Row Expansion Panel */}
+      <DataTableRowExpansion
+        open={expansionOpen}
+        onOpenChange={setExpansionOpen}
+        row={expandedRow}
+        title={(row) => `${row.original.firstName} ${row.original.lastName}`}
+        description={(row) => `Unit ${row.original.unit} • ${row.original.property}`}
+        onPrevious={handlePreviousRow}
+        onNext={handleNextRow}
+        hasPrevious={expandedRow ? tableInstance?.getRowModel().rows.findIndex((r: Row<Tenant>) => r.id === expandedRow.id) > 0 : false}
+        hasNext={expandedRow ? tableInstance?.getRowModel().rows.findIndex((r: Row<Tenant>) => r.id === expandedRow.id) < (tableInstance?.getRowModel().rows.length - 1) : false}
+        footer={(row) => (
+          <>
+            <Button variant='outline' asChild>
+              <Link to='/app/communications'>
+                <LuMail className='mr-2 h-4 w-4' />
+                Send Message
+              </Link>
+            </Button>
+            <Button asChild>
+              <Link to='/app/tenants/$tenantId' params={{ tenantId: row.original.id }}>
+                View Full Profile
+              </Link>
+            </Button>
+          </>
+        )}
+      >
+        {(row) => (
+          <>
+            {/* Contact Information */}
+            <FieldGroup title='Contact Information'>
+              <FieldDisplay label='Email' value={row.original.email} />
+              <FieldDisplay label='Phone' value={row.original.phone} />
+            </FieldGroup>
+
+            {/* Lease Details */}
+            <FieldGroup title='Lease Details'>
+              <FieldDisplay label='Property' value={row.original.property} />
+              <FieldDisplay label='Unit' value={row.original.unit} />
+              <FieldDisplay label='Lease Start' value={new Date(row.original.leaseStart).toLocaleDateString()} />
+              <FieldDisplay label='Lease End' value={new Date(row.original.leaseEnd).toLocaleDateString()} />
+            </FieldGroup>
+
+            {/* Financial */}
+            <FieldGroup title='Financial'>
+              <FieldDisplay
+                label='Monthly Rent'
+                value={`$${row.original.rent.toLocaleString()}`}
+              />
+              <FieldDisplay
+                label='Pet Rent'
+                value={row.original.petRent > 0 ? `$${row.original.petRent}` : 'N/A'}
+              />
+              <FieldDisplay
+                label='Total Monthly'
+                value={`$${(row.original.rent + row.original.petRent).toLocaleString()}`}
+              />
+              <FieldDisplay
+                label='Payment Status'
+                value={
+                  <Badge variant={row.original.paymentStatus === 'current' ? 'outline' : 'destructive'}>
+                    {row.original.paymentStatus === 'current' ? 'Current' : 'Past Due'}
+                  </Badge>
+                }
+              />
+            </FieldGroup>
+
+            {/* Pets */}
+            {row.original.pets.length > 0 && (
+              <FieldGroup title='Pets' columns={1}>
+                {row.original.pets.map((pet, index) => (
+                  <div key={index} className='flex items-center gap-2 rounded-md border p-3'>
+                    <LuDog className='h-5 w-5 text-muted-foreground' />
+                    <div>
+                      <p className='font-medium'>{pet.name}</p>
+                      <p className='text-sm text-muted-foreground'>
+                        {pet.type} • {pet.breed}
+                      </p>
+                    </div>
+                  </div>
+                ))}
+              </FieldGroup>
+            )}
+          </>
+        )}
+      </DataTableRowExpansion>
+
+      {/* Bulk Actions Floating Bar */}
+      {tableInstance && (
+        <DataTableBulkActionsFloating
+          table={tableInstance}
+          onDelete={handleBulkDelete}
+          onExport={handleBulkExport}
+          actions={[
+            {
+              label: 'Send Message',
+              icon: <LuMail className='h-4 w-4' />,
+              onClick: () => {
+                // Navigate to communications with selected tenants
+                console.log('Send message to selected tenants')
+              },
+            },
+          ]}
+        />
+      )}
     </div>
   )
 }

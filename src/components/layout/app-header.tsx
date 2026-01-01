@@ -2,6 +2,7 @@ import { useLocation } from '@tanstack/react-router'
 import { Fragment } from 'react'
 import { useTranslations } from 'use-intl'
 
+import { GlobalSearch } from '~/components/global-search'
 import { Breadcrumb, BreadcrumbItem, BreadcrumbLink, BreadcrumbList, BreadcrumbPage, BreadcrumbSeparator } from '~/components/ui/breadcrumb'
 import { Link } from '~/components/ui/link'
 import { Separator } from '~/components/ui/separator'
@@ -17,8 +18,8 @@ export function AppHeader() {
   const paths = location.pathname.split('/').filter(Boolean)
 
   return (
-    <header className='flex h-16 shrink-0 items-center gap-2'>
-      <div className='flex items-center gap-2 px-4'>
+    <header className='flex h-16 shrink-0 items-center justify-between gap-2 px-4'>
+      <div className='flex items-center gap-2'>
         <SidebarTrigger className='-ml-1' />
         <Separator orientation='vertical' className='mr-2 h-4' />
         <Breadcrumb>
@@ -64,6 +65,9 @@ export function AppHeader() {
           </BreadcrumbList>
         </Breadcrumb>
       </div>
+
+      {/* Global Search */}
+      <GlobalSearch />
     </header>
   )
 }
