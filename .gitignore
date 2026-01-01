@@ -9,6 +9,7 @@ node_modules
 .output
 
 # Environment Variables
+.env
 .env.*
 !.env.example
 
