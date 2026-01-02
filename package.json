@@ -13,10 +13,12 @@
     "db:studio:d": "dotenv -e .env.development prisma studio",
     "db:studio:p": "dotenv -e .env.production prisma studio",
     "db:generate": "prisma generate",
+    "db:seed": "dotenv -e .env tsx prisma/seed.ts",
     "email": "email dev --dir src/emails --port 3001",
     "ui": "pnpm dlx shadcn@latest add",
     "postinstall": "prisma generate",
-    "clean": "rimraf --glob app.config.timestamp_*"
+    "clean": "rimraf --glob app.config.timestamp_*",
+    "airtable:export": "tsx scripts/export-airtable-to-csv.ts"
   },
   "dependencies": {
     "@fontsource-variable/inter": "^5.1.0",
@@ -61,6 +63,7 @@
     "clsx": "^2.1.1",
     "cmdk": "^1.0.4",
     "date-fns": "^4.1.0",
+    "dotenv": "^17.2.3",
     "dotenv-cli": "^7.4.4",
     "es-toolkit": "^1.29.0",
     "html-to-image": "^1.11.13",
@@ -118,6 +121,7 @@
     "rimraf": "^6.0.1",
     "tailwindcss": "3.4.16",
     "tailwindcss-plugin-animate": "npm:tailwindcss-animate@^1.0.7",
+    "tsx": "^4.21.0",
     "type-fest": "^4.30.0",
     "typescript": "^5.7.2",
     "typescript-eslint": "^8.17.0",
