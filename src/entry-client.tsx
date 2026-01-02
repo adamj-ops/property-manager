@@ -5,6 +5,11 @@ import { StrictMode } from 'react'
 import { hydrateRoot } from 'react-dom/client'
 
 import { createRouter } from '~/router'
+import { initSentryClient } from '~/libs/sentry'
+import { initPostHog } from '~/libs/posthog'
+
+initSentryClient()
+initPostHog()
 
 const router = createRouter()
 

@@ -256,7 +256,7 @@
 │                       DATA LAYER                                    │
 ├─────────────────────────────────────────────────────────────────────┤
 │  ┌────────────────┐ ┌────────────────┐ ┌──────────────────────┐    │
-│  │   PostgreSQL   │ │     Redis      │ │   Cloudflare R2     │    │
+│  │   PostgreSQL   │ │     Redis      │ │  Supabase Storage   │    │
 │  │   (Primary DB) │ │  (Cache/Jobs)  │ │   (File Storage)    │    │
 │  └────────────────┘ └────────────────┘ └──────────────────────┘    │
 └─────────────────────────────────────────────────────────────────────┘
@@ -343,7 +343,7 @@
 
 | Service | Purpose |
 |---------|---------|
-| Cloudflare R2 | File/image storage |
+| Supabase Storage | File/image storage |
 | SendGrid | Transactional email |
 | Twilio | SMS notifications |
 | OpenAI | AI/ML features (Vision, GPT-4) |
@@ -451,7 +451,7 @@ See `.cursor/docs/DESIGN_SYSTEM.md` for full specification.
 |-------------|---------|----------|
 | Google Places API | Address validation & geocoding | MVP |
 | SendGrid | Email notifications | MVP |
-| Cloudflare R2 | File storage | MVP |
+| Supabase Storage | File storage | MVP |
 
 ### Planned Integrations (Phase 2+)
 

@@ -1,44 +1,46 @@
-import c from 'ansi-colors'
+import * as Sentry from '@sentry/react'
 
-type Method = 'info' | 'warn' | 'error' | 'success' | 'loading'
+type LogLevel = 'debug' | 'info' | 'warn' | 'error'
+type LogContext = Record<string, unknown>
 
-const DISABLE_IN_PRODUCTION = false
-
-const APP_NAME = c.cyan.bold(` [${import.meta.env.VITE_APP_NAME}] `)
-
-const prefixes: Record<Method, string> = {
-  info: c.white('[INFO]'),
-  warn: c.yellow('[WARN]'),
-  error: c.red('[ERROR]'),
-  success: c.green('[SUCCESS]'),
-  loading: c.magenta('[LOADING]'),
+interface LogEntry {
+  level: LogLevel
+  message: string
+  timestamp: string
+  context?: LogContext
+  correlationId?: string
 }
 
-const methods: Record<Method, 'log' | 'error'> = {
-  info: 'log',
-  warn: 'error',
-  error: 'error',
-  success: 'log',
-  loading: 'log',
-}
+function createLogger() {
+  const isServer = typeof window === 'undefined'
+  const isProd = import.meta.env.PROD
 
-const logger: Record<Method, (...message: unknown[]) => void> = {
-  info: loggerFactory('info'),
-  warn: loggerFactory('warn'),
-  error: loggerFactory('error'),
-  success: loggerFactory('success'),
-  loading: loggerFactory('loading'),
-}
+  function log(level: LogLevel, message: string, context?: LogContext) {
+    const entry: LogEntry = {
+      level,
+      message,
+      timestamp: new Date().toISOString(),
+      context,
+    }
 
-function loggerFactory(method: Method) {
-  return (...message: unknown[]) => {
-    if (DISABLE_IN_PRODUCTION && import.meta.env.PROD) return
+    if (isProd && isServer) {
+      console[level === 'error' ? 'error' : 'log'](JSON.stringify(entry))
+    } else {
+      const prefix = `[${level.toUpperCase()}]`
+      console[level === 'error' ? 'error' : 'log'](prefix, message, context || '')
+    }
 
-    const consoleLogger = console[methods[method]]
-    const prefix = `${APP_NAME}${prefixes[method]}`
+    if (level === 'error' && context?.error instanceof Error) {
+      Sentry.captureException(context.error, { extra: context })
+    }
+  }
 
-    consoleLogger(prefix, ...message)
+  return {
+    debug: (msg: string, ctx?: LogContext) => log('debug', msg, ctx),
+    info: (msg: string, ctx?: LogContext) => log('info', msg, ctx),
+    warn: (msg: string, ctx?: LogContext) => log('warn', msg, ctx),
+    error: (msg: string, ctx?: LogContext) => log('error', msg, ctx),
   }
 }
 
-export { logger }
+export const logger = createLogger()

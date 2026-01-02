@@ -1,8 +1,11 @@
 # Everyday Property Manager - Project Checklist
 
 **Last Updated:** January 2, 2026  
-**Linked to:** [Linear Project - Property Management](https://linear.app/everyday-co/project/property-management-6f3556645bcb)  
-**Team:** EPM (Property Management)
+**Linked to:** [Linear Project - Property Management (EPM)](https://linear.app/everyday-co/project/property-management-bb1d88383bbb)  
+**Team:** Property Management (EPM)
+
+**Spec Pack (Detailed):** https://linear.app/everyday-co/document/epm-spec-pack-v1-detailed-technical-specs-diagrams-bbc31e71e753  
+**Repo Specs:** `/.cursor/docs/epm/` (rendered on GitHub)
 
 > **✅ All stories are linked to Linear issues (EPM-XXX). Check Linear for current status.**
 
@@ -37,16 +40,16 @@
 - [ ] Create initial migration
 - [ ] Test migration on dev database
 
-#### EPM-2: Cloudflare R2 Setup - **URGENT**
-- [ ] Create R2 bucket
-- [ ] Configure R2 credentials in environment variables
-- [ ] Implement file upload service (`src/server/storage.ts`)
-- [ ] Implement signed URL generation for secure uploads
-- [ ] Create file organization structure (team/property/tenant/inspection folders)
-- [ ] Add file size limits (25MB max)
-- [ ] Implement file deletion service
-- [ ] Add error handling for upload failures
-- [ ] Test upload/download flows
+#### EPM-2: Supabase Storage Buckets (Documents & Media) - **URGENT**
+- [ ] Create Supabase Storage buckets (`documents`, `media`)
+- [ ] Configure Supabase credentials in environment variables (server-only service key)
+- [x] Implement storage service (`src/server/storage.ts`)
+- [x] Implement signed URL generation (upload + download)
+- [ ] Finalize path convention (Option A user-scoped)
+- [x] Add file size limits (25MB max)
+- [x] Implement file deletion service
+- [x] Add error handling for upload failures
+- [ ] Configure Storage policies (RLS) and verify end-to-end upload/download/delete flows
 
 #### EPM-4: SendGrid Email Setup - **URGENT**
 - [ ] Create SendGrid account and API key
@@ -910,5 +913,5 @@
 
 **Last Updated:** January 2, 2026  
 **Next Review:** Weekly during active development  
-**Linear Project:** [Property Management](https://linear.app/everyday-co/project/property-management-6f3556645bcb)  
-**Team:** [EPM Team](https://linear.app/everyday-co/team/EPM/all)
+**Linear Project:** [Property Management (EPM)](https://linear.app/everyday-co/project/property-management-bb1d88383bbb)  
+**Team:** [Property Management](https://linear.app/everyday-co/team/Property-Management/all)

@@ -1,6 +1,6 @@
 # Agent Notes - Everyday Property Manager
 
-**Last Updated:** December 31, 2024
+**Last Updated:** January 2, 2026
 
 ---
 
@@ -88,10 +88,10 @@
 - **Better Auth** - Authentication (email/password, 2FA)
 - **Nodemailer** + **React Email** - Email delivery
 
-### External Services (Planned)
-- **Cloudflare R2** - File storage
-- **SendGrid** - Transactional email
-- **Google Places API** - Address validation
+### External Services
+- **Supabase Storage** - File storage (documents + media buckets) ✅ Implemented
+- **SendGrid** - Transactional email (planned)
+- **Google Places API** - Address validation (planned)
 - **OpenAI Vision/GPT-4** - AI features (Phase 2)
 - **Twilio** - SMS notifications (Phase 2)
 
@@ -233,7 +233,98 @@ pnpm dev
 
 ---
 
+## 🚨 IMPORTANT: Linear Workflow
+
+**ALWAYS check Linear before starting work on any feature or bug fix.**
+
+1. **Review the issue** in Linear: `https://linear.app/everyday-co/project/property-management-bb1d88383bbb`
+2. **Check acceptance criteria** - Linear issues contain detailed ACs
+3. **Update issue status** to "In Progress" when starting
+4. **Update issue description** with implementation notes as you work
+5. **Mark "Done"** when complete with brief summary
+
+### Linear Tools Available
+- `user-linear-get_issue` - Get issue details by ID
+- `user-linear-list_issues` - List issues with filters
+- `user-linear-update_issue` - Update status/description
+- `user-linear-list_comments` - View discussion
+
+### Quick Reference
+- **Team:** Property Management (EPM)
+- **Project ID:** `9c543d53-a83b-4a1e-9348-f5b0c0b257c3`
+- **Issue Prefix:** `EPM-*`
+
+---
+
 ## 📝 Session History
+
+### January 2, 2026 (Session 4 - Blockers Sprint)
+
+**Completed EPM-7 (API Service Layer) remaining items:**
+- Created `src/server/authorization.ts` - RBAC and resource access helpers
+  - `requireRole(role)` - Role-based middleware factory
+  - `requirePropertyAccess()` - Property ownership check
+  - `requireUnitAccess()`, `requireTenantAccess()`, `requireLeaseAccess()` - Resource access
+  - `requireResourceAccess(type, idField)` - Generic resource access
+- Created `src/server/errors.ts` - Standardized error handling
+  - `ApiError` class with factory methods (notFound, badRequest, forbidden, etc.)
+  - `ErrorCode` constants for consistent error codes
+  - `success()` / `error()` envelope helpers
+  - `toApiError()` - Converts any error to ApiError
+- Created `src/server/pagination.ts` - Pagination utilities
+  - `paginationSchema`, `cursorPaginationSchema`, `sortingSchema` - Zod schemas
+  - `paginatedResponse()` - Creates paginated response envelope
+  - `toPrismaArgs()`, `toPrismaOrderBy()` - Prisma query helpers
+- Created `src/server/audit.ts` - Audit logging
+  - `auditLog()` - Core logging function
+  - `auditCreate()`, `auditUpdate()`, `auditDelete()` - Convenience wrappers
+  - `queryAuditLogs()`, `getEntityAuditHistory()` - Query helpers
+  - Sensitive field sanitization
+- Created `src/server/index.ts` - Central exports for all server utilities
+
+**Completed EPM-1 (Database Schema) remaining items:**
+- Added `Team` and `TeamMember` models to Prisma schema (multi-tenancy)
+- Added `WorkOrderStatusHistory` model for maintenance request tracking
+- Applied Supabase migration `add_teams_and_status_history`
+- Updated Property model with optional `teamId` reference
+
+**Linear Issues Updated:**
+- EPM-1: Most criteria now complete (security_deposits deferred, test verification pending)
+- EPM-7: Most criteria now complete (team documentation pending)
+
+**Files Created:**
+- `src/server/authorization.ts`
+- `src/server/errors.ts`
+- `src/server/pagination.ts`
+- `src/server/audit.ts`
+- `src/server/index.ts`
+
+**Database Note:**
+- Supabase tables use `pm_` prefix (e.g., `pm_properties`, `pm_maintenance_requests`)
+- New tables don't use prefix (e.g., `teams`, `team_members`, `work_order_status_history`)
+- Prisma schema mappings may need sync with actual table names
+
+### January 1, 2026 (Session 3 - Storage Implementation)
+**Completed:**
+- ✅ EPM-2: Supabase Storage implementation (documents + media buckets)
+- ✅ EPM-44: Document upload UI with drag-drop, progress, validation
+- ✅ Fixed RBAC middleware bug (`Role.Admin` → defined Role const)
+- ✅ Created `src/server/storage.ts` with signed URL helpers
+- ✅ Created `src/services/documents.*` (schema, api, query)
+- ✅ Wired `/app/documents` route to real API data
+- ✅ Created test plan: `.cursor/notes/test_plan_storage.md`
+
+**Intentionally Deferred:**
+- Team-scoped storage paths (user-scoped for now)
+- OCR/document search
+- Advanced folder hierarchy
+- RLS policies (using service-role-only access due to Better Auth)
+
+**Follow-up Tickets Needed:**
+- Audit logging for document access
+- Wire property photos to media bucket
+- Document versioning
+- Bulk download (zip)
 
 ### December 31, 2024 (Session 2)
 - Created comprehensive project documentation:
@@ -263,29 +354,50 @@ pnpm dev
 - UI Wireframes: `.cursor/reference/property-management-prototype.md`
 
 ### Tracking
-- Feature Checklist: `.cursor/notes/project_checklist.md`
+- **Linear Project:** https://linear.app/everyday-co/project/property-management-bb1d88383bbb
+- Linear Reference: `.cursor/notes/linear_issues_checklist.md` (snapshot only)
+- Test Plans: `.cursor/notes/test_plan_*.md`
 - Notes: `.cursor/notes/notebook.md`
+
+### EPM Documentation (New)
+- Master Index: `.cursor/docs/epm/00_MASTER_INDEX.md`
+- Foundations: `.cursor/docs/epm/01_FOUNDATIONS.md`
+- Infrastructure: `.cursor/docs/epm/02_INFRA.md`
 
 ---
 
 ## ⚠️ Development Notes
 
-### Current Database Schema
-The current Prisma schema only has auth-related tables (User, Session, Account, Preference, Verification). Property management tables need to be added per the TECHNICAL_SPEC.md.
+### Current State (Jan 2, 2026)
+- **Auth**: Better Auth working (email/password, sessions)
+- **Storage**: Supabase Storage working (documents + media buckets)
+- **Documents**: Full CRUD with upload/download/delete
+- **Database**: Prisma schema has all core tables + teams + status history
+- **API Layer**: Authorization, error handling, pagination, audit logging utilities ready
 
-### Next Steps
-1. Database schema implementation (properties, units, tenants, leases)
-2. Core API services (property CRUD, tenant CRUD)
-3. Dashboard components
-4. File upload infrastructure (Cloudflare R2)
-5. Email service configuration (SendGrid)
+### Linear Status (Jan 2, 2026)
+- EPM-1: Database Schema - **95% complete** (security_deposits deferred)
+- EPM-2: Supabase Storage - **In Review**
+- EPM-7: API Service Layer - **95% complete** (docs pending)
+- EPM-44: Document Upload - **In Review**
+- EPM-46: User Registration & Auth - **In Progress**
+
+### Architecture Decisions
+- **Storage Paths**: User-scoped (`{userId}/{folder}/{type}/{filename}`)
+- **No RLS on Storage**: Service-role-only access (Better Auth IDs ≠ Supabase auth.uid())
+- **Auth Bridge**: `src/server/user-lookup.ts` maps Better Auth email → Supabase user ID
+- **Error Handling**: `ApiError` class with factory methods, consistent error envelope
+- **Authorization**: Middleware-based RBAC + resource access checks
+- **Multi-tenancy**: Teams table ready, properties can be team-scoped
 
 ### Future Considerations
 - Consider Tailwind v4 migration when stable
 - OKLCH colors can be used directly when browser support improves
 - Plate.js editor patterns from Rehab Planner Pro may be useful for rich text
+- Integrate audit logging into existing services
+- Sync Prisma schema table mappings with database (pm_ prefix issue)
 
 ---
 
 **Maintained by:** Development Team  
-**Last Review:** December 31, 2024
+**Last Review:** January 2, 2026

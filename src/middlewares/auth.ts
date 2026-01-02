@@ -5,6 +5,13 @@ import { setResponseStatus } from 'vinxi/http'
 import { getAuth } from '~/services/auth.api'
 import type { Auth } from '~/services/auth.api'
 
+export const Role = {
+  Admin: 'admin',
+  User: 'user',
+} as const
+
+export type Role = (typeof Role)[keyof typeof Role]
+
 export const authMiddleware = createMiddleware()
   .server(async ({ next }) => {
     const auth = await getAuth()

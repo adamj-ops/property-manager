@@ -5,17 +5,23 @@ import globalStyle from '~/styles/global.css?url'
 
 import { createRootRouteWithContext, Outlet, ScrollRestoration } from '@tanstack/react-router'
 import { Meta, Scripts } from '@tanstack/start'
+import * as Sentry from '@sentry/react'
 import { outdent } from 'outdent'
+import { useEffect } from 'react'
 import { createTranslator, IntlProvider } from 'use-intl'
 import type { ErrorComponentProps } from '@tanstack/react-router'
 import type { PropsWithChildren } from 'react'
 
 import { AppHeader } from '~/components/layout/app-header'
 import { AppSidebar } from '~/components/layout/app-sidebar'
+import { ErrorBoundary } from '~/components/error-boundary'
 import { ThemeProvider } from '~/components/theme'
+import { VercelAnalytics } from '~/components/analytics'
+import { usePostHogPageview } from '~/hooks/use-posthog-pageview'
 import { SidebarInset, SidebarProvider } from '~/components/ui/sidebar'
 import { Toaster } from '~/components/ui/sonner'
 import { Typography } from '~/components/ui/typography'
+import { posthog } from '~/libs/posthog'
 import { createMetadata } from '~/libs/utils'
 import { authQueryOptions } from '~/services/auth.query'
 import { i18nQueryOptions, useI18nQuery } from '~/services/i18n.query'
@@ -94,6 +100,20 @@ export const Route = createRootRouteWithContext<RouterContext>()({
 })
 
 function RootComponent() {
+  const { auth } = Route.useLoaderData() as { auth?: { user?: { id?: string; email?: string; name?: string } } }
+
+  usePostHogPageview()
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return
+    if (auth?.user && posthog.__loaded) {
+      posthog.identify(auth.user.id, {
+        email: auth.user.email,
+        name: auth.user.name,
+      })
+    }
+  }, [auth?.user?.email, auth?.user?.id, auth?.user?.name])
+
   return (
     <Document>
       <SidebarProvider>
@@ -102,7 +122,9 @@ function RootComponent() {
           <div className='flex h-full flex-col'>
             <AppHeader />
             <div className='flex h-full flex-1 flex-col items-center px-4'>
-              <Outlet />
+              <ErrorBoundary>
+                <Outlet />
+              </ErrorBoundary>
             </div>
           </div>
         </SidebarInset>
@@ -122,6 +144,10 @@ function PendingComponent() {
 }
 
 function ErrorComponent({ error }: ErrorComponentProps) {
+  useEffect(() => {
+    Sentry.captureException(error)
+  }, [error])
+
   return (
     <Document>
       <div className='space-y-6 p-6'>
@@ -164,6 +190,7 @@ function Document({ children }: PropsWithChildren) {
         </IntlProvider>
         <ScrollRestoration />
         <Scripts />
+        <VercelAnalytics />
       </body>
     </html>
   )

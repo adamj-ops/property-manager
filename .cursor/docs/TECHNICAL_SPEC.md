@@ -1086,75 +1086,46 @@ interface SecurityDepositInterestJob {
 
 ## File Storage
 
-### Cloudflare R2 Integration
+### Supabase Storage Integration
 
 ```typescript
 // src/server/storage.ts
 
-import { S3Client, PutObjectCommand, GetObjectCommand } from '@aws-sdk/client-s3';
-import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
+// NOTE: We use Supabase Storage (not Cloudflare R2).
+// This section is intentionally high-level; implementation details live in `src/server/storage.ts`.
+//
+// Suggested patterns:
+// - Use Supabase Storage buckets: `documents`, `media`
+// - Use signed URLs for download (and optionally upload)
+// - Persist metadata in DB `documents` table
+//
+// Pseudocode sketch:
+// import { createClient } from '@supabase/supabase-js'
+// const supabase = createClient(process.env.SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!)
+// export async function createSignedUploadUrl(...) { ... }
+// export async function createSignedDownloadUrl(...) { ... }
+// export async function deleteObject(...) { ... }
 
-const r2 = new S3Client({
-  region: 'auto',
-  endpoint: process.env.R2_ENDPOINT,
-  credentials: {
-    accessKeyId: process.env.R2_ACCESS_KEY_ID!,
-    secretAccessKey: process.env.R2_SECRET_ACCESS_KEY!,
-  },
-});
-
-export async function uploadFile(
-  file: Buffer,
-  key: string,
-  contentType: string
-): Promise<string> {
-  await r2.send(new PutObjectCommand({
-    Bucket: process.env.R2_BUCKET,
-    Key: key,
-    Body: file,
-    ContentType: contentType,
-  }));
-  
-  return `${process.env.R2_PUBLIC_URL}/${key}`;
-}
-
-export async function getSignedUploadUrl(
-  key: string,
-  contentType: string,
-  expiresIn = 3600
-): Promise<string> {
-  const command = new PutObjectCommand({
-    Bucket: process.env.R2_BUCKET,
-    Key: key,
-    ContentType: contentType,
-  });
-  
-  return getSignedUrl(r2, command, { expiresIn });
-}
+export {};
 ```
 
 ### File Organization
 
 ```
 bucket/
-├── {teamId}/
-│   ├── properties/
-│   │   └── {propertyId}/
-│   │       ├── images/
-│   │       └── documents/
-│   ├── tenants/
-│   │   └── {tenantId}/
-│   │       ├── photos/
-│   │       └── documents/
-│   ├── inspections/
-│   │   └── {inspectionId}/
-│   │       └── photos/
-│   ├── leases/
-│   │   └── {leaseId}/
-│   │       └── signed/
-│   └── work-orders/
-│       └── {workOrderId}/
-│           └── photos/
+└── team/{teamId}/
+    ├── property/{propertyId}/
+    │   ├── media/
+    │   └── documents/
+    ├── tenant/{tenantId}/
+    │   ├── media/
+    │   └── documents/
+    ├── inspection/{inspectionId}/
+    │   └── media/
+    ├── lease/{leaseId}/
+    │   └── documents/
+    └── work-order/{workOrderId}/
+        └── media/
 ```
 
 ---

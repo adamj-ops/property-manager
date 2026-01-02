@@ -13,18 +13,27 @@ const publicSchema = createEnvSchema('Public', {
   VITE_APP_NAME: z.string(),
   VITE_APP_EMAIL: z.string().email(),
   VITE_APP_BASE_URL: z.string(),
+  VITE_SUPABASE_URL: z.string().url(),
+  VITE_SUPABASE_ANON_KEY: z.string(),
+  VITE_SENTRY_DSN: z.string().url().optional(),
+  VITE_POSTHOG_KEY: z.string().optional(),
+  VITE_POSTHOG_HOST: z.string().url().optional(),
 })
 
 const privateSchema = createEnvSchema('Private', {
   AUTH_SECRET: z.string(),
   DATABASE_URL: z.string(),
+  REDIS_URL: z.string().startsWith('redis://').or(z.string().startsWith('rediss://')),
   GOOGLE_CLIENT_ID: z.string(),
   GOOGLE_CLIENT_SECRET: z.string(),
   DISCORD_CLIENT_ID: z.string(),
   DISCORD_CLIENT_SECRET: z.string(),
   GITHUB_CLIENT_ID: z.string(),
   GITHUB_CLIENT_SECRET: z.string(),
-  EMAIL_APP_PASSWORD: z.string(),
+  RESEND_API_KEY: z.string().startsWith('re_'),
+  SUPABASE_SERVICE_ROLE_KEY: z.string(),
+  SENTRY_AUTH_TOKEN: z.string().optional(),
+  SENTRY_DSN: z.string().url().optional(),
 })
 
 function parseEnv() {

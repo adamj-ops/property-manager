@@ -2,15 +2,15 @@
 
 **Last Updated:** January 2, 2026  
 **Project:** Property Management  
-**Team:** EPM (Property Management)  
+**Team:** Property Management (EPM)  
 **Total Issues:** 76
 
 > **✅ All issues have been recreated in the EPM team with sequential EPM-001 through EPM-076 numbering.**
 
 ## 🔍 Quick Reference
 
-- **Linear Project:** [Property Management](https://linear.app/everyday-co/project/property-management-6f3556645bcb)
-- **Team:** EPM (Property Management)
+- **Linear Project:** [Property Management (EPM)](https://linear.app/everyday-co/project/property-management-bb1d88383bbb)
+- **Team:** Property Management (EPM)
 - **Status Legend:**
   - **Backlog** = Not started
   - **In Progress** = Currently being worked on
@@ -285,5 +285,17 @@
 ---
 
 **Note:** This checklist should be updated regularly as issues are completed or statuses change.  
-**Linear Project:** [Property Management](https://linear.app/everyday-co/project/property-management-6f3556645bcb)  
-**Team:** [EPM Team](https://linear.app/everyday-co/team/EPM/all)
+**Linear Project:** [Property Management (EPM)](https://linear.app/everyday-co/project/property-management-bb1d88383bbb)  
+**Team:** [Property Management](https://linear.app/everyday-co/team/Property-Management/all)
+
+---
+
+## ⚠️ Project Hygiene Note (Jan 2, 2026)
+
+There are currently **two Linear projects named \"Property Management\"** in the workspace:
+
+- **Everyday Co. team** (issue prefix `EVE-*`)
+- **Property Management team** (issue prefix `EPM-*`)
+
+This repo and these checklists are intended to track against the **EPM** project/issue set.
+See the Linear document: `https://linear.app/everyday-co/document/repo-audit-vs-linear-checklist-jan-2-2026-50221c979585`
