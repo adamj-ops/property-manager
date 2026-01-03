@@ -4,7 +4,7 @@ import {
   LuFileImage,
   LuFileSpreadsheet,
   LuFileText,
-  LuLoader2,
+  LuLoader,
   LuUpload,
   LuX,
 } from 'react-icons/lu'
@@ -250,7 +250,7 @@ export function DocumentUpload({
               </div>
               <div className="flex items-center gap-2">
                 {filePreview.status === 'uploading' && (
-                  <LuLoader2 className="size-4 animate-spin text-primary" />
+                  <LuLoader className="size-4 animate-spin text-primary" />
                 )}
                 {filePreview.status !== 'uploading' && (
                   <Button
