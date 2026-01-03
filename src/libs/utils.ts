@@ -18,6 +18,9 @@ export function cx(...inputs: ClassArray) {
   return twMerge(clsx(inputs))
 }
 
+// Alias for legacy callers expecting `cn`
+export const cn = cx
+
 export function createContextFactory<ContextData>(options?: {
   defaultValue?: ContextData | null
   errorMessage?: string

@@ -18,3 +18,8 @@ hydrateRoot(document, (
     <StartClient router={router} />
   </StrictMode>
 ))
+
+// Export default to satisfy Vinxi virtual client handler expectations
+export default function clientEntry() {
+  return router
+}
