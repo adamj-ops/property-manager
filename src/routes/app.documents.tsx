@@ -10,7 +10,7 @@ import {
   LuFilter,
   LuFolder,
   LuFolderOpen,
-  LuLoader2,
+  LuLoader,
   LuSearch,
   LuTrash2,
 } from 'react-icons/lu'
@@ -357,7 +357,7 @@ function DocumentsList({ filters }: { filters: Partial<DocumentFilters> }) {
               disabled={getDownloadUrl.isPending}
             >
               {getDownloadUrl.isPending ? (
-                <LuLoader2 className="size-4 animate-spin" />
+                <LuLoader className="size-4 animate-spin" />
               ) : (
                 <LuDownload className="size-4" />
               )}
@@ -369,7 +369,7 @@ function DocumentsList({ filters }: { filters: Partial<DocumentFilters> }) {
               disabled={deleteDocument.isPending}
             >
               {deleteDocument.isPending ? (
-                <LuLoader2 className="size-4 animate-spin" />
+                <LuLoader className="size-4 animate-spin" />
               ) : (
                 <LuTrash2 className="size-4 text-destructive" />
               )}

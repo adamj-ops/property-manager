@@ -285,7 +285,7 @@ export function DocumentUpload({
               <Button size="sm" onClick={uploadFiles} disabled={isLoading}>
                 {isLoading ? (
                   <>
-                    <LuLoader2 className="mr-2 size-4 animate-spin" />
+                    <LuLoader className="mr-2 size-4 animate-spin" />
                     Uploading...
                   </>
                 ) : (
