@@ -152,9 +152,14 @@ function SignUpRoute() {
             )}
           />
 
-          <form.Submit className='w-full'>
-            {t('auth.create-account')}
-          </form.Submit>
+          <form.Subscribe
+            selector={(state) => state.isSubmitting}
+            children={(isSubmitting) => (
+              <form.Submit className='w-full'>
+                {isSubmitting ? t('auth.signing-up') : t('auth.create-account')}
+              </form.Submit>
+            )}
+          />
         </form.Root>
 
         <div className='flex items-center justify-between'>

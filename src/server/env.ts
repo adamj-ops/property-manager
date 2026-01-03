@@ -18,6 +18,8 @@ const publicSchema = createEnvSchema('Public', {
   VITE_SENTRY_DSN: z.string().url().optional(),
   VITE_POSTHOG_KEY: z.string().optional(),
   VITE_POSTHOG_HOST: z.string().url().optional(),
+  // Stripe publishable key (safe to expose in client)
+  VITE_STRIPE_PUBLISHABLE_KEY: z.string().startsWith('pk_').optional(),
 })
 
 const privateSchema = createEnvSchema('Private', {
@@ -35,6 +37,37 @@ const privateSchema = createEnvSchema('Private', {
   SUPABASE_SERVICE_ROLE_KEY: z.string(),
   SENTRY_AUTH_TOKEN: z.string().optional(),
   SENTRY_DSN: z.string().url().optional(),
+  // Stripe secret key - MUST be test key (sk_test_*) unless explicitly enabled for live mode
+  STRIPE_SECRET_KEY: z
+    .string()
+    .startsWith('sk_')
+    .refine(
+      (key) => {
+        // Enforce test mode unless STRIPE_LIVE_MODE is explicitly set to 'true'
+        const isLiveMode = process.env.STRIPE_LIVE_MODE === 'true'
+        const isTestKey = key.startsWith('sk_test_')
+        const isLiveKey = key.startsWith('sk_live_')
+
+        // Only allow live keys if STRIPE_LIVE_MODE is explicitly enabled
+        if (isLiveKey && !isLiveMode) {
+          throw new Error(
+            'STRIPE_SECRET_KEY is a live key but STRIPE_LIVE_MODE is not set to "true". ' +
+              'This is a safety measure to prevent accidental live charges. ' +
+              'Set STRIPE_LIVE_MODE=true only when ready for production.',
+          )
+        }
+
+        return true
+      },
+      {
+        message: 'Stripe key validation failed',
+      },
+    )
+    .optional(),
+  // Stripe webhook secret for signature verification
+  STRIPE_WEBHOOK_SECRET: z.string().startsWith('whsec_').optional(),
+  // Explicit flag to enable live mode (safety measure)
+  STRIPE_LIVE_MODE: z.enum(['true', 'false']).optional(),
 })
 
 function parseEnv() {

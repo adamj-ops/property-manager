@@ -88,9 +88,14 @@ function SignInRoute() {
               </field.Container>
             )}
           />
-          <form.Submit>
-            {t('auth.sign-in')}
-          </form.Submit>
+          <form.Subscribe
+            selector={(state) => state.isSubmitting}
+            children={(isSubmitting) => (
+              <form.Submit>
+                {isSubmitting ? t('auth.signing-in') : t('auth.sign-in')}
+              </form.Submit>
+            )}
+          />
         </form.Root>
 
         <div className='flex items-center justify-between'>

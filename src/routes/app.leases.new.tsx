@@ -1,5 +1,7 @@
+import { useQuery } from '@tanstack/react-query'
 import { createFileRoute } from '@tanstack/react-router'
-import { LuCircleAlert, LuArrowLeft, LuCheck, LuFileText } from 'react-icons/lu'
+import { useState } from 'react'
+import { LuCircleAlert, LuArrowLeft, LuCheck, LuFileText, LuStar } from 'react-icons/lu'
 
 import { Badge } from '~/components/ui/badge'
 import { Button } from '~/components/ui/button'
@@ -11,12 +13,33 @@ import { Link } from '~/components/ui/link'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '~/components/ui/select'
 import { Separator } from '~/components/ui/separator'
 import { Typography } from '~/components/ui/typography'
+import { cn } from '~/libs/utils'
+import { TEMPLATE_TYPE_LABELS, type LeaseTemplateType } from '~/services/lease-templates.schema'
+import { templatesQueryOptions } from '~/services/lease-templates.query'
 
 export const Route = createFileRoute('/app/leases/new')({
   component: NewLeasePage,
 })
 
 function NewLeasePage() {
+  const [selectedMainTemplate, setSelectedMainTemplate] = useState<string | null>(null)
+  const [selectedAddenda, setSelectedAddenda] = useState<string[]>([])
+
+  // Fetch available templates
+  const { data: templatesData } = useQuery(
+    templatesQueryOptions({ isActive: true, isArchived: false, limit: 100, offset: 0 })
+  )
+
+  const templates = templatesData?.templates || []
+  const mainLeaseTemplates = templates.filter((t) => t.type === 'MAIN_LEASE')
+  const addendaTemplates = templates.filter((t) => t.type !== 'MAIN_LEASE')
+
+  const toggleAddendum = (id: string) => {
+    setSelectedAddenda((prev) =>
+      prev.includes(id) ? prev.filter((a) => a !== id) : [...prev, id]
+    )
+  }
+
   return (
     <div className='w-full max-w-3xl space-y-6 py-6'>
       {/* Back Button & Header */}
@@ -234,6 +257,138 @@ function NewLeasePage() {
                 This property was built in 1975 (pre-1978). Federal law requires a lead paint disclosure.
               </p>
             </div>
+          </CardContent>
+        </Card>
+
+        {/* Lease Template Selection */}
+        <Card>
+          <CardHeader>
+            <CardTitle className='flex items-center gap-2'>
+              <LuFileText className='size-5' />
+              Lease Template
+            </CardTitle>
+            <CardDescription>
+              Select a template for the lease document
+            </CardDescription>
+          </CardHeader>
+          <CardContent className='space-y-4'>
+            {mainLeaseTemplates.length > 0 ? (
+              <div className='grid gap-3'>
+                {mainLeaseTemplates.map((template) => (
+                  <div
+                    key={template.id}
+                    className={cn(
+                      'flex items-center justify-between rounded-lg border p-4 cursor-pointer transition-colors',
+                      selectedMainTemplate === template.id
+                        ? 'border-primary bg-primary/5'
+                        : 'hover:border-muted-foreground/50'
+                    )}
+                    onClick={() => setSelectedMainTemplate(template.id)}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter' || e.key === ' ') {
+                        setSelectedMainTemplate(template.id)
+                      }
+                    }}
+                    role="button"
+                    tabIndex={0}
+                  >
+                    <div className='flex items-center gap-3'>
+                      <LuFileText className='size-5 text-muted-foreground' />
+                      <div>
+                        <p className='font-medium'>{template.name}</p>
+                        <p className='text-xs text-muted-foreground'>
+                          v{template.version} • {template.variables?.length || 0} variables
+                        </p>
+                      </div>
+                    </div>
+                    <div className='flex items-center gap-2'>
+                      {template.is_default && (
+                        <Badge variant='secondary' className='gap-1'>
+                          <LuStar className='size-3' />
+                          Default
+                        </Badge>
+                      )}
+                      {selectedMainTemplate === template.id && (
+                        <div className='size-5 rounded-full bg-primary flex items-center justify-center'>
+                          <LuCheck className='size-3 text-primary-foreground' />
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div className='rounded-lg border border-dashed p-6 text-center'>
+                <LuFileText className='mx-auto size-8 text-muted-foreground/50' />
+                <p className='mt-2 text-sm font-medium'>No templates available</p>
+                <p className='text-xs text-muted-foreground'>
+                  Import a lease template to generate documents
+                </p>
+                <Button variant='outline' size='sm' className='mt-4' asChild>
+                  <Link to='/app/leases/templates'>Manage Templates</Link>
+                </Button>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+
+        {/* Addenda Selection */}
+        <Card>
+          <CardHeader>
+            <CardTitle>Addenda</CardTitle>
+            <CardDescription>
+              Select addenda to include with this lease ({selectedAddenda.length} selected)
+            </CardDescription>
+          </CardHeader>
+          <CardContent className='space-y-3'>
+            {addendaTemplates.length > 0 ? (
+              <div className='grid gap-2 md:grid-cols-2'>
+                {addendaTemplates.map((template) => (
+                  <div
+                    key={template.id}
+                    className={cn(
+                      'flex items-center gap-3 rounded-lg border p-3 cursor-pointer transition-colors',
+                      selectedAddenda.includes(template.id)
+                        ? 'border-primary bg-primary/5'
+                        : 'hover:border-muted-foreground/50'
+                    )}
+                    onClick={() => toggleAddendum(template.id)}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter' || e.key === ' ') {
+                        toggleAddendum(template.id)
+                      }
+                    }}
+                    role="button"
+                    tabIndex={0}
+                  >
+                    <Checkbox
+                      checked={selectedAddenda.includes(template.id)}
+                      onCheckedChange={() => toggleAddendum(template.id)}
+                    />
+                    <div className='flex-1 min-w-0'>
+                      <p className='text-sm font-medium truncate'>{template.name}</p>
+                      <p className='text-xs text-muted-foreground'>
+                        {TEMPLATE_TYPE_LABELS[template.type as LeaseTemplateType]}
+                      </p>
+                    </div>
+                    {template.is_default && (
+                      <Badge variant='outline' className='text-xs shrink-0'>
+                        Recommended
+                      </Badge>
+                    )}
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div className='rounded-lg border border-dashed p-4 text-center'>
+                <p className='text-sm text-muted-foreground'>
+                  No addenda templates available
+                </p>
+                <Button variant='link' size='sm' asChild>
+                  <Link to='/app/leases/templates'>Import addenda</Link>
+                </Button>
+              </div>
+            )}
           </CardContent>
         </Card>
 

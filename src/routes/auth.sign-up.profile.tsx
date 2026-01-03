@@ -241,9 +241,14 @@ function BusinessProfileRoute() {
             >
               {t('common.back')}
             </Button>
-            <form.Submit className='flex-1'>
-              {t('common.continue')}
-            </form.Submit>
+            <form.Subscribe
+              selector={(state) => state.isSubmitting}
+              children={(isSubmitting) => (
+                <form.Submit className='flex-1'>
+                  {isSubmitting ? t('onboarding.saving-profile') : t('common.continue')}
+                </form.Submit>
+              )}
+            />
           </div>
         </form.Root>
       </CardContent>

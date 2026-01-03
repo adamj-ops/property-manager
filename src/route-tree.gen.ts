@@ -12,6 +12,7 @@
 
 import { Route as rootRoute } from './routes/__root'
 import { Route as UserImport } from './routes/user'
+import { Route as TenantImport } from './routes/tenant'
 import { Route as AuthImport } from './routes/auth'
 import { Route as AppImport } from './routes/app'
 import { Route as AdminImport } from './routes/admin'
@@ -20,6 +21,8 @@ import { Route as UserEmailVerificationImport } from './routes/user.email-verifi
 import { Route as UserChangePasswordImport } from './routes/user.change-password'
 import { Route as UserChangeEmailImport } from './routes/user.change-email'
 import { Route as UserAccountSettingsImport } from './routes/user.account-settings'
+import { Route as TenantPaymentsImport } from './routes/tenant.payments'
+import { Route as TenantDashboardImport } from './routes/tenant.dashboard'
 import { Route as AuthSignUpImport } from './routes/auth.sign-up'
 import { Route as AuthSignInImport } from './routes/auth.sign-in'
 import { Route as AppTenantsImport } from './routes/app.tenants'
@@ -38,6 +41,8 @@ import { Route as AppPropertiesIndexImport } from './routes/app.properties.index
 import { Route as AppMaintenanceIndexImport } from './routes/app.maintenance.index'
 import { Route as AppLeasesIndexImport } from './routes/app.leases.index'
 import { Route as AppFinancialsIndexImport } from './routes/app.financials.index'
+import { Route as TenantPaymentsSuccessImport } from './routes/tenant.payments.success'
+import { Route as TenantPaymentsCancelImport } from './routes/tenant.payments.cancel'
 import { Route as AuthSignUpWelcomeImport } from './routes/auth.sign-up.welcome'
 import { Route as AuthSignUpVerifyImport } from './routes/auth.sign-up.verify'
 import { Route as AuthSignUpProfileImport } from './routes/auth.sign-up.profile'
@@ -47,6 +52,7 @@ import { Route as AppPropertiesNewImport } from './routes/app.properties.new'
 import { Route as AppPropertiesPropertyIdImport } from './routes/app.properties.$propertyId'
 import { Route as AppMaintenanceNewImport } from './routes/app.maintenance.new'
 import { Route as AppMaintenanceWorkOrderIdImport } from './routes/app.maintenance.$workOrderId'
+import { Route as AppLeasesTemplatesImport } from './routes/app.leases.templates'
 import { Route as AppLeasesNewImport } from './routes/app.leases.new'
 import { Route as AppLeasesLeaseIdImport } from './routes/app.leases.$leaseId'
 import { Route as AppFinancialsPaymentsImport } from './routes/app.financials.payments'
@@ -59,6 +65,12 @@ import { Route as AppPropertiesPropertyIdUnitsImport } from './routes/app.proper
 const UserRoute = UserImport.update({
   id: '/user',
   path: '/user',
+  getParentRoute: () => rootRoute,
+} as any)
+
+const TenantRoute = TenantImport.update({
+  id: '/tenant',
+  path: '/tenant',
   getParentRoute: () => rootRoute,
 } as any)
 
@@ -108,6 +120,18 @@ const UserAccountSettingsRoute = UserAccountSettingsImport.update({
   id: '/account-settings',
   path: '/account-settings',
   getParentRoute: () => UserRoute,
+} as any)
+
+const TenantPaymentsRoute = TenantPaymentsImport.update({
+  id: '/payments',
+  path: '/payments',
+  getParentRoute: () => TenantRoute,
+} as any)
+
+const TenantDashboardRoute = TenantDashboardImport.update({
+  id: '/dashboard',
+  path: '/dashboard',
+  getParentRoute: () => TenantRoute,
 } as any)
 
 const AuthSignUpRoute = AuthSignUpImport.update({
@@ -218,6 +242,18 @@ const AppFinancialsIndexRoute = AppFinancialsIndexImport.update({
   getParentRoute: () => AppFinancialsRoute,
 } as any)
 
+const TenantPaymentsSuccessRoute = TenantPaymentsSuccessImport.update({
+  id: '/success',
+  path: '/success',
+  getParentRoute: () => TenantPaymentsRoute,
+} as any)
+
+const TenantPaymentsCancelRoute = TenantPaymentsCancelImport.update({
+  id: '/cancel',
+  path: '/cancel',
+  getParentRoute: () => TenantPaymentsRoute,
+} as any)
+
 const AuthSignUpWelcomeRoute = AuthSignUpWelcomeImport.update({
   id: '/welcome',
   path: '/welcome',
@@ -270,6 +306,12 @@ const AppMaintenanceWorkOrderIdRoute = AppMaintenanceWorkOrderIdImport.update({
   id: '/$workOrderId',
   path: '/$workOrderId',
   getParentRoute: () => AppMaintenanceRoute,
+} as any)
+
+const AppLeasesTemplatesRoute = AppLeasesTemplatesImport.update({
+  id: '/templates',
+  path: '/templates',
+  getParentRoute: () => AppLeasesRoute,
 } as any)
 
 const AppLeasesNewRoute = AppLeasesNewImport.update({
@@ -340,6 +382,13 @@ declare module '@tanstack/react-router' {
       path: '/auth'
       fullPath: '/auth'
       preLoaderRoute: typeof AuthImport
+      parentRoute: typeof rootRoute
+    }
+    '/tenant': {
+      id: '/tenant'
+      path: '/tenant'
+      fullPath: '/tenant'
+      preLoaderRoute: typeof TenantImport
       parentRoute: typeof rootRoute
     }
     '/user': {
@@ -440,6 +489,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthSignUpImport
       parentRoute: typeof AuthImport
     }
+    '/tenant/dashboard': {
+      id: '/tenant/dashboard'
+      path: '/dashboard'
+      fullPath: '/tenant/dashboard'
+      preLoaderRoute: typeof TenantDashboardImport
+      parentRoute: typeof TenantImport
+    }
+    '/tenant/payments': {
+      id: '/tenant/payments'
+      path: '/payments'
+      fullPath: '/tenant/payments'
+      preLoaderRoute: typeof TenantPaymentsImport
+      parentRoute: typeof TenantImport
+    }
     '/user/account-settings': {
       id: '/user/account-settings'
       path: '/account-settings'
@@ -494,6 +557,13 @@ declare module '@tanstack/react-router' {
       path: '/new'
       fullPath: '/app/leases/new'
       preLoaderRoute: typeof AppLeasesNewImport
+      parentRoute: typeof AppLeasesImport
+    }
+    '/app/leases/templates': {
+      id: '/app/leases/templates'
+      path: '/templates'
+      fullPath: '/app/leases/templates'
+      preLoaderRoute: typeof AppLeasesTemplatesImport
       parentRoute: typeof AppLeasesImport
     }
     '/app/maintenance/$workOrderId': {
@@ -558,6 +628,20 @@ declare module '@tanstack/react-router' {
       fullPath: '/auth/sign-up/welcome'
       preLoaderRoute: typeof AuthSignUpWelcomeImport
       parentRoute: typeof AuthSignUpImport
+    }
+    '/tenant/payments/cancel': {
+      id: '/tenant/payments/cancel'
+      path: '/cancel'
+      fullPath: '/tenant/payments/cancel'
+      preLoaderRoute: typeof TenantPaymentsCancelImport
+      parentRoute: typeof TenantPaymentsImport
+    }
+    '/tenant/payments/success': {
+      id: '/tenant/payments/success'
+      path: '/success'
+      fullPath: '/tenant/payments/success'
+      preLoaderRoute: typeof TenantPaymentsSuccessImport
+      parentRoute: typeof TenantPaymentsImport
     }
     '/app/financials/': {
       id: '/app/financials/'
@@ -644,12 +728,14 @@ const AppFinancialsRouteWithChildren = AppFinancialsRoute._addFileChildren(
 interface AppLeasesRouteChildren {
   AppLeasesLeaseIdRoute: typeof AppLeasesLeaseIdRoute
   AppLeasesNewRoute: typeof AppLeasesNewRoute
+  AppLeasesTemplatesRoute: typeof AppLeasesTemplatesRoute
   AppLeasesIndexRoute: typeof AppLeasesIndexRoute
 }
 
 const AppLeasesRouteChildren: AppLeasesRouteChildren = {
   AppLeasesLeaseIdRoute: AppLeasesLeaseIdRoute,
   AppLeasesNewRoute: AppLeasesNewRoute,
+  AppLeasesTemplatesRoute: AppLeasesTemplatesRoute,
   AppLeasesIndexRoute: AppLeasesIndexRoute,
 }
 
@@ -773,6 +859,33 @@ const AuthRouteChildren: AuthRouteChildren = {
 
 const AuthRouteWithChildren = AuthRoute._addFileChildren(AuthRouteChildren)
 
+interface TenantPaymentsRouteChildren {
+  TenantPaymentsCancelRoute: typeof TenantPaymentsCancelRoute
+  TenantPaymentsSuccessRoute: typeof TenantPaymentsSuccessRoute
+}
+
+const TenantPaymentsRouteChildren: TenantPaymentsRouteChildren = {
+  TenantPaymentsCancelRoute: TenantPaymentsCancelRoute,
+  TenantPaymentsSuccessRoute: TenantPaymentsSuccessRoute,
+}
+
+const TenantPaymentsRouteWithChildren = TenantPaymentsRoute._addFileChildren(
+  TenantPaymentsRouteChildren,
+)
+
+interface TenantRouteChildren {
+  TenantDashboardRoute: typeof TenantDashboardRoute
+  TenantPaymentsRoute: typeof TenantPaymentsRouteWithChildren
+}
+
+const TenantRouteChildren: TenantRouteChildren = {
+  TenantDashboardRoute: TenantDashboardRoute,
+  TenantPaymentsRoute: TenantPaymentsRouteWithChildren,
+}
+
+const TenantRouteWithChildren =
+  TenantRoute._addFileChildren(TenantRouteChildren)
+
 interface UserRouteChildren {
   UserAccountSettingsRoute: typeof UserAccountSettingsRoute
   UserChangeEmailRoute: typeof UserChangeEmailRoute
@@ -794,6 +907,7 @@ export interface FileRoutesByFullPath {
   '/admin': typeof AdminRouteWithChildren
   '/app': typeof AppRouteWithChildren
   '/auth': typeof AuthRouteWithChildren
+  '/tenant': typeof TenantRouteWithChildren
   '/user': typeof UserRouteWithChildren
   '/example-form': typeof examplesExampleFormRoute
   '/admin/dashboard': typeof AdminDashboardRoute
@@ -808,6 +922,8 @@ export interface FileRoutesByFullPath {
   '/app/tenants': typeof AppTenantsRouteWithChildren
   '/auth/sign-in': typeof AuthSignInRoute
   '/auth/sign-up': typeof AuthSignUpRouteWithChildren
+  '/tenant/dashboard': typeof TenantDashboardRoute
+  '/tenant/payments': typeof TenantPaymentsRouteWithChildren
   '/user/account-settings': typeof UserAccountSettingsRoute
   '/user/change-email': typeof UserChangeEmailRoute
   '/user/change-password': typeof UserChangePasswordRoute
@@ -816,6 +932,7 @@ export interface FileRoutesByFullPath {
   '/app/financials/payments': typeof AppFinancialsPaymentsRoute
   '/app/leases/$leaseId': typeof AppLeasesLeaseIdRoute
   '/app/leases/new': typeof AppLeasesNewRoute
+  '/app/leases/templates': typeof AppLeasesTemplatesRoute
   '/app/maintenance/$workOrderId': typeof AppMaintenanceWorkOrderIdRoute
   '/app/maintenance/new': typeof AppMaintenanceNewRoute
   '/app/properties/$propertyId': typeof AppPropertiesPropertyIdRouteWithChildren
@@ -825,6 +942,8 @@ export interface FileRoutesByFullPath {
   '/auth/sign-up/profile': typeof AuthSignUpProfileRoute
   '/auth/sign-up/verify': typeof AuthSignUpVerifyRoute
   '/auth/sign-up/welcome': typeof AuthSignUpWelcomeRoute
+  '/tenant/payments/cancel': typeof TenantPaymentsCancelRoute
+  '/tenant/payments/success': typeof TenantPaymentsSuccessRoute
   '/app/financials/': typeof AppFinancialsIndexRoute
   '/app/leases/': typeof AppLeasesIndexRoute
   '/app/maintenance/': typeof AppMaintenanceIndexRoute
@@ -839,6 +958,7 @@ export interface FileRoutesByTo {
   '/admin': typeof AdminRouteWithChildren
   '/app': typeof AppRouteWithChildren
   '/auth': typeof AuthRouteWithChildren
+  '/tenant': typeof TenantRouteWithChildren
   '/user': typeof UserRouteWithChildren
   '/example-form': typeof examplesExampleFormRoute
   '/admin/dashboard': typeof AdminDashboardRoute
@@ -848,6 +968,8 @@ export interface FileRoutesByTo {
   '/app/documents': typeof AppDocumentsRoute
   '/auth/sign-in': typeof AuthSignInRoute
   '/auth/sign-up': typeof AuthSignUpRouteWithChildren
+  '/tenant/dashboard': typeof TenantDashboardRoute
+  '/tenant/payments': typeof TenantPaymentsRouteWithChildren
   '/user/account-settings': typeof UserAccountSettingsRoute
   '/user/change-email': typeof UserChangeEmailRoute
   '/user/change-password': typeof UserChangePasswordRoute
@@ -856,6 +978,7 @@ export interface FileRoutesByTo {
   '/app/financials/payments': typeof AppFinancialsPaymentsRoute
   '/app/leases/$leaseId': typeof AppLeasesLeaseIdRoute
   '/app/leases/new': typeof AppLeasesNewRoute
+  '/app/leases/templates': typeof AppLeasesTemplatesRoute
   '/app/maintenance/$workOrderId': typeof AppMaintenanceWorkOrderIdRoute
   '/app/maintenance/new': typeof AppMaintenanceNewRoute
   '/app/properties/new': typeof AppPropertiesNewRoute
@@ -864,6 +987,8 @@ export interface FileRoutesByTo {
   '/auth/sign-up/profile': typeof AuthSignUpProfileRoute
   '/auth/sign-up/verify': typeof AuthSignUpVerifyRoute
   '/auth/sign-up/welcome': typeof AuthSignUpWelcomeRoute
+  '/tenant/payments/cancel': typeof TenantPaymentsCancelRoute
+  '/tenant/payments/success': typeof TenantPaymentsSuccessRoute
   '/app/financials': typeof AppFinancialsIndexRoute
   '/app/leases': typeof AppLeasesIndexRoute
   '/app/maintenance': typeof AppMaintenanceIndexRoute
@@ -879,6 +1004,7 @@ export interface FileRoutesById {
   '/admin': typeof AdminRouteWithChildren
   '/app': typeof AppRouteWithChildren
   '/auth': typeof AuthRouteWithChildren
+  '/tenant': typeof TenantRouteWithChildren
   '/user': typeof UserRouteWithChildren
   '/(examples)/example-form': typeof examplesExampleFormRoute
   '/admin/dashboard': typeof AdminDashboardRoute
@@ -893,6 +1019,8 @@ export interface FileRoutesById {
   '/app/tenants': typeof AppTenantsRouteWithChildren
   '/auth/sign-in': typeof AuthSignInRoute
   '/auth/sign-up': typeof AuthSignUpRouteWithChildren
+  '/tenant/dashboard': typeof TenantDashboardRoute
+  '/tenant/payments': typeof TenantPaymentsRouteWithChildren
   '/user/account-settings': typeof UserAccountSettingsRoute
   '/user/change-email': typeof UserChangeEmailRoute
   '/user/change-password': typeof UserChangePasswordRoute
@@ -901,6 +1029,7 @@ export interface FileRoutesById {
   '/app/financials/payments': typeof AppFinancialsPaymentsRoute
   '/app/leases/$leaseId': typeof AppLeasesLeaseIdRoute
   '/app/leases/new': typeof AppLeasesNewRoute
+  '/app/leases/templates': typeof AppLeasesTemplatesRoute
   '/app/maintenance/$workOrderId': typeof AppMaintenanceWorkOrderIdRoute
   '/app/maintenance/new': typeof AppMaintenanceNewRoute
   '/app/properties/$propertyId': typeof AppPropertiesPropertyIdRouteWithChildren
@@ -910,6 +1039,8 @@ export interface FileRoutesById {
   '/auth/sign-up/profile': typeof AuthSignUpProfileRoute
   '/auth/sign-up/verify': typeof AuthSignUpVerifyRoute
   '/auth/sign-up/welcome': typeof AuthSignUpWelcomeRoute
+  '/tenant/payments/cancel': typeof TenantPaymentsCancelRoute
+  '/tenant/payments/success': typeof TenantPaymentsSuccessRoute
   '/app/financials/': typeof AppFinancialsIndexRoute
   '/app/leases/': typeof AppLeasesIndexRoute
   '/app/maintenance/': typeof AppMaintenanceIndexRoute
@@ -926,6 +1057,7 @@ export interface FileRouteTypes {
     | '/admin'
     | '/app'
     | '/auth'
+    | '/tenant'
     | '/user'
     | '/example-form'
     | '/admin/dashboard'
@@ -940,6 +1072,8 @@ export interface FileRouteTypes {
     | '/app/tenants'
     | '/auth/sign-in'
     | '/auth/sign-up'
+    | '/tenant/dashboard'
+    | '/tenant/payments'
     | '/user/account-settings'
     | '/user/change-email'
     | '/user/change-password'
@@ -948,6 +1082,7 @@ export interface FileRouteTypes {
     | '/app/financials/payments'
     | '/app/leases/$leaseId'
     | '/app/leases/new'
+    | '/app/leases/templates'
     | '/app/maintenance/$workOrderId'
     | '/app/maintenance/new'
     | '/app/properties/$propertyId'
@@ -957,6 +1092,8 @@ export interface FileRouteTypes {
     | '/auth/sign-up/profile'
     | '/auth/sign-up/verify'
     | '/auth/sign-up/welcome'
+    | '/tenant/payments/cancel'
+    | '/tenant/payments/success'
     | '/app/financials/'
     | '/app/leases/'
     | '/app/maintenance/'
@@ -970,6 +1107,7 @@ export interface FileRouteTypes {
     | '/admin'
     | '/app'
     | '/auth'
+    | '/tenant'
     | '/user'
     | '/example-form'
     | '/admin/dashboard'
@@ -979,6 +1117,8 @@ export interface FileRouteTypes {
     | '/app/documents'
     | '/auth/sign-in'
     | '/auth/sign-up'
+    | '/tenant/dashboard'
+    | '/tenant/payments'
     | '/user/account-settings'
     | '/user/change-email'
     | '/user/change-password'
@@ -987,6 +1127,7 @@ export interface FileRouteTypes {
     | '/app/financials/payments'
     | '/app/leases/$leaseId'
     | '/app/leases/new'
+    | '/app/leases/templates'
     | '/app/maintenance/$workOrderId'
     | '/app/maintenance/new'
     | '/app/properties/new'
@@ -995,6 +1136,8 @@ export interface FileRouteTypes {
     | '/auth/sign-up/profile'
     | '/auth/sign-up/verify'
     | '/auth/sign-up/welcome'
+    | '/tenant/payments/cancel'
+    | '/tenant/payments/success'
     | '/app/financials'
     | '/app/leases'
     | '/app/maintenance'
@@ -1008,6 +1151,7 @@ export interface FileRouteTypes {
     | '/admin'
     | '/app'
     | '/auth'
+    | '/tenant'
     | '/user'
     | '/(examples)/example-form'
     | '/admin/dashboard'
@@ -1022,6 +1166,8 @@ export interface FileRouteTypes {
     | '/app/tenants'
     | '/auth/sign-in'
     | '/auth/sign-up'
+    | '/tenant/dashboard'
+    | '/tenant/payments'
     | '/user/account-settings'
     | '/user/change-email'
     | '/user/change-password'
@@ -1030,6 +1176,7 @@ export interface FileRouteTypes {
     | '/app/financials/payments'
     | '/app/leases/$leaseId'
     | '/app/leases/new'
+    | '/app/leases/templates'
     | '/app/maintenance/$workOrderId'
     | '/app/maintenance/new'
     | '/app/properties/$propertyId'
@@ -1039,6 +1186,8 @@ export interface FileRouteTypes {
     | '/auth/sign-up/profile'
     | '/auth/sign-up/verify'
     | '/auth/sign-up/welcome'
+    | '/tenant/payments/cancel'
+    | '/tenant/payments/success'
     | '/app/financials/'
     | '/app/leases/'
     | '/app/maintenance/'
@@ -1054,6 +1203,7 @@ export interface RootRouteChildren {
   AdminRoute: typeof AdminRouteWithChildren
   AppRoute: typeof AppRouteWithChildren
   AuthRoute: typeof AuthRouteWithChildren
+  TenantRoute: typeof TenantRouteWithChildren
   UserRoute: typeof UserRouteWithChildren
   examplesExampleFormRoute: typeof examplesExampleFormRoute
 }
@@ -1063,6 +1213,7 @@ const rootRouteChildren: RootRouteChildren = {
   AdminRoute: AdminRouteWithChildren,
   AppRoute: AppRouteWithChildren,
   AuthRoute: AuthRouteWithChildren,
+  TenantRoute: TenantRouteWithChildren,
   UserRoute: UserRouteWithChildren,
   examplesExampleFormRoute: examplesExampleFormRoute,
 }
@@ -1081,6 +1232,7 @@ export const routeTree = rootRoute
         "/admin",
         "/app",
         "/auth",
+        "/tenant",
         "/user",
         "/(examples)/example-form"
       ]
@@ -1113,6 +1265,13 @@ export const routeTree = rootRoute
       "children": [
         "/auth/sign-in",
         "/auth/sign-up"
+      ]
+    },
+    "/tenant": {
+      "filePath": "tenant.tsx",
+      "children": [
+        "/tenant/dashboard",
+        "/tenant/payments"
       ]
     },
     "/user": {
@@ -1162,6 +1321,7 @@ export const routeTree = rootRoute
       "children": [
         "/app/leases/$leaseId",
         "/app/leases/new",
+        "/app/leases/templates",
         "/app/leases/"
       ]
     },
@@ -1205,6 +1365,18 @@ export const routeTree = rootRoute
         "/auth/sign-up/welcome"
       ]
     },
+    "/tenant/dashboard": {
+      "filePath": "tenant.dashboard.tsx",
+      "parent": "/tenant"
+    },
+    "/tenant/payments": {
+      "filePath": "tenant.payments.tsx",
+      "parent": "/tenant",
+      "children": [
+        "/tenant/payments/cancel",
+        "/tenant/payments/success"
+      ]
+    },
     "/user/account-settings": {
       "filePath": "user.account-settings.tsx",
       "parent": "/user"
@@ -1235,6 +1407,10 @@ export const routeTree = rootRoute
     },
     "/app/leases/new": {
       "filePath": "app.leases.new.tsx",
+      "parent": "/app/leases"
+    },
+    "/app/leases/templates": {
+      "filePath": "app.leases.templates.tsx",
       "parent": "/app/leases"
     },
     "/app/maintenance/$workOrderId": {
@@ -1276,6 +1452,14 @@ export const routeTree = rootRoute
     "/auth/sign-up/welcome": {
       "filePath": "auth.sign-up.welcome.tsx",
       "parent": "/auth/sign-up"
+    },
+    "/tenant/payments/cancel": {
+      "filePath": "tenant.payments.cancel.tsx",
+      "parent": "/tenant/payments"
+    },
+    "/tenant/payments/success": {
+      "filePath": "tenant.payments.success.tsx",
+      "parent": "/tenant/payments"
     },
     "/app/financials/": {
       "filePath": "app.financials.index.tsx",

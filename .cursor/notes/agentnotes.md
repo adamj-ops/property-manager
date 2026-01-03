@@ -1,6 +1,6 @@
 # Agent Notes - Everyday Property Manager
 
-**Last Updated:** January 2, 2026
+**Last Updated:** January 3, 2026
 
 ---
 
@@ -124,6 +124,39 @@ The UI is derived from **Rehab Planner Pro** for visual consistency.
 - `plugins/tailwind/shadcn-preset.ts` - Theme configuration
 - `tailwind.config.ts` - Tailwind config
 - `.cursor/docs/DESIGN_SYSTEM.md` - Full specification
+
+---
+
+## 🧪 Testing Framework
+
+**Implemented:** January 3, 2026 (EPM-9)
+
+### Test Stack
+- **Vitest** - Unit and integration tests (happy-dom environment)
+- **React Testing Library** - Component tests
+- **Playwright** - E2E tests (Chromium)
+
+### Test Commands
+```bash
+pnpm test              # Run all tests
+pnpm test:unit         # Unit tests only
+pnpm test:integration  # Integration tests only
+pnpm test:components   # Component tests only
+pnpm test:e2e          # Playwright E2E tests
+pnpm test:coverage     # Generate coverage report
+pnpm test:watch        # Watch mode for development
+pnpm test:ui           # Vitest UI
+```
+
+### Test Directories
+- `tests/unit/` - Schema validation, utility functions
+- `tests/integration/` - Server function tests with real DB
+- `tests/components/` - React component tests
+- `tests/e2e/` - Full user workflow tests
+- `tests/utils/` - Test utilities and helpers
+
+### Documentation
+- `.cursor/docs/epm/TESTING.md` - Complete testing framework documentation
 
 ---
 
@@ -257,6 +290,47 @@ pnpm dev
 ---
 
 ## 📝 Session History
+
+### January 3, 2026 (Session 5 - EPM-43 Lease Document Generation)
+
+**Completed EPM-43 (Lease Document Generation):**
+- Installed PDF conversion dependencies (`mammoth`, `puppeteer`)
+- Created `src/server/lease-document-builder.ts` - Variable data builder that maps lease/tenant/property/unit data to template variables
+- Created `src/server/docx-merger.ts` - Utility to merge multiple DOCX documents (main lease + addenda)
+- Created `src/server/pdf-converter.ts` - Converts DOCX to PDF using mammoth (DOCX→HTML) and puppeteer (HTML→PDF)
+- Created `src/services/lease-documents.api.ts` - API endpoints for generating, regenerating, and downloading lease PDFs
+- Created `src/services/lease-documents.schema.ts` - Zod schemas for lease document operations
+- Created `src/services/lease-documents.query.ts` - React Query hooks for document generation
+- Created `src/components/leases/document-generator.tsx` - UI component for generating and downloading lease documents
+- Integrated DocumentGenerator component into lease detail page (`src/routes/app.leases.$leaseId.tsx`)
+
+**Implementation Details:**
+- Uses `docxtemplater` (from EPM-83) to render DOCX templates with variable data
+- Builds variable data from lease, tenant, unit, and property records
+- Merges main lease template with addendum templates
+- Converts merged DOCX to PDF using mammoth + puppeteer
+- Stores PDFs in Supabase Storage at `{userId}/leases/{leaseId}/lease-{timestamp}.pdf`
+- Creates Document record and updates Lease.leaseDocumentUrl
+- UI allows generation and download of lease documents
+
+**Files Created:**
+- `src/server/lease-document-builder.ts`
+- `src/server/docx-merger.ts`
+- `src/server/pdf-converter.ts`
+- `src/services/lease-documents.api.ts`
+- `src/services/lease-documents.schema.ts`
+- `src/services/lease-documents.query.ts`
+- `src/components/leases/document-generator.tsx`
+
+**Files Modified:**
+- `src/routes/app.leases.$leaseId.tsx` - Added DocumentGenerator component
+- `package.json` - Added mammoth and puppeteer dependencies
+
+**Notes:**
+- PDF conversion uses mammoth + puppeteer (no external binary dependencies)
+- DOCX merging is simplified - combines document bodies with page breaks
+- Addenda selection is currently based on lease data (petsAllowed, etc.) - TODO: allow user selection
+- Template fetching uses default/active templates from EPM-83 system
 
 ### January 2, 2026 (Session 4 - Blockers Sprint)
 

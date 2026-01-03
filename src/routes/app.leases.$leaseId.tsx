@@ -1,6 +1,7 @@
 import { createFileRoute } from '@tanstack/react-router'
 import { LuArrowLeft, LuCalendar, LuDollarSign, LuDownload, LuPencil, LuFileText, LuRefreshCw, LuUser } from 'react-icons/lu'
 
+import { DocumentGenerator } from '~/components/leases/document-generator'
 import { Badge } from '~/components/ui/badge'
 import { Button } from '~/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '~/components/ui/card'
@@ -278,6 +279,9 @@ function LeaseDetailPage() {
               </div>
             </CardContent>
           </Card>
+
+          {/* Document Generator */}
+          <DocumentGenerator leaseId={leaseId} />
         </div>
       </div>
     </div>

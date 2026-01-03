@@ -46,6 +46,13 @@ const en = {
     'others': 'Others',
     'examples': 'Examples',
     'example-form': 'Form',
+    // Tenant Portal
+    'tenant-portal': 'Tenant Portal',
+    'pay-rent': 'Pay Rent',
+    'payment-history': 'Payment History',
+    'my-lease': 'My Lease',
+    'lease-details': 'Lease Details',
+    'maintenance-requests': 'Maintenance Requests',
   },
   auth: {
     'name': 'Name',
@@ -103,6 +110,8 @@ const en = {
     'password-must-match': 'Passwords must match',
     'password-must-different': 'New password must be different from current password',
     'email-must-different': 'New email must be different from current email',
+    'signing-in': 'Signing in...',
+    'signing-up': 'Creating account...',
   },
   onboarding: {
     // Business Profile (Page 2)
@@ -127,6 +136,7 @@ const en = {
     'select-platform': 'Select a platform',
     'profile-saved': 'Profile saved successfully',
     'profile-save-error': 'Failed to save profile',
+    'saving-profile': 'Saving...',
 
     // Email Verification (Page 3)
     'check-your-email': 'Check your email',

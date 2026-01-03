@@ -55,6 +55,8 @@ model User {
   createdDocuments   Document[]           @relation("DocumentUploader")
   teamMemberships    TeamMember[]
   ownedTeams         Team[]               @relation("TeamOwner")
+  createdTemplates   LeaseTemplate[]      @relation("TemplateCreator")
+  tenantProfile      Tenant?              @relation("TenantUser") // Tenant portal access
 
   @@map("users")
 }
@@ -381,6 +383,13 @@ model Tenant {
   // Preferences
   preferredContactMethod String? @default("email")
 
+  // Stripe Integration
+  stripeCustomerId String? @unique // Stripe customer ID for payment processing
+
+  // User Account Link (for tenant portal access)
+  userId String? @unique @db.Uuid
+  user   User?   @relation("TenantUser", fields: [userId], references: [id])
+
   // Metadata
   notes     String?
   imageUrl  String?
@@ -470,6 +479,9 @@ model Lease {
   // Documents
   leaseDocumentUrl  String?
   signedDocumentUrl String?
+
+  // Stripe Integration
+  stripeSubscriptionId String? @unique // Stripe subscription ID for recurring rent payments
 
   // Metadata
   notes     String?
@@ -843,6 +855,10 @@ model Payment {
   forPeriodStart DateTime?
   forPeriodEnd   DateTime?
 
+  // Stripe Integration
+  stripePaymentIntentId String? @unique // Stripe payment intent ID
+  stripeChargeId        String? // Stripe charge ID (for refunds)
+
   // Processing
   processedAt   DateTime?
   processingFee Decimal?  @db.Decimal(10, 2)
@@ -1201,4 +1217,67 @@ model AuditLog {
   @@index([userId])
   @@index([createdAt])
   @@map("audit_logs")
+}
+
+// =============================================================================
+// LEASE TEMPLATES (EPM-83)
+// =============================================================================
+
+enum LeaseTemplateType {
+  MAIN_LEASE
+  ADDENDUM_PET
+  ADDENDUM_PARKING
+  ADDENDUM_CRIME_FREE
+  ADDENDUM_LEAD_PAINT
+  ADDENDUM_SECURITY_DEPOSIT
+  ADDENDUM_UTILITIES
+  ADDENDUM_SMOKING
+  ADDENDUM_GUEST
+  ADDENDUM_CUSTOM
+}
+
+model LeaseTemplate {
+  id      String            @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  name    String
+  type    LeaseTemplateType
+  version Int               @default(1)
+
+  // Template Content
+  templateFileUrl  String? @map("template_file_url")
+  templateFilePath String? @map("template_file_path")
+  templateContent  String? @map("template_content") @db.Text
+
+  // Variable System
+  variables      String[] @default([])
+  variableSchema Json?    @map("variable_schema")
+
+  // Template Metadata
+  description String?
+  isDefault   Boolean @default(false) @map("is_default")
+  isActive    Boolean @default(true) @map("is_active")
+  isArchived  Boolean @default(false) @map("is_archived")
+
+  // Versioning
+  parentTemplateId String?         @db.Uuid @map("parent_template_id")
+  parentTemplate   LeaseTemplate?  @relation("TemplateVersions", fields: [parentTemplateId], references: [id], onDelete: SetNull)
+  childTemplates   LeaseTemplate[] @relation("TemplateVersions")
+  changeNotes      String?         @map("change_notes")
+
+  // Compliance
+  minnesotaCompliant Boolean @default(true) @map("minnesota_compliant")
+  complianceNotes    String? @map("compliance_notes")
+
+  // Metadata
+  createdById String   @db.Uuid @map("created_by_id")
+  createdBy   User     @relation("TemplateCreator", fields: [createdById], references: [id])
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  @@unique([name, version])
+  @@index([type])
+  @@index([isActive])
+  @@index([isDefault])
+  @@index([parentTemplateId])
+  @@index([createdById])
+  @@map("lease_templates")
 }
