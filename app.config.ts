@@ -12,7 +12,7 @@ const config = {
 
 const app = defineConfig({
   server: {
-    preset: 'node-server',
+    preset: 'vercel',
     compatibilityDate: '2024-12-05',
   },
   routers: {
