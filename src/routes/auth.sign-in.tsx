@@ -14,7 +14,7 @@ import { socialProviders } from '~/config/social-provider'
 import { authClient } from '~/libs/auth-client'
 import { tKey } from '~/libs/i18n'
 import { cx } from '~/libs/utils'
-import { passwordSchema, usernameSchema } from '~/services/auth.schema'
+import { emailSchema } from '~/services/auth.schema'
 
 export const Route = createFileRoute('/auth/sign-in')({
   component: SignInRoute,
@@ -22,8 +22,8 @@ export const Route = createFileRoute('/auth/sign-in')({
 
 const signInSchema = (t = tKey) => z
   .object({
-    username: usernameSchema(t),
-    password: passwordSchema(t),
+    email: emailSchema(t),
+    password: z.string().min(1, t('auth.password-required')),
     rememberMe: z.boolean().optional(),
   })
 
@@ -34,25 +34,32 @@ function SignInRoute() {
 
   const form = useForm(signInSchema(t), {
     defaultValues: {
-      username: '',
+      email: '',
       password: '',
       rememberMe: true,
       ...(import.meta.env.DEV && {
-        username: 'user',
+        email: import.meta.env.VITE_APP_EMAIL || 'test@example.com',
         password: '!Ab12345',
       }),
     },
     onSubmit: async ({ value }) => {
-      await authClient.signIn.username(value, {
-        onSuccess: () => {
-          toast.success(t('auth.sign-in-success'))
+      await authClient.signIn.email(
+        {
+          email: value.email,
+          password: value.password,
+          rememberMe: value.rememberMe,
         },
-        onError: ({ error }) => {
-          toast.error(t('auth.sign-in-error'), {
-            description: error.message, // TODO: i18n
-          })
+        {
+          onSuccess: () => {
+            toast.success(t('auth.sign-in-success'))
+          },
+          onError: ({ error }) => {
+            toast.error(t('auth.sign-in-error'), {
+              description: error.message,
+            })
+          },
         },
-      })
+      )
     },
   })
 
@@ -66,10 +73,10 @@ function SignInRoute() {
       <CardContent className='space-y-6'>
         <form.Root>
           <form.Field
-            name='username'
+            name='email'
             render={(field) => (
-              <field.Container label={t('auth.username')}>
-                <Input />
+              <field.Container label={t('auth.email')}>
+                <Input type='email' autoComplete='email' />
               </field.Container>
             )}
           />
@@ -77,7 +84,7 @@ function SignInRoute() {
             name='password'
             render={(field) => (
               <field.Container label={t('auth.password')}>
-                <InputPassword />
+                <InputPassword autoComplete='current-password' />
               </field.Container>
             )}
           />
@@ -92,7 +99,7 @@ function SignInRoute() {
           <Separator className='flex-1' />
         </div>
 
-        <div className='w-full space-y-4'>
+        <div className='w-full space-y-3'>
           {socialProviders.map((socialProvider) => (
             <Button
               key={socialProvider.id}

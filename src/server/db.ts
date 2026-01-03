@@ -25,16 +25,24 @@ pool.on('error', (err) => {
 })
 
 const adapter = new PrismaPg(pool)
+const useAdapter = process.env.PRISMA_USE_ADAPTER === 'true'
 
 // Create Prisma client with adapter
 const prismaClientSingleton = () => {
-  return new PrismaClient({
-    adapter,
-    log:
-      process.env.NODE_ENV === 'development'
-        ? ['query', 'error', 'warn']
-        : ['error'],
-  })
+  return useAdapter
+    ? new PrismaClient({
+        adapter,
+        log:
+          process.env.NODE_ENV === 'development'
+            ? ['query', 'error', 'warn']
+            : ['error'],
+      })
+    : new PrismaClient({
+        log:
+          process.env.NODE_ENV === 'development'
+            ? ['query', 'error', 'warn']
+            : ['error'],
+      })
 }
 
 // Ensure single instance in development (hot reload)

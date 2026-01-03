@@ -4,13 +4,14 @@ import { hash, verify } from '@node-rs/argon2'
 import { betterAuth } from 'better-auth'
 import { prismaAdapter } from 'better-auth/adapters/prisma'
 import { APIError } from 'better-auth/api'
-import { admin, username } from 'better-auth/plugins'
+import { admin, emailOTP } from 'better-auth/plugins'
 import type { BetterAuthPlugin } from 'better-auth'
 
+import { VerificationCodeEmail } from '~/emails/verification-code-email'
 import { VerificationEmail } from '~/emails/verification-email'
 import { prisma } from '~/server/db'
 import { sendEmail } from '~/server/email'
-import { nameSchema, PASSWORD_MAX, PASSWORD_MIN, passwordSchema, usernameSchema } from '~/services/auth.schema'
+import { nameSchema, PASSWORD_MAX, PASSWORD_MIN, passwordSchema } from '~/services/auth.schema'
 
 export type Session = typeof auth.$Infer.Session
 
@@ -42,6 +43,23 @@ export const auth = betterAuth({
   },
   user: {
     modelName: 'User',
+    additionalFields: {
+      phone: {
+        type: 'string',
+        required: false,
+        input: false,
+      },
+      userRole: {
+        type: 'string',
+        required: false,
+        input: false,
+      },
+      onboardingCompletedAt: {
+        type: 'date',
+        required: false,
+        input: false,
+      },
+    },
     changeEmail: {
       enabled: true,
       sendChangeEmailVerification: async ({ newEmail, url }) => {
@@ -70,24 +88,30 @@ export const auth = betterAuth({
   },
   socialProviders: {
     google: {
-      clientId: process.env.GOOGLE_CLIENT_ID,
-      clientSecret: process.env.GOOGLE_CLIENT_SECRET,
-    },
-    discord: {
-      clientId: process.env.DISCORD_CLIENT_ID,
-      clientSecret: process.env.DISCORD_CLIENT_SECRET,
-    },
-    github: {
-      clientId: process.env.GITHUB_CLIENT_ID,
-      clientSecret: process.env.GITHUB_CLIENT_SECRET,
+      clientId: process.env.GOOGLE_CLIENT_ID as string,
+      clientSecret: process.env.GOOGLE_CLIENT_SECRET as string,
     },
   },
   plugins: [
-    username(),
     admin(),
+    emailOTP({
+      otpLength: 6,
+      expiresIn: 600, // 10 minutes
+      sendVerificationOTP: async ({ email, otp, type }) => {
+        const subjectMap = {
+          'email-verification': 'Your verification code',
+          'sign-in': 'Your sign-in code',
+          'forget-password': 'Your password reset code',
+        }
+        await sendEmail({
+          to: email,
+          subject: subjectMap[type] || 'Your verification code',
+          react: VerificationCodeEmail({ code: otp, type }),
+        })
+      },
+    }),
     // https://discord.com/channels/1288403910284935179/1288403910284935182/1311052339225821225
     nameValidator(),
-    usernameValidator(),
     passwordValidator(),
   ],
 })
@@ -104,27 +128,6 @@ function nameValidator() {
             if (nameParseResult.error) {
               throw new APIError('BAD_REQUEST', {
                 message: 'Invalid name',
-              })
-            }
-          },
-        },
-      ],
-    },
-  } as const satisfies BetterAuthPlugin
-}
-
-function usernameValidator() {
-  return {
-    id: 'username-validator',
-    hooks: {
-      before: [
-        {
-          matcher: (ctx) => ctx.body?.username,
-          handler: async (ctx) => {
-            const usernameParseResult = usernameSchema().safeParse(ctx.body.username)
-            if (usernameParseResult.error) {
-              throw new APIError('BAD_REQUEST', {
-                message: 'Invalid username',
               })
             }
           },

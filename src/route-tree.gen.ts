@@ -38,6 +38,9 @@ import { Route as AppPropertiesIndexImport } from './routes/app.properties.index
 import { Route as AppMaintenanceIndexImport } from './routes/app.maintenance.index'
 import { Route as AppLeasesIndexImport } from './routes/app.leases.index'
 import { Route as AppFinancialsIndexImport } from './routes/app.financials.index'
+import { Route as AuthSignUpWelcomeImport } from './routes/auth.sign-up.welcome'
+import { Route as AuthSignUpVerifyImport } from './routes/auth.sign-up.verify'
+import { Route as AuthSignUpProfileImport } from './routes/auth.sign-up.profile'
 import { Route as AppTenantsNewImport } from './routes/app.tenants.new'
 import { Route as AppTenantsTenantIdImport } from './routes/app.tenants.$tenantId'
 import { Route as AppPropertiesNewImport } from './routes/app.properties.new'
@@ -213,6 +216,24 @@ const AppFinancialsIndexRoute = AppFinancialsIndexImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => AppFinancialsRoute,
+} as any)
+
+const AuthSignUpWelcomeRoute = AuthSignUpWelcomeImport.update({
+  id: '/welcome',
+  path: '/welcome',
+  getParentRoute: () => AuthSignUpRoute,
+} as any)
+
+const AuthSignUpVerifyRoute = AuthSignUpVerifyImport.update({
+  id: '/verify',
+  path: '/verify',
+  getParentRoute: () => AuthSignUpRoute,
+} as any)
+
+const AuthSignUpProfileRoute = AuthSignUpProfileImport.update({
+  id: '/profile',
+  path: '/profile',
+  getParentRoute: () => AuthSignUpRoute,
 } as any)
 
 const AppTenantsNewRoute = AppTenantsNewImport.update({
@@ -517,6 +538,27 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppTenantsNewImport
       parentRoute: typeof AppTenantsImport
     }
+    '/auth/sign-up/profile': {
+      id: '/auth/sign-up/profile'
+      path: '/profile'
+      fullPath: '/auth/sign-up/profile'
+      preLoaderRoute: typeof AuthSignUpProfileImport
+      parentRoute: typeof AuthSignUpImport
+    }
+    '/auth/sign-up/verify': {
+      id: '/auth/sign-up/verify'
+      path: '/verify'
+      fullPath: '/auth/sign-up/verify'
+      preLoaderRoute: typeof AuthSignUpVerifyImport
+      parentRoute: typeof AuthSignUpImport
+    }
+    '/auth/sign-up/welcome': {
+      id: '/auth/sign-up/welcome'
+      path: '/welcome'
+      fullPath: '/auth/sign-up/welcome'
+      preLoaderRoute: typeof AuthSignUpWelcomeImport
+      parentRoute: typeof AuthSignUpImport
+    }
     '/app/financials/': {
       id: '/app/financials/'
       path: '/'
@@ -703,14 +745,30 @@ const AppRouteChildren: AppRouteChildren = {
 
 const AppRouteWithChildren = AppRoute._addFileChildren(AppRouteChildren)
 
+interface AuthSignUpRouteChildren {
+  AuthSignUpProfileRoute: typeof AuthSignUpProfileRoute
+  AuthSignUpVerifyRoute: typeof AuthSignUpVerifyRoute
+  AuthSignUpWelcomeRoute: typeof AuthSignUpWelcomeRoute
+}
+
+const AuthSignUpRouteChildren: AuthSignUpRouteChildren = {
+  AuthSignUpProfileRoute: AuthSignUpProfileRoute,
+  AuthSignUpVerifyRoute: AuthSignUpVerifyRoute,
+  AuthSignUpWelcomeRoute: AuthSignUpWelcomeRoute,
+}
+
+const AuthSignUpRouteWithChildren = AuthSignUpRoute._addFileChildren(
+  AuthSignUpRouteChildren,
+)
+
 interface AuthRouteChildren {
   AuthSignInRoute: typeof AuthSignInRoute
-  AuthSignUpRoute: typeof AuthSignUpRoute
+  AuthSignUpRoute: typeof AuthSignUpRouteWithChildren
 }
 
 const AuthRouteChildren: AuthRouteChildren = {
   AuthSignInRoute: AuthSignInRoute,
-  AuthSignUpRoute: AuthSignUpRoute,
+  AuthSignUpRoute: AuthSignUpRouteWithChildren,
 }
 
 const AuthRouteWithChildren = AuthRoute._addFileChildren(AuthRouteChildren)
@@ -749,7 +807,7 @@ export interface FileRoutesByFullPath {
   '/app/properties': typeof AppPropertiesRouteWithChildren
   '/app/tenants': typeof AppTenantsRouteWithChildren
   '/auth/sign-in': typeof AuthSignInRoute
-  '/auth/sign-up': typeof AuthSignUpRoute
+  '/auth/sign-up': typeof AuthSignUpRouteWithChildren
   '/user/account-settings': typeof UserAccountSettingsRoute
   '/user/change-email': typeof UserChangeEmailRoute
   '/user/change-password': typeof UserChangePasswordRoute
@@ -764,6 +822,9 @@ export interface FileRoutesByFullPath {
   '/app/properties/new': typeof AppPropertiesNewRoute
   '/app/tenants/$tenantId': typeof AppTenantsTenantIdRoute
   '/app/tenants/new': typeof AppTenantsNewRoute
+  '/auth/sign-up/profile': typeof AuthSignUpProfileRoute
+  '/auth/sign-up/verify': typeof AuthSignUpVerifyRoute
+  '/auth/sign-up/welcome': typeof AuthSignUpWelcomeRoute
   '/app/financials/': typeof AppFinancialsIndexRoute
   '/app/leases/': typeof AppLeasesIndexRoute
   '/app/maintenance/': typeof AppMaintenanceIndexRoute
@@ -786,7 +847,7 @@ export interface FileRoutesByTo {
   '/app/dashboard': typeof AppDashboardRoute
   '/app/documents': typeof AppDocumentsRoute
   '/auth/sign-in': typeof AuthSignInRoute
-  '/auth/sign-up': typeof AuthSignUpRoute
+  '/auth/sign-up': typeof AuthSignUpRouteWithChildren
   '/user/account-settings': typeof UserAccountSettingsRoute
   '/user/change-email': typeof UserChangeEmailRoute
   '/user/change-password': typeof UserChangePasswordRoute
@@ -800,6 +861,9 @@ export interface FileRoutesByTo {
   '/app/properties/new': typeof AppPropertiesNewRoute
   '/app/tenants/$tenantId': typeof AppTenantsTenantIdRoute
   '/app/tenants/new': typeof AppTenantsNewRoute
+  '/auth/sign-up/profile': typeof AuthSignUpProfileRoute
+  '/auth/sign-up/verify': typeof AuthSignUpVerifyRoute
+  '/auth/sign-up/welcome': typeof AuthSignUpWelcomeRoute
   '/app/financials': typeof AppFinancialsIndexRoute
   '/app/leases': typeof AppLeasesIndexRoute
   '/app/maintenance': typeof AppMaintenanceIndexRoute
@@ -828,7 +892,7 @@ export interface FileRoutesById {
   '/app/properties': typeof AppPropertiesRouteWithChildren
   '/app/tenants': typeof AppTenantsRouteWithChildren
   '/auth/sign-in': typeof AuthSignInRoute
-  '/auth/sign-up': typeof AuthSignUpRoute
+  '/auth/sign-up': typeof AuthSignUpRouteWithChildren
   '/user/account-settings': typeof UserAccountSettingsRoute
   '/user/change-email': typeof UserChangeEmailRoute
   '/user/change-password': typeof UserChangePasswordRoute
@@ -843,6 +907,9 @@ export interface FileRoutesById {
   '/app/properties/new': typeof AppPropertiesNewRoute
   '/app/tenants/$tenantId': typeof AppTenantsTenantIdRoute
   '/app/tenants/new': typeof AppTenantsNewRoute
+  '/auth/sign-up/profile': typeof AuthSignUpProfileRoute
+  '/auth/sign-up/verify': typeof AuthSignUpVerifyRoute
+  '/auth/sign-up/welcome': typeof AuthSignUpWelcomeRoute
   '/app/financials/': typeof AppFinancialsIndexRoute
   '/app/leases/': typeof AppLeasesIndexRoute
   '/app/maintenance/': typeof AppMaintenanceIndexRoute
@@ -887,6 +954,9 @@ export interface FileRouteTypes {
     | '/app/properties/new'
     | '/app/tenants/$tenantId'
     | '/app/tenants/new'
+    | '/auth/sign-up/profile'
+    | '/auth/sign-up/verify'
+    | '/auth/sign-up/welcome'
     | '/app/financials/'
     | '/app/leases/'
     | '/app/maintenance/'
@@ -922,6 +992,9 @@ export interface FileRouteTypes {
     | '/app/properties/new'
     | '/app/tenants/$tenantId'
     | '/app/tenants/new'
+    | '/auth/sign-up/profile'
+    | '/auth/sign-up/verify'
+    | '/auth/sign-up/welcome'
     | '/app/financials'
     | '/app/leases'
     | '/app/maintenance'
@@ -963,6 +1036,9 @@ export interface FileRouteTypes {
     | '/app/properties/new'
     | '/app/tenants/$tenantId'
     | '/app/tenants/new'
+    | '/auth/sign-up/profile'
+    | '/auth/sign-up/verify'
+    | '/auth/sign-up/welcome'
     | '/app/financials/'
     | '/app/leases/'
     | '/app/maintenance/'
@@ -1122,7 +1198,12 @@ export const routeTree = rootRoute
     },
     "/auth/sign-up": {
       "filePath": "auth.sign-up.tsx",
-      "parent": "/auth"
+      "parent": "/auth",
+      "children": [
+        "/auth/sign-up/profile",
+        "/auth/sign-up/verify",
+        "/auth/sign-up/welcome"
+      ]
     },
     "/user/account-settings": {
       "filePath": "user.account-settings.tsx",
@@ -1183,6 +1264,18 @@ export const routeTree = rootRoute
     "/app/tenants/new": {
       "filePath": "app.tenants.new.tsx",
       "parent": "/app/tenants"
+    },
+    "/auth/sign-up/profile": {
+      "filePath": "auth.sign-up.profile.tsx",
+      "parent": "/auth/sign-up"
+    },
+    "/auth/sign-up/verify": {
+      "filePath": "auth.sign-up.verify.tsx",
+      "parent": "/auth/sign-up"
+    },
+    "/auth/sign-up/welcome": {
+      "filePath": "auth.sign-up.welcome.tsx",
+      "parent": "/auth/sign-up"
     },
     "/app/financials/": {
       "filePath": "app.financials.index.tsx",

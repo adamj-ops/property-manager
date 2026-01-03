@@ -164,6 +164,9 @@ importers:
       http-status:
         specifier: ^2.0.0
         version: 2.0.0
+      input-otp:
+        specifier: ^1.4.2
+        version: 1.4.2(react-dom@19.0.0(react@19.0.0))(react@19.0.0)
       jspdf:
         specifier: ^3.0.4
         version: 3.0.4
@@ -4702,6 +4705,12 @@ packages:
         optional: true
       react-dom:
         optional: true
+
+  input-otp@1.4.2:
+    resolution: {integrity: sha512-l3jWwYNvrEa6NTCt7BECfCm48GvwuZzkoeG3gBL2w4CHeOXW3eKFmf9UNYkNfYc3mxMrthMnxjIE07MT0zLBQA==}
+    peerDependencies:
+      react: ^16.8 || ^17.0 || ^18.0 || ^19.0.0 || ^19.0.0-rc
+      react-dom: ^16.8 || ^17.0 || ^18.0 || ^19.0.0 || ^19.0.0-rc
 
   internal-slot@1.0.7:
     resolution: {integrity: sha512-NGnrKwXzSms2qUUih/ILZ5JBqNTSa1+ZmP6flaIp6KmSElgE9qdndzS3cqjrDovwFdmwsGsLdeFgB6suw+1e9g==}
@@ -11401,6 +11410,11 @@ snapshots:
     dependencies:
       prop-types: 15.8.1
     optionalDependencies:
+      react: 19.0.0
+      react-dom: 19.0.0(react@19.0.0)
+
+  input-otp@1.4.2(react-dom@19.0.0(react@19.0.0))(react@19.0.0):
+    dependencies:
       react: 19.0.0
       react-dom: 19.0.0(react@19.0.0)
 

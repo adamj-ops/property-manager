@@ -38,6 +38,11 @@ model User {
   banReason     String?
   banExpires    DateTime?
 
+  // Onboarding fields
+  phone                 String?
+  userRole              String?   // "property_manager", "owner", "leasing_agent", "portfolio_manager", "other"
+  onboardingCompletedAt DateTime?
+
   // Relations
   sessions           Session[]
   accounts           Account[]
@@ -138,6 +143,11 @@ model Team {
   // Subscription/Billing (for future use)
   plan          String    @default("free")
   planExpiresAt DateTime?
+
+  // Onboarding data
+  unitsManaged     String? // "1-10", "11-50", "51-200", "200+"
+  signupReason     String? // "switching", "new_business", "spreadsheets", "scaling", "new_properties", "compliance", "other"
+  previousPlatform String? // "buildium", "appfolio", "rent_manager", "tenantcloud", "propertyware", "other"
 
   // Metadata
   createdAt DateTime @default(now())

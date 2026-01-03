@@ -3,24 +3,24 @@ import fontsourceJetBrainsMono from '@fontsource-variable/jetbrains-mono?url'
 import fontsourceNotoSansTC from '@fontsource-variable/noto-sans-tc?url'
 import globalStyle from '~/styles/global.css?url'
 
+import * as Sentry from '@sentry/react'
 import { createRootRouteWithContext, Outlet, ScrollRestoration } from '@tanstack/react-router'
 import { Meta, Scripts } from '@tanstack/start'
-import * as Sentry from '@sentry/react'
 import { outdent } from 'outdent'
 import { useEffect } from 'react'
 import { createTranslator, IntlProvider } from 'use-intl'
 import type { ErrorComponentProps } from '@tanstack/react-router'
 import type { PropsWithChildren } from 'react'
 
+import { VercelAnalytics } from '~/components/analytics'
+import { ErrorBoundary } from '~/components/error-boundary'
 import { AppHeader } from '~/components/layout/app-header'
 import { AppSidebar } from '~/components/layout/app-sidebar'
-import { ErrorBoundary } from '~/components/error-boundary'
 import { ThemeProvider } from '~/components/theme'
-import { VercelAnalytics } from '~/components/analytics'
-import { usePostHogPageview } from '~/hooks/use-posthog-pageview'
 import { SidebarInset, SidebarProvider } from '~/components/ui/sidebar'
 import { Toaster } from '~/components/ui/sonner'
 import { Typography } from '~/components/ui/typography'
+import { usePostHogPageview } from '~/hooks/use-posthog-pageview'
 import { posthog } from '~/libs/posthog'
 import { createMetadata } from '~/libs/utils'
 import { authQueryOptions } from '~/services/auth.query'
@@ -100,7 +100,9 @@ export const Route = createRootRouteWithContext<RouterContext>()({
 })
 
 function RootComponent() {
-  const { auth } = Route.useLoaderData() as { auth?: { user?: { id?: string; email?: string; name?: string } } }
+  const loaderData = Route.useLoaderData() as { auth?: { user?: { id?: string; email?: string; name?: string }; isAuthenticated?: boolean } } | undefined
+  const auth = loaderData?.auth
+  const isAuthenticated = auth?.isAuthenticated ?? false
 
   usePostHogPageview()
 
@@ -114,6 +116,20 @@ function RootComponent() {
     }
   }, [auth?.user?.email, auth?.user?.id, auth?.user?.name])
 
+  // For unauthenticated users, render a minimal layout without sidebar
+  if (!isAuthenticated) {
+    return (
+      <Document>
+        <div className='flex min-h-screen flex-col items-center justify-center bg-background'>
+          <ErrorBoundary>
+            <Outlet />
+          </ErrorBoundary>
+        </div>
+      </Document>
+    )
+  }
+
+  // For authenticated users, render the full app layout with sidebar
   return (
     <Document>
       <SidebarProvider>

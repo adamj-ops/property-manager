@@ -1,4 +1,3 @@
-import { BsDiscord, BsGithub } from 'react-icons/bs'
 import { FcGoogle } from 'react-icons/fc'
 import type { IconBaseProps, IconType } from 'react-icons'
 
@@ -23,23 +22,5 @@ export const socialProviders: SocialProvider[] = [
     logoColor: undefined,
     textColor: '#000',
     backgroundColor: '#fff',
-  },
-  {
-    id: 'discord',
-    name: 'Discord',
-    icon: BsDiscord,
-    size: 20,
-    logoColor: '#fff',
-    textColor: '#fff',
-    backgroundColor: '#5865f2',
-  },
-  {
-    id: 'github',
-    name: 'GitHub',
-    icon: BsGithub,
-    size: 20,
-    logoColor: '#fff',
-    textColor: '#fff',
-    backgroundColor: '#333',
   },
 ]
