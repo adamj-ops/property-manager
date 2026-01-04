@@ -2,7 +2,7 @@
 
 **Date:** 2026-01-04
 **Branch:** `claude/epic-3-review-planning-Pqak1`
-**Status:** ~95% Complete (MVP Core Features Done)
+**Status:** ~98% Complete (MVP + Phase 2 Features)
 **Total Story Points:** 42 (MVP), 49 (Full)
 
 ---
@@ -23,6 +23,15 @@
 | **Photo upload for work orders** | ✅ Done | Issue photos + completion photos with Supabase Storage |
 | **Vendor assignment dropdown** | ✅ Done | Can assign/unassign vendors from work order detail |
 | **Email notifications for status changes** | ✅ Done | Sends email to tenant on status updates via Resend |
+| **Recurring Maintenance Schedules (EPM-74)** | ✅ Done | Full CRUD with auto work order creation |
+
+### Files Created (Session 4 - Recurring Schedules)
+- `prisma/schema.prisma` - Added MaintenanceSchedule model with RecurrenceFrequency enum
+- `src/services/schedules.schema.ts` - Zod schemas for schedule validation
+- `src/services/schedules.api.ts` - Server functions (CRUD + execute + stats)
+- `src/services/schedules.query.ts` - React Query hooks for schedules
+- `src/routes/app.maintenance.schedules.tsx` - Schedule list page with create dialog
+- `src/routes/app.maintenance.schedules.$scheduleId.tsx` - Schedule detail/edit page
 
 ### Files Created (Session 3)
 - `src/emails/maintenance-status-email.tsx` - React Email template for status notifications

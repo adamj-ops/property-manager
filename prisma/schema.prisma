@@ -50,6 +50,7 @@ model User {
   properties         Property[]           @relation("PropertyManager")
   assignedWorkOrders MaintenanceRequest[] @relation("AssignedTo")
   createdWorkOrders  MaintenanceRequest[] @relation("CreatedBy")
+  createdSchedules   MaintenanceSchedule[]
   sentMessages       Message[]            @relation("MessageSender")
   auditLogs          AuditLog[]
   createdDocuments   Document[]           @relation("DocumentUploader")
@@ -258,10 +259,11 @@ model Property {
   manager     User         @relation("PropertyManager", fields: [managerId], references: [id])
   teamId      String?      @db.Uuid
   team        Team?        @relation("TeamProperties", fields: [teamId], references: [id])
-  units       Unit[]
-  expenses    Expense[]
-  documents   Document[]
-  inspections Inspection[]
+  units                Unit[]
+  expenses             Expense[]
+  documents            Document[]
+  inspections          Inspection[]
+  maintenanceSchedules MaintenanceSchedule[]
 
   @@index([managerId])
   @@index([teamId])
@@ -320,6 +322,7 @@ model Unit {
   property            Property             @relation(fields: [propertyId], references: [id], onDelete: Cascade)
   leases              Lease[]
   maintenanceRequests MaintenanceRequest[]
+  maintenanceSchedules MaintenanceSchedule[]
 
   @@unique([propertyId, unitNumber])
   @@index([propertyId])
@@ -678,11 +681,16 @@ model MaintenanceRequest {
   vendorId     String? @db.Uuid
   vendor       Vendor? @relation(fields: [vendorId], references: [id])
 
+  // If generated from a schedule
+  scheduleId   String?              @db.Uuid
+  schedule     MaintenanceSchedule? @relation("ScheduleGenerated", fields: [scheduleId], references: [id], onDelete: SetNull)
+
   comments      MaintenanceComment[]
   statusHistory WorkOrderStatusHistory[]
   expenses      Expense[]
 
   @@index([unitId])
+  @@index([scheduleId])
   @@index([status])
   @@index([priority])
   @@index([assignedToId])
@@ -730,6 +738,76 @@ model WorkOrderStatusHistory {
   @@index([requestId])
   @@index([createdAt])
   @@map("work_order_status_history")
+}
+
+// =============================================================================
+// RECURRING MAINTENANCE SCHEDULES
+// =============================================================================
+
+enum RecurrenceFrequency {
+  DAILY
+  WEEKLY
+  BIWEEKLY
+  MONTHLY
+  QUARTERLY
+  BIANNUALLY
+  ANNUALLY
+}
+
+model MaintenanceSchedule {
+  id     String  @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  name   String // e.g., "HVAC Filter Change", "Quarterly Inspection"
+  isActive Boolean @default(true)
+
+  // What to create
+  category    MaintenanceCategory
+  priority    MaintenancePriority @default(MEDIUM)
+  title       String // Title for generated work orders
+  description String // Description for generated work orders
+  location    String? // e.g., "All HVAC units"
+
+  // Recurrence settings
+  frequency      RecurrenceFrequency
+  intervalCount  Int                  @default(1) // e.g., every 2 weeks
+  dayOfWeek      Int?                 // 0-6 for weekly (Sunday = 0)
+  dayOfMonth     Int?                 // 1-31 for monthly
+  monthOfYear    Int?                 // 1-12 for annually
+
+  // Scheduling
+  startDate      DateTime             // When the schedule starts
+  endDate        DateTime?            // Optional end date
+  nextRunAt      DateTime             // Next scheduled execution
+  lastRunAt      DateTime?            // Last time a work order was created
+
+  // Cost estimate
+  estimatedCost  Decimal?             @db.Decimal(10, 2)
+  estimatedDuration Int?              // in minutes
+
+  // Assignment
+  autoAssignVendor Boolean @default(false)
+
+  // Metadata
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  propertyId String?  @db.Uuid
+  property   Property? @relation(fields: [propertyId], references: [id], onDelete: Cascade)
+  unitId     String?  @db.Uuid
+  unit       Unit?    @relation(fields: [unitId], references: [id], onDelete: Cascade)
+  vendorId   String?  @db.Uuid
+  vendor     Vendor?  @relation(fields: [vendorId], references: [id], onDelete: SetNull)
+  createdById String  @db.Uuid
+  createdBy   User    @relation(fields: [createdById], references: [id])
+
+  // Track generated work orders
+  generatedRequests MaintenanceRequest[] @relation("ScheduleGenerated")
+
+  @@index([nextRunAt])
+  @@index([isActive])
+  @@index([propertyId])
+  @@index([unitId])
+  @@map("pm_maintenance_schedules")
 }
 
 // =============================================================================
@@ -787,8 +865,9 @@ model Vendor {
   updatedAt DateTime @updatedAt
 
   // Relations
-  maintenanceRequests MaintenanceRequest[]
-  expenses            Expense[]
+  maintenanceRequests  MaintenanceRequest[]
+  maintenanceSchedules MaintenanceSchedule[]
+  expenses             Expense[]
 
   @@index([status])
   @@map("pm_vendors")
