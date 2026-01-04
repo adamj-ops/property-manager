@@ -213,7 +213,10 @@ export const createSetupIntent = createServerFn({ method: 'POST' })
  */
 export const listPaymentMethods = createServerFn({ method: 'GET' })
   .middleware([authedMiddleware])
-  .validator(zodValidator(tenantIdSchema))
+  .validator(zodValidator(z.object({
+    tenantId: z.string().uuid(),
+    type: z.enum(['card', 'us_bank_account']).optional().default('card'),
+  })))
   .handler(async ({ data }) => {
     if (!isStripeConfigured()) {
       throw ApiError.serviceUnavailable('Stripe is not configured')
@@ -230,10 +233,87 @@ export const listPaymentMethods = createServerFn({ method: 'GET' })
 
     const paymentMethods = await stripe().paymentMethods.list({
       customer: tenant.stripeCustomerId,
-      type: 'card', // Can expand to include 'us_bank_account' if needed
+      type: data.type,
     })
 
     return { paymentMethods: paymentMethods.data }
+  })
+
+/**
+ * Delete a payment method
+ */
+export const deletePaymentMethod = createServerFn({ method: 'POST' })
+  .middleware([authedMiddleware])
+  .validator(zodValidator(z.object({
+    tenantId: z.string().uuid(),
+    paymentMethodId: z.string(),
+  })))
+  .handler(async ({ data }) => {
+    if (!isStripeConfigured()) {
+      throw ApiError.serviceUnavailable('Stripe is not configured')
+    }
+
+    const { tenantId, paymentMethodId } = data
+
+    // Verify tenant owns this payment method
+    const tenant = await prisma.tenant.findUnique({
+      where: { id: tenantId },
+      select: { stripeCustomerId: true },
+    })
+
+    if (!tenant || !tenant.stripeCustomerId) {
+      throw ApiError.notFound('Tenant has no Stripe customer')
+    }
+
+    // Verify payment method belongs to this customer
+    const paymentMethod = await stripe().paymentMethods.retrieve(paymentMethodId)
+    if (paymentMethod.customer !== tenant.stripeCustomerId) {
+      throw ApiError.forbidden('Payment method does not belong to this tenant')
+    }
+
+    // Detach the payment method from the customer
+    await stripe().paymentMethods.detach(paymentMethodId)
+
+    logger.info('Payment method deleted', { tenantId, paymentMethodId })
+
+    return { success: true }
+  })
+
+/**
+ * Set default payment method for a tenant
+ */
+export const setDefaultPaymentMethod = createServerFn({ method: 'POST' })
+  .middleware([authedMiddleware])
+  .validator(zodValidator(z.object({
+    tenantId: z.string().uuid(),
+    paymentMethodId: z.string(),
+  })))
+  .handler(async ({ data }) => {
+    if (!isStripeConfigured()) {
+      throw ApiError.serviceUnavailable('Stripe is not configured')
+    }
+
+    const { tenantId, paymentMethodId } = data
+
+    const tenant = await prisma.tenant.findUnique({
+      where: { id: tenantId },
+      select: { stripeCustomerId: true },
+    })
+
+    if (!tenant || !tenant.stripeCustomerId) {
+      throw ApiError.notFound('Tenant has no Stripe customer')
+    }
+
+    // Update customer's default payment method
+    await stripe().customers.update(tenant.stripeCustomerId, {
+      invoice_settings: {
+        default_payment_method: paymentMethodId,
+      },
+    })
+
+    logger.info('Default payment method updated', { tenantId, paymentMethodId })
+
+    return { success: true }
   })
 
 // ============================================================================
@@ -573,6 +653,110 @@ export const cancelSubscription = createServerFn({ method: 'POST' })
     logger.info('Subscription canceled', { subscriptionId: data.subscriptionId })
 
     return { subscription: canceledSubscription }
+  })
+
+/**
+ * Get subscription details by lease ID
+ */
+export const getSubscription = createServerFn({ method: 'GET' })
+  .middleware([authedMiddleware])
+  .validator(zodValidator(leaseIdSchema))
+  .handler(async ({ data }) => {
+    if (!isStripeConfigured()) {
+      throw ApiError.serviceUnavailable('Stripe is not configured')
+    }
+
+    const lease = await prisma.lease.findUnique({
+      where: { id: data.leaseId },
+      select: { stripeSubscriptionId: true },
+    })
+
+    if (!lease) {
+      throw ApiError.notFound('Lease not found')
+    }
+
+    if (!lease.stripeSubscriptionId) {
+      return { subscription: null }
+    }
+
+    const subscription = await stripe().subscriptions.retrieve(lease.stripeSubscriptionId, {
+      expand: ['latest_invoice', 'default_payment_method'],
+    })
+
+    return {
+      subscription,
+      status: subscription.status,
+      currentPeriodEnd: new Date(subscription.current_period_end * 1000),
+      currentPeriodStart: new Date(subscription.current_period_start * 1000),
+      cancelAtPeriodEnd: subscription.cancel_at_period_end,
+      amount: subscription.items.data[0]?.price.unit_amount
+        ? subscription.items.data[0].price.unit_amount / 100
+        : null,
+    }
+  })
+
+/**
+ * Get subscription details by subscription ID (direct lookup)
+ */
+export const getSubscriptionById = createServerFn({ method: 'GET' })
+  .middleware([authedMiddleware])
+  .validator(zodValidator(z.object({ subscriptionId: z.string() })))
+  .handler(async ({ data }) => {
+    if (!isStripeConfigured()) {
+      throw ApiError.serviceUnavailable('Stripe is not configured')
+    }
+
+    const subscription = await stripe().subscriptions.retrieve(data.subscriptionId, {
+      expand: ['latest_invoice', 'default_payment_method'],
+    })
+
+    return {
+      subscription,
+      status: subscription.status,
+      currentPeriodEnd: new Date(subscription.current_period_end * 1000),
+      currentPeriodStart: new Date(subscription.current_period_start * 1000),
+      cancelAtPeriodEnd: subscription.cancel_at_period_end,
+    }
+  })
+
+/**
+ * Pause subscription (sets cancel_at_period_end to true)
+ */
+export const pauseSubscription = createServerFn({ method: 'POST' })
+  .middleware([authedMiddleware])
+  .validator(zodValidator(z.object({ subscriptionId: z.string() })))
+  .handler(async ({ data }) => {
+    if (!isStripeConfigured()) {
+      throw ApiError.serviceUnavailable('Stripe is not configured')
+    }
+
+    const subscription = await stripe().subscriptions.update(data.subscriptionId, {
+      cancel_at_period_end: true,
+    })
+
+    logger.info('Subscription paused', { subscriptionId: data.subscriptionId })
+
+    return { subscription }
+  })
+
+/**
+ * Resume subscription (sets cancel_at_period_end to false)
+ */
+export const resumeSubscription = createServerFn({ method: 'POST' })
+  .middleware([authedMiddleware])
+  .validator(zodValidator(z.object({ subscriptionId: z.string() })))
+  .handler(async ({ data }) => {
+    if (!isStripeConfigured()) {
+      throw ApiError.serviceUnavailable('Stripe is not configured')
+    }
+
+    const subscription = await stripe().subscriptions.update(data.subscriptionId, {
+      cancel_at_period_end: false,
+    })
+
+    logger.info('Subscription resumed', { subscriptionId: data.subscriptionId })
+
+    return { subscription }
   })
 
 // ============================================================================

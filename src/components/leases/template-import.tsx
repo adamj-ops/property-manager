@@ -11,7 +11,7 @@ import {
   LuUpload,
   LuX,
   LuCheck,
-  LuAlertTriangle,
+  LuTriangleAlert,
 } from 'react-icons/lu'
 
 import { Badge } from '~/components/ui/badge'
@@ -319,7 +319,7 @@ export function TemplateImportDialog({
                   )}
                   {uploadResult.warnings && uploadResult.warnings.length > 0 && (
                     <div className="flex items-start gap-2 text-yellow-700 dark:text-yellow-400">
-                      <LuAlertTriangle className="size-4 mt-0.5" />
+                      <LuTriangleAlert className="size-4 mt-0.5" />
                       <div className="text-sm">
                         {uploadResult.warnings.map((w, i) => (
                           <p key={i}>{w}</p>

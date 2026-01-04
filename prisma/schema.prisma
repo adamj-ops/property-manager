@@ -384,7 +384,8 @@ model Tenant {
   preferredContactMethod String? @default("email")
 
   // Stripe Integration
-  stripeCustomerId String? @unique // Stripe customer ID for payment processing
+  stripeCustomerId    String? @unique // Stripe customer ID for payment processing
+  paymentFailureCount Int     @default(0) // Track consecutive payment failures for late fee escalation
 
   // User Account Link (for tenant portal access)
   userId String? @unique @db.Uuid
@@ -858,6 +859,13 @@ model Payment {
   // Stripe Integration
   stripePaymentIntentId String? @unique // Stripe payment intent ID
   stripeChargeId        String? // Stripe charge ID (for refunds)
+  stripePaymentMethodId String? // Payment method used for this payment
+  stripeFeeAmount       Decimal? @db.Decimal(10, 2) // Stripe processing fee
+  failureReason         String? // Reason for payment failure
+
+  // Refund tracking
+  refundedAt     DateTime? // When the payment was refunded
+  refundAmount   Decimal?  @db.Decimal(10, 2) // Amount refunded (supports partial refunds)
 
   // Processing
   processedAt   DateTime?
@@ -880,6 +888,23 @@ model Payment {
   @@index([paymentDate])
   @@index([status])
   @@map("payments")
+}
+
+// Stripe Webhook Event Tracking (for idempotency)
+model StripeWebhook {
+  id          String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  eventId     String   @unique // Stripe event ID (evt_xxx)
+  eventType   String   // Event type (e.g., payment_intent.succeeded)
+  processed   Boolean  @default(false)
+  processedAt DateTime?
+  payload     Json?    // Raw event payload for debugging
+  error       String?  // Error message if processing failed
+  createdAt   DateTime @default(now())
+
+  @@index([eventId])
+  @@index([eventType])
+  @@index([processed])
+  @@map("stripe_webhooks")
 }
 
 enum ExpenseCategory {

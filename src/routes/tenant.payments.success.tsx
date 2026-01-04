@@ -1,7 +1,7 @@
 'use client'
 
 import { createFileRoute, Link } from '@tanstack/react-router'
-import { LuCheckCircle, LuHome } from 'react-icons/lu'
+import { LuCircleCheck, LuHouse } from 'react-icons/lu'
 
 import { Button } from '~/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '~/components/ui/card'
@@ -20,7 +20,7 @@ function PaymentSuccessPage() {
       <Card className='border-green-500/20 bg-green-500/5'>
         <CardHeader className='text-center'>
           <div className='mx-auto mb-4 flex size-16 items-center justify-center rounded-full bg-green-500/10'>
-            <LuCheckCircle className='size-8 text-green-600' />
+            <LuCircleCheck className='size-8 text-green-600' />
           </div>
           <CardTitle className='text-2xl'>Payment Successful!</CardTitle>
           <CardDescription>Your payment has been processed successfully</CardDescription>
@@ -48,7 +48,7 @@ function PaymentSuccessPage() {
             </Button>
             <Button asChild className='flex-1'>
               <Link to='/tenant/dashboard'>
-                <LuHome className='mr-2 size-4' />
+                <LuHouse className='mr-2 size-4' />
                 Return to Dashboard
               </Link>
             </Button>

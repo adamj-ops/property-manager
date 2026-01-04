@@ -1,11 +1,11 @@
 # Linear Issues Checklist - Property Management
 
-**Last Updated:** January 2, 2026  
-**Project:** Property Management  
-**Team:** Property Management (EPM)  
-**Total Issues:** 76
+**Last Updated:** January 3, 2026
+**Project:** Property Management
+**Team:** Property Management (EPM)
+**Total Issues:** 77
 
-> **✅ All issues have been recreated in the EPM team with sequential EPM-001 through EPM-076 numbering.**
+> **✅ All issues have been recreated in the EPM team with sequential EPM-001 through EPM-077 numbering.**
 
 ## 🔍 Quick Reference
 
@@ -59,6 +59,7 @@
 | EPM-6 | Infrastructure: Background Jobs Setup (BullMQ/Redis) | Backlog | High | MVP | EPM-1, EPM-4 |
 | EPM-8 | Infrastructure: CI/CD Pipeline Setup | Backlog | High | MVP | None (parallel) |
 | EPM-9 | Testing: Testing Framework Setup | Backlog | High | MVP | EPM-7 |
+| EPM-77 | Infrastructure: Stripe Payment Integration | ✅ Done | High | MVP, Payments | EPM-1, EPM-4 |
 
 ### Medium Priority Issues
 
@@ -239,7 +240,7 @@
 ### By Status
 - **Backlog:** 76 issues
 - **In Progress:** 0 issues
-- **Done:** 0 issues
+- **Done:** 1 issue (EPM-77)
 
 ### By Priority
 - **Urgent (P0):** 4 infrastructure issues
@@ -249,7 +250,7 @@
 ### By Phase
 - **MVP (Phase 1):** ~40 issues
 - **Phase 2:** ~32 issues
-- **Infrastructure:** 13 issues
+- **Infrastructure:** 14 issues (including EPM-77)
 - **Documentation:** 3 issues
 
 ### Total Story Points
@@ -299,3 +300,100 @@ There are currently **two Linear projects named \"Property Management\"** in the
 
 This repo and these checklists are intended to track against the **EPM** project/issue set.
 See the Linear document: `https://linear.app/everyday-co/document/repo-audit-vs-linear-checklist-jan-2-2026-50221c979585`
+
+---
+
+## ✅ Completed Issues Detail
+
+### EPM-77: Infrastructure: Stripe Payment Integration
+
+**Status:** ✅ Done (January 3, 2026)
+**Priority:** High
+**Labels:** MVP, Payments, Infrastructure
+
+#### Implementation Summary
+
+Full Stripe payment integration per technical specification. Supports one-time payments (Payment Intents), recurring rent (Subscriptions), and Stripe Checkout hosted pages.
+
+#### Completed Checklist
+
+**Database Schema:**
+- [x] Payment model: `stripePaymentIntentId`, `stripeChargeId`, `stripePaymentMethodId`, `stripeFeeAmount`, `failureReason`, `refundedAt`, `refundAmount`
+- [x] Tenant model: `stripeCustomerId`, `paymentFailureCount`
+- [x] Lease model: `stripeSubscriptionId`
+- [x] StripeWebhook model for idempotency tracking (event_id, event_type, processed, processed_at, payload, error)
+- [x] Migration `006_stripe_schema_extensions.sql`
+
+**API Endpoints (stripe.api.ts):**
+- [x] `createOrGetStripeCustomer` - Create/retrieve Stripe customer
+- [x] `getStripeCustomer` - Get customer details
+- [x] `createSetupIntent` - Setup intent for payment method attachment
+- [x] `listPaymentMethods` - List tenant payment methods (card, ACH)
+- [x] `deletePaymentMethod` - Remove payment method
+- [x] `setDefaultPaymentMethod` - Set default for invoices
+- [x] `createPaymentIntent` - One-time payment intent
+- [x] `createCheckoutSession` - Stripe Checkout hosted page
+- [x] `createSubscription` - Recurring rent subscription
+- [x] `updateSubscription` - Modify subscription
+- [x] `cancelSubscription` - Cancel subscription
+- [x] `getSubscription` - Get by lease ID
+- [x] `getSubscriptionById` - Get by subscription ID
+- [x] `pauseSubscription` - Set cancel_at_period_end
+- [x] `resumeSubscription` - Resume paused subscription
+- [x] `refundPayment` - Process full/partial refunds
+
+**Webhook Handlers (webhooks.stripe.ts):**
+- [x] `payment_intent.succeeded` - Record payment, send receipt
+- [x] `payment_intent.payment_failed` - Handle failure, notify tenant/manager
+- [x] `invoice.payment_succeeded` - Record subscription payment
+- [x] `invoice.payment_failed` - Handle subscription failure
+- [x] `customer.subscription.updated` - Sync subscription changes
+- [x] `customer.subscription.deleted` - Clear subscription from lease
+- [x] `charge.refunded` - Sync external refunds
+- [x] Webhook idempotency via stripe_webhooks table
+- [x] Webhook signature verification
+
+**Email Notifications:**
+- [x] Payment receipt email (PaymentReceiptEmail)
+- [x] Payment failure email (PaymentFailedEmail)
+- [x] Refund notification email
+- [x] Notifications to both tenant and property manager
+
+**Validation (lib/validations/stripe.ts):**
+- [x] createPaymentIntentSchema
+- [x] createSubscriptionSchema
+- [x] updateSubscriptionSchema
+- [x] webhookEventSchema
+- [x] paymentMethodTypeSchema
+- [x] attachPaymentMethodSchema
+- [x] detachPaymentMethodSchema
+- [x] refundPaymentSchema
+- [x] createCustomerSchema
+- [x] createCheckoutSessionSchema
+- [x] Stripe ID validation schemas (cus_, pi_, sub_, ch_, pm_, seti_, re_, evt_)
+- [x] Amount helpers: `validatePaymentAmount`, `dollarsToCents`, `centsToDollars`
+
+**Security & Compliance:**
+- [x] Test/Live mode safety checks (requires STRIPE_LIVE_MODE=true for live keys)
+- [x] PCI compliance via Stripe.js tokenization
+- [x] Webhook signature verification
+- [x] Minnesota compliance: $50 min / $500 max payment validation
+- [x] Payment failure tracking for late fee escalation (EPM-37 integration)
+
+**Files Modified/Created:**
+- `prisma/schema.prisma` - Payment, Tenant, StripeWebhook models
+- `src/server/stripe.ts` - Stripe client initialization
+- `src/services/stripe.api.ts` - All API endpoints
+- `src/routes/api/webhooks.stripe.ts` - Webhook handlers
+- `src/lib/validations/stripe.ts` - Zod validation schemas
+- `src/emails/payment-failed.tsx` - Failure notification template
+- `src/routes/tenant.payments.success.tsx` - Success redirect page
+- `src/routes/tenant.payments.cancel.tsx` - Cancel redirect page
+- `supabase/migrations/005_add_payment_failure_count.sql`
+- `supabase/migrations/006_stripe_schema_extensions.sql`
+
+**Required Environment Variables:**
+- `STRIPE_SECRET_KEY` - Stripe API secret key (test or live)
+- `STRIPE_WEBHOOK_SECRET` - Webhook endpoint signing secret
+- `STRIPE_LIVE_MODE` - Set to "true" for production (safety gate)
+- `VITE_APP_BASE_URL` - App URL for Checkout redirects

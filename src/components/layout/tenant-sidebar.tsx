@@ -113,9 +113,10 @@ function SidebarAppearance() {
                 size='lg'
                 className='data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground'
               >
-                {themeOptions.find((option) => option.value === theme)?.Icon && (
-                  <themeOptions.find((option) => option.value === theme)!.Icon />
-                )}
+                {(() => {
+                  const ThemeIcon = themeOptions.find((option) => option.value === theme)?.Icon
+                  return ThemeIcon ? <ThemeIcon /> : null
+                })()}
                 <span>{t(`sidebar.${theme}`)}</span>
               </SidebarMenuButton>
             </DropdownMenuTrigger>
