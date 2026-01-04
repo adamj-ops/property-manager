@@ -79,7 +79,53 @@ export const useUpdateProperty = () => {
   return useMutation({
     mutationFn: ({ id, ...data }: UpdatePropertyInput & { id: string }) =>
       updateProperty({ data: { id, ...data } }),
-    onSuccess: (_, variables) => {
+    // Optimistic update
+    onMutate: async (newData) => {
+      // Cancel any outgoing refetches
+      await queryClient.cancelQueries({ queryKey: propertyKeys.lists() })
+      await queryClient.cancelQueries({ queryKey: propertyKeys.detail(newData.id) })
+
+      // Snapshot the previous value
+      const previousLists = queryClient.getQueriesData({ queryKey: propertyKeys.lists() })
+      const previousDetail = queryClient.getQueryData(propertyKeys.detail(newData.id))
+
+      // Optimistically update lists
+      queryClient.setQueriesData(
+        { queryKey: propertyKeys.lists() },
+        (old: { properties: unknown[]; total: number } | undefined) => {
+          if (!old) return old
+          return {
+            ...old,
+            properties: old.properties.map((p: { id: string }) =>
+              p.id === newData.id ? { ...p, ...newData } : p
+            ),
+          }
+        }
+      )
+
+      // Optimistically update detail
+      if (previousDetail) {
+        queryClient.setQueryData(propertyKeys.detail(newData.id), {
+          ...previousDetail,
+          ...newData,
+        })
+      }
+
+      return { previousLists, previousDetail }
+    },
+    onError: (_, newData, context) => {
+      // Rollback on error
+      if (context?.previousLists) {
+        context.previousLists.forEach(([queryKey, data]) => {
+          queryClient.setQueryData(queryKey, data)
+        })
+      }
+      if (context?.previousDetail) {
+        queryClient.setQueryData(propertyKeys.detail(newData.id), context.previousDetail)
+      }
+    },
+    onSettled: (_, __, variables) => {
+      // Always refetch to ensure consistency
       queryClient.invalidateQueries({ queryKey: propertyKeys.detail(variables.id) })
       queryClient.invalidateQueries({ queryKey: propertyKeys.lists() })
     },

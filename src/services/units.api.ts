@@ -9,6 +9,7 @@ import {
   unitFiltersSchema,
   unitIdSchema,
   bulkCreateUnitsSchema,
+  bulkDeleteUnitsSchema,
 } from '~/services/units.schema'
 
 // Get all units (with optional property filter)
@@ -210,4 +211,65 @@ export const deleteUnit = createServerFn({ method: 'POST' })
     })
 
     return { success: true }
+  })
+
+// Bulk delete units
+export const bulkDeleteUnits = createServerFn({ method: 'POST' })
+  .middleware([authedMiddleware])
+  .validator(zodValidator(bulkDeleteUnitsSchema))
+  .handler(async ({ context, data }) => {
+    const { ids } = data
+
+    // Verify all units belong to user's properties
+    const units = await prisma.unit.findMany({
+      where: {
+        id: { in: ids },
+        property: { managerId: context.auth.user.id },
+      },
+      select: { id: true, propertyId: true },
+    })
+
+    if (units.length !== ids.length) {
+      throw new Error('One or more units not found or not authorized')
+    }
+
+    // Check for active leases
+    const unitsWithActiveLeases = await prisma.unit.findMany({
+      where: {
+        id: { in: ids },
+        leases: { some: { status: 'ACTIVE' } },
+      },
+      select: { id: true, unitNumber: true },
+    })
+
+    if (unitsWithActiveLeases.length > 0) {
+      const unitNumbers = unitsWithActiveLeases.map((u) => u.unitNumber).join(', ')
+      throw new Error(`Cannot delete units with active leases: ${unitNumbers}`)
+    }
+
+    // Group units by property for count updates
+    const propertyUnitCounts = units.reduce(
+      (acc, unit) => {
+        acc[unit.propertyId] = (acc[unit.propertyId] || 0) + 1
+        return acc
+      },
+      {} as Record<string, number>
+    )
+
+    // Delete units
+    await prisma.unit.deleteMany({
+      where: { id: { in: ids } },
+    })
+
+    // Update property unit counts
+    await Promise.all(
+      Object.entries(propertyUnitCounts).map(([propertyId, count]) =>
+        prisma.property.update({
+          where: { id: propertyId },
+          data: { totalUnits: { decrement: count } },
+        })
+      )
+    )
+
+    return { deletedCount: ids.length }
   })

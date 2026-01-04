@@ -12,6 +12,7 @@ import {
   bulkCreateUnits,
   updateUnit,
   deleteUnit,
+  bulkDeleteUnits,
 } from '~/services/units.api'
 import { propertyKeys } from '~/services/properties.query'
 import type {
@@ -19,6 +20,7 @@ import type {
   UpdateUnitInput,
   UnitFilters,
   BulkCreateUnitsInput,
+  BulkDeleteUnitsInput,
 } from '~/services/units.schema'
 
 // Query keys
@@ -83,7 +85,53 @@ export const useUpdateUnit = () => {
   return useMutation({
     mutationFn: ({ id, ...data }: UpdateUnitInput & { id: string }) =>
       updateUnit({ data: { id, ...data } }),
-    onSuccess: (_, variables) => {
+    // Optimistic update
+    onMutate: async (newData) => {
+      // Cancel any outgoing refetches
+      await queryClient.cancelQueries({ queryKey: unitKeys.lists() })
+      await queryClient.cancelQueries({ queryKey: unitKeys.detail(newData.id) })
+
+      // Snapshot the previous value
+      const previousLists = queryClient.getQueriesData({ queryKey: unitKeys.lists() })
+      const previousDetail = queryClient.getQueryData(unitKeys.detail(newData.id))
+
+      // Optimistically update lists
+      queryClient.setQueriesData(
+        { queryKey: unitKeys.lists() },
+        (old: { units: unknown[]; total: number } | undefined) => {
+          if (!old) return old
+          return {
+            ...old,
+            units: old.units.map((u: { id: string }) =>
+              u.id === newData.id ? { ...u, ...newData } : u
+            ),
+          }
+        }
+      )
+
+      // Optimistically update detail
+      if (previousDetail) {
+        queryClient.setQueryData(unitKeys.detail(newData.id), {
+          ...previousDetail,
+          ...newData,
+        })
+      }
+
+      return { previousLists, previousDetail }
+    },
+    onError: (_, newData, context) => {
+      // Rollback on error
+      if (context?.previousLists) {
+        context.previousLists.forEach(([queryKey, data]) => {
+          queryClient.setQueryData(queryKey, data)
+        })
+      }
+      if (context?.previousDetail) {
+        queryClient.setQueryData(unitKeys.detail(newData.id), context.previousDetail)
+      }
+    },
+    onSettled: (_, __, variables) => {
+      // Always refetch to ensure consistency
       queryClient.invalidateQueries({ queryKey: unitKeys.detail(variables.id) })
       queryClient.invalidateQueries({ queryKey: unitKeys.lists() })
     },
@@ -95,6 +143,18 @@ export const useDeleteUnit = () => {
 
   return useMutation({
     mutationFn: (id: string) => deleteUnit({ data: { id } }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: unitKeys.all })
+      queryClient.invalidateQueries({ queryKey: propertyKeys.all })
+    },
+  })
+}
+
+export const useBulkDeleteUnits = () => {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: (data: BulkDeleteUnitsInput) => bulkDeleteUnits({ data }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: unitKeys.all })
       queryClient.invalidateQueries({ queryKey: propertyKeys.all })

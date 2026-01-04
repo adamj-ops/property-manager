@@ -62,8 +62,13 @@ export const bulkCreateUnitsSchema = z.object({
   units: z.array(createUnitSchema.omit({ propertyId: true })).min(1).max(100),
 })
 
+export const bulkDeleteUnitsSchema = z.object({
+  ids: z.array(z.string().uuid()).min(1, 'Select at least one unit').max(100),
+})
+
 export type UnitStatus = z.infer<typeof unitStatusEnum>
 export type CreateUnitInput = z.infer<typeof createUnitSchema>
 export type UpdateUnitInput = z.infer<typeof updateUnitSchema>
 export type UnitFilters = z.infer<typeof unitFiltersSchema>
 export type BulkCreateUnitsInput = z.infer<typeof bulkCreateUnitsSchema>
+export type BulkDeleteUnitsInput = z.infer<typeof bulkDeleteUnitsSchema>

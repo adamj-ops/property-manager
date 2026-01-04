@@ -1,11 +1,12 @@
 import { createFileRoute } from '@tanstack/react-router'
 import { Suspense, useCallback, useState } from 'react'
 import { toast } from 'sonner'
-import { LuArrowLeft, LuFilter, LuHouse, LuLayoutGrid, LuList, LuLoaderCircle, LuPlus, LuSearch, LuTrash2, LuPencil } from 'react-icons/lu'
+import { LuArrowLeft, LuFilter, LuHouse, LuLayoutGrid, LuList, LuLoaderCircle, LuPlus, LuSearch, LuTrash2, LuPencil, LuX } from 'react-icons/lu'
 
 import { Badge } from '~/components/ui/badge'
 import { Button } from '~/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '~/components/ui/card'
+import { Checkbox } from '~/components/ui/checkbox'
 import {
   Dialog,
   DialogContent,
@@ -41,7 +42,7 @@ import {
 } from '~/components/ui/table'
 import { Typography } from '~/components/ui/typography'
 import { usePropertyQuery } from '~/services/properties.query'
-import { useUnitsQuery, useDeleteUnit, useUpdateUnit } from '~/services/units.query'
+import { useUnitsQuery, useDeleteUnit, useUpdateUnit, useBulkDeleteUnits } from '~/services/units.query'
 import type { UnitStatus } from '~/services/units.schema'
 
 export const Route = createFileRoute('/app/properties/$propertyId/units')({
@@ -95,12 +96,15 @@ function UnitsContent({ propertyId }: { propertyId: string }) {
   const { data } = useUnitsQuery({ propertyId })
   const deleteUnit = useDeleteUnit()
   const updateUnit = useUpdateUnit()
+  const bulkDeleteUnits = useBulkDeleteUnits()
 
   const [searchQuery, setSearchQuery] = useState('')
   const [statusFilter, setStatusFilter] = useState<string>('all')
   const [viewMode, setViewMode] = useState<'grid' | 'table'>('table')
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
   const [unitToDelete, setUnitToDelete] = useState<Unit | null>(null)
+  const [selectedUnitIds, setSelectedUnitIds] = useState<Set<string>>(new Set())
+  const [bulkDeleteDialogOpen, setBulkDeleteDialogOpen] = useState(false)
 
   const units = data.units as Unit[]
 
@@ -130,6 +134,37 @@ function UnitsContent({ propertyId }: { propertyId: string }) {
     [updateUnit]
   )
 
+  // Selection handlers
+  const toggleUnitSelection = useCallback((unitId: string) => {
+    setSelectedUnitIds((prev) => {
+      const next = new Set(prev)
+      if (next.has(unitId)) {
+        next.delete(unitId)
+      } else {
+        next.add(unitId)
+      }
+      return next
+    })
+  }, [])
+
+  const clearSelection = useCallback(() => {
+    setSelectedUnitIds(new Set())
+  }, [])
+
+  // Bulk delete handler
+  const handleBulkDeleteConfirm = async () => {
+    try {
+      const ids = Array.from(selectedUnitIds)
+      const result = await bulkDeleteUnits.mutateAsync({ ids })
+      toast.success(`Deleted ${result.deletedCount} unit(s)`)
+      setSelectedUnitIds(new Set())
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : 'Failed to delete units')
+    } finally {
+      setBulkDeleteDialogOpen(false)
+    }
+  }
+
   // Filter units
   const filteredUnits = units.filter((unit) => {
     const matchesSearch =
@@ -138,6 +173,22 @@ function UnitsContent({ propertyId }: { propertyId: string }) {
     const matchesStatus = statusFilter === 'all' || unit.status === statusFilter
     return matchesSearch && matchesStatus
   })
+
+  // Toggle all selection (defined after filteredUnits)
+  const toggleAllSelection = () => {
+    if (selectedUnitIds.size === filteredUnits.length) {
+      setSelectedUnitIds(new Set())
+    } else {
+      setSelectedUnitIds(new Set(filteredUnits.map((u) => u.id)))
+    }
+  }
+
+  // Get selected units that can be deleted (no active leases)
+  const selectedUnits = filteredUnits.filter((u) => selectedUnitIds.has(u.id))
+  const selectedWithActiveLeases = selectedUnits.filter((u) =>
+    u.leases.some((l) => l.status === 'ACTIVE')
+  )
+  const canBulkDelete = selectedUnits.length > 0 && selectedWithActiveLeases.length === 0
 
   // Calculate stats
   const totalUnits = units.length
@@ -268,6 +319,40 @@ function UnitsContent({ propertyId }: { propertyId: string }) {
         </div>
       </div>
 
+      {/* Bulk Actions Bar */}
+      {selectedUnitIds.size > 0 && (
+        <div className='flex items-center gap-3 rounded-lg border bg-muted/50 px-4 py-2'>
+          <div className='flex items-center gap-2'>
+            <div className='flex size-6 items-center justify-center rounded-full bg-primary text-xs font-medium text-primary-foreground'>
+              {selectedUnitIds.size}
+            </div>
+            <span className='text-sm font-medium'>
+              {selectedUnitIds.size === 1 ? 'unit selected' : 'units selected'}
+            </span>
+          </div>
+          <div className='h-4 w-px bg-border' />
+          <Button
+            variant='destructive'
+            size='sm'
+            onClick={() => setBulkDeleteDialogOpen(true)}
+            disabled={!canBulkDelete}
+          >
+            <LuTrash2 className='mr-2 size-4' />
+            Delete
+          </Button>
+          {selectedWithActiveLeases.length > 0 && (
+            <span className='text-xs text-muted-foreground'>
+              {selectedWithActiveLeases.length} unit(s) have active leases
+            </span>
+          )}
+          <div className='flex-1' />
+          <Button variant='ghost' size='sm' onClick={clearSelection}>
+            <LuX className='mr-1 size-4' />
+            Clear
+          </Button>
+        </div>
+      )}
+
       {/* Units List */}
       {filteredUnits.length === 0 ? (
         <Card>
@@ -295,6 +380,13 @@ function UnitsContent({ propertyId }: { propertyId: string }) {
             <Table>
               <TableHeader>
                 <TableRow>
+                  <TableHead className='w-10'>
+                    <Checkbox
+                      checked={selectedUnitIds.size === filteredUnits.length && filteredUnits.length > 0}
+                      onCheckedChange={toggleAllSelection}
+                      aria-label='Select all units'
+                    />
+                  </TableHead>
                   <TableHead className='w-24'>Unit</TableHead>
                   <TableHead>Status</TableHead>
                   <TableHead className='w-20'>Beds</TableHead>
@@ -312,6 +404,8 @@ function UnitsContent({ propertyId }: { propertyId: string }) {
                     key={unit.id}
                     unit={unit}
                     propertyId={propertyId}
+                    isSelected={selectedUnitIds.has(unit.id)}
+                    onToggleSelect={() => toggleUnitSelection(unit.id)}
                     onStatusChange={handleStatusChange}
                     onRentChange={handleRentChange}
                     onDelete={() => handleDeleteClick(unit)}
@@ -355,6 +449,38 @@ function UnitsContent({ propertyId }: { propertyId: string }) {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Bulk Delete Dialog */}
+      <Dialog open={bulkDeleteDialogOpen} onOpenChange={setBulkDeleteDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Delete {selectedUnitIds.size} Unit(s)</DialogTitle>
+            <DialogDescription>
+              Are you sure you want to delete {selectedUnitIds.size} unit(s)? This action
+              cannot be undone.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button variant='outline' onClick={() => setBulkDeleteDialogOpen(false)}>
+              Cancel
+            </Button>
+            <Button
+              variant='destructive'
+              onClick={handleBulkDeleteConfirm}
+              disabled={bulkDeleteUnits.isPending}
+            >
+              {bulkDeleteUnits.isPending ? (
+                <>
+                  <LuLoaderCircle className='mr-2 size-4 animate-spin' />
+                  Deleting...
+                </>
+              ) : (
+                'Delete'
+              )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }
@@ -363,12 +489,14 @@ function UnitsContent({ propertyId }: { propertyId: string }) {
 interface UnitTableRowProps {
   unit: Unit
   propertyId: string
+  isSelected: boolean
+  onToggleSelect: () => void
   onStatusChange: (unit: Unit, newStatus: UnitStatus) => Promise<void>
   onRentChange: (unit: Unit, field: 'marketRent' | 'currentRent', value: number) => Promise<void>
   onDelete: () => void
 }
 
-function UnitTableRow({ unit, propertyId, onStatusChange, onRentChange, onDelete }: UnitTableRowProps) {
+function UnitTableRow({ unit, propertyId, isSelected, onToggleSelect, onStatusChange, onRentChange, onDelete }: UnitTableRowProps) {
   const [editingField, setEditingField] = useState<string | null>(null)
   const [editValue, setEditValue] = useState('')
   const [isSaving, setIsSaving] = useState(false)
@@ -406,7 +534,14 @@ function UnitTableRow({ unit, propertyId, onStatusChange, onRentChange, onDelete
   }
 
   return (
-    <TableRow className='hover:bg-muted/30'>
+    <TableRow className={`hover:bg-muted/30 ${isSelected ? 'bg-muted/50' : ''}`}>
+      <TableCell>
+        <Checkbox
+          checked={isSelected}
+          onCheckedChange={onToggleSelect}
+          aria-label={`Select unit ${unit.unitNumber}`}
+        />
+      </TableCell>
       <TableCell className='font-medium'>
         <Link
           to='/app/properties/$propertyId/units/$unitId/edit'
