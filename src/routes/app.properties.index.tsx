@@ -1,7 +1,7 @@
 'use client'
 
 import { createFileRoute } from '@tanstack/react-router'
-import { Suspense, useState } from 'react'
+import { Suspense, useCallback, useState } from 'react'
 import { toast } from 'sonner'
 import type { ColumnDef } from '@tanstack/react-table'
 import {
@@ -26,6 +26,8 @@ import {
   DataTableColumnHeader,
   DataTableRowActions,
   DataTableToolbar,
+  EditableCell,
+  EditableBadgeCell,
 } from '~/components/ui/data-table'
 import {
   DropdownMenuItem,
@@ -45,6 +47,7 @@ import {
   usePropertiesQuery,
   usePropertyStatsQuery,
   useDeleteProperty,
+  useUpdateProperty,
 } from '~/services/properties.query'
 import type { PropertyType, PropertyStatus } from '~/services/properties.schema'
 
@@ -182,6 +185,7 @@ function StatsCardsSkeleton() {
 function PropertiesTable() {
   const { data } = usePropertiesQuery()
   const deleteProperty = useDeleteProperty()
+  const updateProperty = useUpdateProperty()
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
   const [propertyToDelete, setPropertyToDelete] = useState<Property | null>(null)
 
@@ -206,6 +210,42 @@ function PropertiesTable() {
     }
   }
 
+  // Handler for inline cell edits
+  const handleCellSave = useCallback(
+    async (property: Property, columnId: string, value: unknown) => {
+      try {
+        await updateProperty.mutateAsync({
+          id: property.id,
+          [columnId]: value,
+        })
+        toast.success('Updated successfully')
+      } catch (error) {
+        toast.error(error instanceof Error ? error.message : 'Failed to update')
+        throw error // Re-throw to trigger revert in EditableCell
+      }
+    },
+    [updateProperty]
+  )
+
+  // Property type options for inline editing
+  const propertyTypeOptions = [
+    { value: 'SINGLE_FAMILY', label: 'Single Family' },
+    { value: 'MULTI_FAMILY', label: 'Multi-Family' },
+    { value: 'APARTMENT', label: 'Apartment' },
+    { value: 'CONDO', label: 'Condo' },
+    { value: 'TOWNHOUSE', label: 'Townhouse' },
+    { value: 'COMMERCIAL', label: 'Commercial' },
+    { value: 'MIXED_USE', label: 'Mixed Use' },
+  ]
+
+  // Property status options for inline editing
+  const propertyStatusOptions = [
+    { value: 'ACTIVE', label: 'Active', variant: 'default' as const, className: 'bg-green-500' },
+    { value: 'INACTIVE', label: 'Inactive', variant: 'secondary' as const },
+    { value: 'UNDER_RENOVATION', label: 'Under Renovation', variant: 'outline' as const, className: 'border-yellow-500 text-yellow-600' },
+    { value: 'FOR_SALE', label: 'For Sale', variant: 'outline' as const, className: 'border-blue-500 text-blue-600' },
+  ]
+
   // Column definitions for data table
   const columns: ColumnDef<Property>[] = [
     {
@@ -213,22 +253,25 @@ function PropertiesTable() {
       header: ({ column }) => (
         <DataTableColumnHeader column={column} title='Property' />
       ),
-      cell: ({ row }) => (
+      cell: (context) => (
         <div className='flex items-center gap-3'>
-          <div className='flex size-10 items-center justify-center rounded-lg bg-primary/10'>
+          <Link
+            to='/app/properties/$propertyId'
+            params={{ propertyId: context.row.original.id }}
+            className='flex size-10 items-center justify-center rounded-lg bg-primary/10 hover:bg-primary/20 transition-colors'
+          >
             <LuBuilding2 className='size-5 text-primary' />
-          </div>
-          <div>
-            <Link
-              to='/app/properties/$propertyId'
-              params={{ propertyId: row.original.id }}
-              className='font-medium hover:underline'
-            >
-              {row.original.name}
-            </Link>
+          </Link>
+          <div className='flex-1'>
+            <EditableCell
+              {...context}
+              type='text'
+              onSave={handleCellSave}
+              className='font-medium'
+            />
             <div className='flex items-center gap-1 text-xs text-muted-foreground'>
               <LuMapPin className='size-3' />
-              {row.original.city}, {row.original.state}
+              {context.row.original.city}, {context.row.original.state}
             </div>
           </div>
         </div>
@@ -298,27 +341,35 @@ function PropertiesTable() {
       },
     },
     {
+      accessorKey: 'type',
+      header: 'Type',
+      cell: (context) => (
+        <EditableCell
+          {...context}
+          type='select'
+          options={propertyTypeOptions}
+          onSave={handleCellSave}
+        />
+      ),
+    },
+    {
       accessorKey: 'status',
       header: 'Status',
-      cell: ({ row }) => {
-        const vacantUnits = row.original.units.filter((u) => u.status === 'VACANT').length
-        const hasIssues = vacantUnits > 0
+      cell: (context) => {
+        const vacantUnits = context.row.original.units.filter((u) => u.status === 'VACANT').length
 
         return (
-          <div className='flex flex-wrap gap-1'>
+          <div className='flex flex-wrap items-center gap-2'>
+            <EditableBadgeCell
+              {...context}
+              options={propertyStatusOptions}
+              onSave={handleCellSave}
+            />
             {vacantUnits > 0 && (
               <Badge variant='secondary' className='text-xs'>
                 {vacantUnits} vacant
               </Badge>
             )}
-            {!hasIssues && (
-              <Badge variant='outline' className='border-green-500 text-green-600 text-xs'>
-                Fully occupied
-              </Badge>
-            )}
-            <Badge variant='outline' className='text-xs'>
-              {formatPropertyType(row.original.type)}
-            </Badge>
           </div>
         )
       },

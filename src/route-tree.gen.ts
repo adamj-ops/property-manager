@@ -59,7 +59,9 @@ import { Route as AppFinancialsPaymentsImport } from './routes/app.financials.pa
 import { Route as AppFinancialsExpensesImport } from './routes/app.financials.expenses'
 import { Route as AppPropertiesPropertyIdIndexImport } from './routes/app.properties.$propertyId.index'
 import { Route as AppPropertiesPropertyIdUnitsImport } from './routes/app.properties.$propertyId.units'
+import { Route as AppPropertiesPropertyIdEditImport } from './routes/app.properties.$propertyId.edit'
 import { Route as AppPropertiesPropertyIdUnitsNewImport } from './routes/app.properties.$propertyId.units.new'
+import { Route as AppPropertiesPropertyIdUnitsUnitIdEditImport } from './routes/app.properties.$propertyId.units.$unitId.edit'
 
 // Create/Update Routes
 
@@ -353,10 +355,24 @@ const AppPropertiesPropertyIdUnitsRoute =
     getParentRoute: () => AppPropertiesPropertyIdRoute,
   } as any)
 
+const AppPropertiesPropertyIdEditRoute =
+  AppPropertiesPropertyIdEditImport.update({
+    id: '/edit',
+    path: '/edit',
+    getParentRoute: () => AppPropertiesPropertyIdRoute,
+  } as any)
+
 const AppPropertiesPropertyIdUnitsNewRoute =
   AppPropertiesPropertyIdUnitsNewImport.update({
     id: '/new',
     path: '/new',
+    getParentRoute: () => AppPropertiesPropertyIdUnitsRoute,
+  } as any)
+
+const AppPropertiesPropertyIdUnitsUnitIdEditRoute =
+  AppPropertiesPropertyIdUnitsUnitIdEditImport.update({
+    id: '/$unitId/edit',
+    path: '/$unitId/edit',
     getParentRoute: () => AppPropertiesPropertyIdUnitsRoute,
   } as any)
 
@@ -686,6 +702,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppTenantsIndexImport
       parentRoute: typeof AppTenantsImport
     }
+    '/app/properties/$propertyId/edit': {
+      id: '/app/properties/$propertyId/edit'
+      path: '/edit'
+      fullPath: '/app/properties/$propertyId/edit'
+      preLoaderRoute: typeof AppPropertiesPropertyIdEditImport
+      parentRoute: typeof AppPropertiesPropertyIdImport
+    }
     '/app/properties/$propertyId/units': {
       id: '/app/properties/$propertyId/units'
       path: '/units'
@@ -705,6 +728,13 @@ declare module '@tanstack/react-router' {
       path: '/new'
       fullPath: '/app/properties/$propertyId/units/new'
       preLoaderRoute: typeof AppPropertiesPropertyIdUnitsNewImport
+      parentRoute: typeof AppPropertiesPropertyIdUnitsImport
+    }
+    '/app/properties/$propertyId/units/$unitId/edit': {
+      id: '/app/properties/$propertyId/units/$unitId/edit'
+      path: '/$unitId/edit'
+      fullPath: '/app/properties/$propertyId/units/$unitId/edit'
+      preLoaderRoute: typeof AppPropertiesPropertyIdUnitsUnitIdEditImport
       parentRoute: typeof AppPropertiesPropertyIdUnitsImport
     }
   }
@@ -776,11 +806,14 @@ const AppMaintenanceRouteWithChildren = AppMaintenanceRoute._addFileChildren(
 
 interface AppPropertiesPropertyIdUnitsRouteChildren {
   AppPropertiesPropertyIdUnitsNewRoute: typeof AppPropertiesPropertyIdUnitsNewRoute
+  AppPropertiesPropertyIdUnitsUnitIdEditRoute: typeof AppPropertiesPropertyIdUnitsUnitIdEditRoute
 }
 
 const AppPropertiesPropertyIdUnitsRouteChildren: AppPropertiesPropertyIdUnitsRouteChildren =
   {
     AppPropertiesPropertyIdUnitsNewRoute: AppPropertiesPropertyIdUnitsNewRoute,
+    AppPropertiesPropertyIdUnitsUnitIdEditRoute:
+      AppPropertiesPropertyIdUnitsUnitIdEditRoute,
   }
 
 const AppPropertiesPropertyIdUnitsRouteWithChildren =
@@ -789,12 +822,14 @@ const AppPropertiesPropertyIdUnitsRouteWithChildren =
   )
 
 interface AppPropertiesPropertyIdRouteChildren {
+  AppPropertiesPropertyIdEditRoute: typeof AppPropertiesPropertyIdEditRoute
   AppPropertiesPropertyIdUnitsRoute: typeof AppPropertiesPropertyIdUnitsRouteWithChildren
   AppPropertiesPropertyIdIndexRoute: typeof AppPropertiesPropertyIdIndexRoute
 }
 
 const AppPropertiesPropertyIdRouteChildren: AppPropertiesPropertyIdRouteChildren =
   {
+    AppPropertiesPropertyIdEditRoute: AppPropertiesPropertyIdEditRoute,
     AppPropertiesPropertyIdUnitsRoute:
       AppPropertiesPropertyIdUnitsRouteWithChildren,
     AppPropertiesPropertyIdIndexRoute: AppPropertiesPropertyIdIndexRoute,
@@ -979,9 +1014,11 @@ export interface FileRoutesByFullPath {
   '/app/maintenance/': typeof AppMaintenanceIndexRoute
   '/app/properties/': typeof AppPropertiesIndexRoute
   '/app/tenants/': typeof AppTenantsIndexRoute
+  '/app/properties/$propertyId/edit': typeof AppPropertiesPropertyIdEditRoute
   '/app/properties/$propertyId/units': typeof AppPropertiesPropertyIdUnitsRouteWithChildren
   '/app/properties/$propertyId/': typeof AppPropertiesPropertyIdIndexRoute
   '/app/properties/$propertyId/units/new': typeof AppPropertiesPropertyIdUnitsNewRoute
+  '/app/properties/$propertyId/units/$unitId/edit': typeof AppPropertiesPropertyIdUnitsUnitIdEditRoute
 }
 
 export interface FileRoutesByTo {
@@ -1025,9 +1062,11 @@ export interface FileRoutesByTo {
   '/app/maintenance': typeof AppMaintenanceIndexRoute
   '/app/properties': typeof AppPropertiesIndexRoute
   '/app/tenants': typeof AppTenantsIndexRoute
+  '/app/properties/$propertyId/edit': typeof AppPropertiesPropertyIdEditRoute
   '/app/properties/$propertyId/units': typeof AppPropertiesPropertyIdUnitsRouteWithChildren
   '/app/properties/$propertyId': typeof AppPropertiesPropertyIdIndexRoute
   '/app/properties/$propertyId/units/new': typeof AppPropertiesPropertyIdUnitsNewRoute
+  '/app/properties/$propertyId/units/$unitId/edit': typeof AppPropertiesPropertyIdUnitsUnitIdEditRoute
 }
 
 export interface FileRoutesById {
@@ -1078,9 +1117,11 @@ export interface FileRoutesById {
   '/app/maintenance/': typeof AppMaintenanceIndexRoute
   '/app/properties/': typeof AppPropertiesIndexRoute
   '/app/tenants/': typeof AppTenantsIndexRoute
+  '/app/properties/$propertyId/edit': typeof AppPropertiesPropertyIdEditRoute
   '/app/properties/$propertyId/units': typeof AppPropertiesPropertyIdUnitsRouteWithChildren
   '/app/properties/$propertyId/': typeof AppPropertiesPropertyIdIndexRoute
   '/app/properties/$propertyId/units/new': typeof AppPropertiesPropertyIdUnitsNewRoute
+  '/app/properties/$propertyId/units/$unitId/edit': typeof AppPropertiesPropertyIdUnitsUnitIdEditRoute
 }
 
 export interface FileRouteTypes {
@@ -1132,9 +1173,11 @@ export interface FileRouteTypes {
     | '/app/maintenance/'
     | '/app/properties/'
     | '/app/tenants/'
+    | '/app/properties/$propertyId/edit'
     | '/app/properties/$propertyId/units'
     | '/app/properties/$propertyId/'
     | '/app/properties/$propertyId/units/new'
+    | '/app/properties/$propertyId/units/$unitId/edit'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -1177,9 +1220,11 @@ export interface FileRouteTypes {
     | '/app/maintenance'
     | '/app/properties'
     | '/app/tenants'
+    | '/app/properties/$propertyId/edit'
     | '/app/properties/$propertyId/units'
     | '/app/properties/$propertyId'
     | '/app/properties/$propertyId/units/new'
+    | '/app/properties/$propertyId/units/$unitId/edit'
   id:
     | '__root__'
     | '/'
@@ -1228,9 +1273,11 @@ export interface FileRouteTypes {
     | '/app/maintenance/'
     | '/app/properties/'
     | '/app/tenants/'
+    | '/app/properties/$propertyId/edit'
     | '/app/properties/$propertyId/units'
     | '/app/properties/$propertyId/'
     | '/app/properties/$propertyId/units/new'
+    | '/app/properties/$propertyId/units/$unitId/edit'
   fileRoutesById: FileRoutesById
 }
 
@@ -1461,6 +1508,7 @@ export const routeTree = rootRoute
       "filePath": "app.properties.$propertyId.tsx",
       "parent": "/app/properties",
       "children": [
+        "/app/properties/$propertyId/edit",
         "/app/properties/$propertyId/units",
         "/app/properties/$propertyId/"
       ]
@@ -1517,11 +1565,16 @@ export const routeTree = rootRoute
       "filePath": "app.tenants.index.tsx",
       "parent": "/app/tenants"
     },
+    "/app/properties/$propertyId/edit": {
+      "filePath": "app.properties.$propertyId.edit.tsx",
+      "parent": "/app/properties/$propertyId"
+    },
     "/app/properties/$propertyId/units": {
       "filePath": "app.properties.$propertyId.units.tsx",
       "parent": "/app/properties/$propertyId",
       "children": [
-        "/app/properties/$propertyId/units/new"
+        "/app/properties/$propertyId/units/new",
+        "/app/properties/$propertyId/units/$unitId/edit"
       ]
     },
     "/app/properties/$propertyId/": {
@@ -1530,6 +1583,10 @@ export const routeTree = rootRoute
     },
     "/app/properties/$propertyId/units/new": {
       "filePath": "app.properties.$propertyId.units.new.tsx",
+      "parent": "/app/properties/$propertyId/units"
+    },
+    "/app/properties/$propertyId/units/$unitId/edit": {
+      "filePath": "app.properties.$propertyId.units.$unitId.edit.tsx",
       "parent": "/app/properties/$propertyId/units"
     }
   }

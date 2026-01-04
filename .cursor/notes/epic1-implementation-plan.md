@@ -8,17 +8,22 @@
 
 ## Executive Summary
 
-Epic 1 (Core Property & Unit Management) is **~85% complete** (updated January 4, 2026). Most frontend components are now wired to real APIs. The remaining work is EPM-16 (Edit Property/Unit functionality).
+Epic 1 (Core Property & Unit Management) is **100% complete** (updated January 4, 2026). All frontend components are wired to real APIs with full CRUD operations.
 
-### Completed Issues (5/6):
+### Completed Issues (6/6):
 - **EPM-17**: Property creation form wired to API
-- **EPM-14**: Property list connected to real API with delete
+- **EPM-14**: Property list connected to real API with delete + inline editing
 - **EPM-15**: Unit creation form implemented
-- **EPM-19**: Units list with search/filter functionality
+- **EPM-19**: Units list with search/filter functionality + inline editing
 - **EPM-18**: Property detail page with real data
+- **EPM-16**: Edit property/unit pages with Airtable-style inline table editing
 
-### Remaining:
-- **EPM-16**: Edit property/unit pages (5 story points)
+### Key Features Implemented:
+- Dedicated edit pages for properties and units (full form editing)
+- Airtable-style inline table editing in property list (name, type, status)
+- Airtable-style inline table editing in units list (status, rent values)
+- Toggle between table view and grid view for units
+- All changes saved immediately to API with loading states
 
 ---
 
@@ -114,18 +119,68 @@ Files to create:
 
 ### Phase 4: EPM-16 - Edit Property/Unit Details (5 pts)
 **Priority: Fourth - Depends on EPM-17, EPM-15**
+**Status: IN PROGRESS (January 4, 2026)**
 
-Tasks:
+#### UX Research Summary
+
+Based on research of property management platforms (Buildium, AppFolio, Propertyware):
+
+**Recommended Pattern: Dedicated Page Editing**
+- Properties and units have 15-25+ fields across multiple categories
+- Full-page edit forms provide:
+  - Bulk editing capability for many fields at once
+  - Clear context of what's being edited (breadcrumb navigation)
+  - Familiar form-based UX matching creation flow
+  - Adequate space for complex fields (address autocomplete, notes)
+- Inline editing only appropriate for single-field quick updates (not our use case)
+- Modal editing loses context of the full resource hierarchy
+
+**Key UX Decisions:**
+1. Edit pages mirror create pages but pre-populated with existing data
+2. Form validation uses same Zod schemas as create (via `updatePropertySchema`/`updateUnitSchema`)
+3. Changes require explicit "Save" action (no auto-save)
+4. Cancel returns to detail page without changes
+5. Success redirects to detail page with toast confirmation
+
+**Property Edit Fields (by section):**
+1. Basic Information: name, type, totalUnits
+2. Address: addressLine1/2, city, state, zipCode (with Google Places)
+3. Details: yearBuilt, totalSqFt, lotSize, parkingSpaces, notes
+
+**Unit Edit Fields (by section):**
+1. Unit Information: unitNumber, floorPlan, bedrooms, bathrooms, sqFt, floor
+2. Rent Information: marketRent, currentRent, depositAmount
+3. Pet Policy: petFriendly, petDeposit, petRent
+4. Status: status (VACANT, OCCUPIED, etc.)
+5. Notes: notes
+
+#### Implementation Tasks
+
 1. Create `app.properties.$propertyId.edit.tsx` for property editing
-2. Prefill form with existing property data
-3. Wire to `updateProperty` API
-4. Create unit edit functionality (inline or modal)
-5. Wire to `updateUnit` API
-6. Add optimistic updates with rollback
+   - Fetch existing property data via `usePropertyQuery`
+   - Pre-fill form with current values
+   - Wire to `updateProperty` mutation
+   - Validate using `updatePropertySchema`
+   - Redirect to property detail on success
+
+2. Create `app.properties.$propertyId.units.$unitId.edit.tsx` for unit editing
+   - Fetch existing unit data via `useUnitQuery`
+   - Pre-fill form matching create unit structure
+   - Wire to `updateUnit` mutation
+   - Validate using `updateUnitSchema`
+   - Redirect to units list on success
+
+3. Add success/error toast notifications
+4. Test edit flow end-to-end
 
 Files to create:
 - `src/routes/app.properties.$propertyId.edit.tsx`
-- `src/components/units/edit-unit-dialog.tsx`
+- `src/routes/app.properties.$propertyId.units.$unitId.edit.tsx`
+
+**Sources:**
+- [Buildium vs AppFolio Comparison](https://www.buildium.com/blog/buildium-vs-appfolio/)
+- [PatternFly Inline Edit Guidelines](https://www.patternfly.org/components/inline-edit/design-guidelines/)
+- [Cloudscape Edit Patterns](https://cloudscape.design/patterns/resource-management/edit/inline-edit/)
 
 ### Phase 5: EPM-19 - View Unit Availability Status (5 pts)
 **Priority: Fifth - Depends on EPM-15**
