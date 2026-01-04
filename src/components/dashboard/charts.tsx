@@ -87,7 +87,7 @@ export function RevenueChart({
   onPresetChange,
   showControls = true,
 }: RevenueChartProps) {
-  const { drillDownData, handleChartClick, closeDrillDown } = useChartDrillDown()
+  const { drillDownData, handleChartClick, closeDrillDown } = useChartDrillDown<typeof revenueData[0]>()
 
   const onBarClick = useCallback(
     (data: typeof revenueData[0]) => {
@@ -146,7 +146,7 @@ export function RevenueChart({
           stroke='var(--color-revenue)'
           strokeWidth={2}
           style={{ cursor: 'pointer' }}
-          onClick={(_, idx) => revenueData[idx] && onBarClick(revenueData[idx])}
+          onClick={((_: unknown, idx: number) => revenueData[idx] && onBarClick(revenueData[idx])) as any}
         />
         <Area
           dataKey='collected'
@@ -156,7 +156,7 @@ export function RevenueChart({
           stroke='var(--color-collected)'
           strokeWidth={2}
           style={{ cursor: 'pointer' }}
-          onClick={(_, idx) => revenueData[idx] && onBarClick(revenueData[idx])}
+          onClick={((_: unknown, idx: number) => revenueData[idx] && onBarClick(revenueData[idx])) as any}
         />
       </AreaChart>
     </ChartContainer>
@@ -215,7 +215,7 @@ interface OccupancyChartProps {
 }
 
 export function OccupancyChart({ showControls = true }: OccupancyChartProps) {
-  const { drillDownData, handleChartClick, closeDrillDown } = useChartDrillDown()
+  const { drillDownData, handleChartClick, closeDrillDown } = useChartDrillDown<typeof occupancyData[0]>()
 
   const onBarClick = useCallback(
     (data: typeof occupancyData[0]) => {
@@ -351,7 +351,7 @@ interface MaintenanceChartProps {
 }
 
 export function MaintenanceChart({ showControls = true }: MaintenanceChartProps) {
-  const { drillDownData, handleChartClick, closeDrillDown } = useChartDrillDown()
+  const { drillDownData, handleChartClick, closeDrillDown } = useChartDrillDown<typeof maintenanceData[0]>()
 
   const onPieClick = useCallback(
     (data: typeof maintenanceData[0]) => {
@@ -398,7 +398,7 @@ export function MaintenanceChart({ showControls = true }: MaintenanceChartProps)
           strokeWidth={2}
           stroke='hsl(var(--background))'
           style={{ cursor: 'pointer' }}
-          onClick={(_, idx) => maintenanceData[idx] && onPieClick(maintenanceData[idx])}
+          onClick={((_: unknown, idx: number) => maintenanceData[idx] && onPieClick(maintenanceData[idx])) as any}
         >
           {maintenanceData.map((entry, index) => (
             <Cell key={`cell-${index}`} fill={entry.fill} />
@@ -461,7 +461,7 @@ interface LeaseExpirationChartProps {
 }
 
 export function LeaseExpirationChart({ showControls = true }: LeaseExpirationChartProps) {
-  const { drillDownData, handleChartClick, closeDrillDown } = useChartDrillDown()
+  const { drillDownData, handleChartClick, closeDrillDown } = useChartDrillDown<typeof leaseExpirationData[0]>()
 
   const onLineClick = useCallback(
     (data: typeof leaseExpirationData[0]) => {
@@ -520,9 +520,9 @@ export function LeaseExpirationChart({ showControls = true }: LeaseExpirationCha
           activeDot={{
             r: 6,
             cursor: 'pointer',
-            onClick: (_, payload) => {
-              if (payload?.payload) onLineClick(payload.payload as typeof leaseExpirationData[0])
-            }
+            onClick: ((_: unknown, payload: { payload?: typeof leaseExpirationData[0] }) => {
+              if (payload?.payload) onLineClick(payload.payload)
+            }) as any
           }}
         />
         <Line
@@ -534,9 +534,9 @@ export function LeaseExpirationChart({ showControls = true }: LeaseExpirationCha
           activeDot={{
             r: 6,
             cursor: 'pointer',
-            onClick: (_, payload) => {
-              if (payload?.payload) onLineClick(payload.payload as typeof leaseExpirationData[0])
-            }
+            onClick: ((_: unknown, payload: { payload?: typeof leaseExpirationData[0] }) => {
+              if (payload?.payload) onLineClick(payload.payload)
+            }) as any
           }}
         />
       </LineChart>
@@ -596,7 +596,7 @@ interface CollectionChartProps {
 }
 
 export function CollectionChart({ showControls = true }: CollectionChartProps) {
-  const { drillDownData, handleChartClick, closeDrillDown } = useChartDrillDown()
+  const { drillDownData, handleChartClick, closeDrillDown } = useChartDrillDown<typeof collectionData[0]>()
 
   const onBarClick = useCallback(
     (data: typeof collectionData[0]) => {

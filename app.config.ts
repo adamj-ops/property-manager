@@ -51,9 +51,10 @@ const app = defineConfig({
       ],
     },
     plugins: [
+      // Cast to any to resolve vite version type mismatch
       tsconfigPathsPlugin({
         projects: ['./tsconfig.json'],
-      }),
+      }) as any,
     ],
   },
   react: {
