@@ -32,7 +32,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '~
 import { Skeleton } from '~/components/ui/skeleton'
 import { Textarea } from '~/components/ui/textarea'
 import { Typography } from '~/components/ui/typography'
-import { useToast } from '~/components/ui/use-toast'
+import { toast } from 'sonner'
 
 import {
   useSchedulesQuery,
@@ -138,7 +138,6 @@ function StatsCards() {
 }
 
 function CreateScheduleDialog() {
-  const { toast } = useToast()
   const [open, setOpen] = useState(false)
   const createMutation = useCreateSchedule()
 
@@ -161,8 +160,7 @@ function CreateScheduleDialog() {
 
     try {
       await createMutation.mutateAsync(formData as CreateScheduleInput)
-      toast({
-        title: 'Schedule Created',
+      toast.success('Schedule Created', {
         description: 'The recurring maintenance schedule has been created',
       })
       setOpen(false)
@@ -174,10 +172,8 @@ function CreateScheduleDialog() {
       })
       setSelectedPropertyId('')
     } catch {
-      toast({
-        title: 'Error',
+      toast.error('Error', {
         description: 'Failed to create schedule',
-        variant: 'destructive',
       })
     }
   }
@@ -420,7 +416,6 @@ function CreateScheduleDialog() {
 }
 
 function SchedulesList() {
-  const { toast } = useToast()
   const [search, setSearch] = useState('')
   const [filterActive, setFilterActive] = useState<string>('all')
 
@@ -435,17 +430,14 @@ function SchedulesList() {
   const handleToggleActive = async (id: string, currentlyActive: boolean) => {
     try {
       await updateMutation.mutateAsync({ id, isActive: !currentlyActive })
-      toast({
-        title: currentlyActive ? 'Schedule Paused' : 'Schedule Activated',
+      toast.success(currentlyActive ? 'Schedule Paused' : 'Schedule Activated', {
         description: currentlyActive
           ? 'The schedule has been paused'
           : 'The schedule is now active',
       })
     } catch {
-      toast({
-        title: 'Error',
+      toast.error('Error', {
         description: 'Failed to update schedule',
-        variant: 'destructive',
       })
     }
   }
@@ -453,15 +445,12 @@ function SchedulesList() {
   const handleExecuteNow = async (id: string) => {
     try {
       await executeMutation.mutateAsync(id)
-      toast({
-        title: 'Work Order Created',
+      toast.success('Work Order Created', {
         description: 'A new work order has been created from this schedule',
       })
     } catch {
-      toast({
-        title: 'Error',
+      toast.error('Error', {
         description: 'Failed to create work order',
-        variant: 'destructive',
       })
     }
   }

@@ -8,7 +8,7 @@ import {
   LuCheck,
   LuClock,
   LuDollarSign,
-  LuLoader2,
+  LuLoaderCircle,
   LuMessageSquare,
   LuPhone,
   LuSend,
@@ -28,7 +28,7 @@ import { Skeleton } from '~/components/ui/skeleton'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '~/components/ui/tabs'
 import { Textarea } from '~/components/ui/textarea'
 import { Typography } from '~/components/ui/typography'
-import { useToast } from '~/components/ui/use-toast'
+import { toast } from 'sonner'
 import { MaintenancePhotoUpload } from '~/components/maintenance/photo-upload'
 
 import {
@@ -113,7 +113,6 @@ function WorkOrderSkeleton() {
 // Work order detail component
 function WorkOrderDetail() {
   const { workOrderId } = Route.useParams()
-  const { toast } = useToast()
 
   const { data: workOrder } = useMaintenanceRequestQuery(workOrderId)
   const { data: vendorsData } = useVendorsQuery({ status: 'ACTIVE' })
@@ -132,8 +131,7 @@ function WorkOrderDetail() {
 
   const handleStatusUpdate = async () => {
     if (!newStatus || newStatus === workOrder.status) {
-      toast({
-        title: 'No changes',
+      toast('No changes', {
         description: 'Please select a different status',
       })
       return
@@ -155,15 +153,12 @@ function WorkOrderDetail() {
         setStatusNote('')
       }
 
-      toast({
-        title: 'Status Updated',
+      toast.success('Status Updated', {
         description: `Work order status changed to ${statusConfig[newStatus]?.label || newStatus}`,
       })
     } catch {
-      toast({
-        title: 'Error',
+      toast.error('Error', {
         description: 'Failed to update status',
-        variant: 'destructive',
       })
     }
   }
@@ -178,15 +173,12 @@ function WorkOrderDetail() {
         completedAt: new Date(),
       })
 
-      toast({
-        title: 'Work Order Completed',
+      toast.success('Work Order Completed', {
         description: 'The work order has been marked as complete',
       })
     } catch {
-      toast({
-        title: 'Error',
+      toast.error('Error', {
         description: 'Failed to complete work order',
-        variant: 'destructive',
       })
     }
   }
@@ -194,10 +186,8 @@ function WorkOrderDetail() {
   const handleSaveCost = async () => {
     const cost = parseFloat(actualCost)
     if (isNaN(cost) || cost < 0) {
-      toast({
-        title: 'Invalid Cost',
+      toast.error('Invalid Cost', {
         description: 'Please enter a valid cost amount',
-        variant: 'destructive',
       })
       return
     }
@@ -208,25 +198,20 @@ function WorkOrderDetail() {
         actualCost: cost,
       })
 
-      toast({
-        title: 'Cost Saved',
+      toast.success('Cost Saved', {
         description: `Actual cost updated to $${cost.toFixed(2)}`,
       })
     } catch {
-      toast({
-        title: 'Error',
+      toast.error('Error', {
         description: 'Failed to save cost',
-        variant: 'destructive',
       })
     }
   }
 
   const handleAddComment = async () => {
     if (!newComment.trim()) {
-      toast({
-        title: 'Empty Comment',
+      toast.error('Empty Comment', {
         description: 'Please enter a comment',
-        variant: 'destructive',
       })
       return
     }
@@ -239,15 +224,12 @@ function WorkOrderDetail() {
       })
 
       setNewComment('')
-      toast({
-        title: 'Comment Added',
+      toast.success('Comment Added', {
         description: 'Your comment has been added',
       })
     } catch {
-      toast({
-        title: 'Error',
+      toast.error('Error', {
         description: 'Failed to add comment',
-        variant: 'destructive',
       })
     }
   }
@@ -260,23 +242,19 @@ function WorkOrderDetail() {
           id: workOrderId,
           vendorId: undefined,
         })
-        toast({
-          title: 'Vendor Removed',
+        toast.success('Vendor Removed', {
           description: 'Vendor assignment has been cleared',
         })
       } catch {
-        toast({
-          title: 'Error',
+        toast.error('Error', {
           description: 'Failed to remove vendor',
-          variant: 'destructive',
         })
       }
       return
     }
 
     if (selectedVendorId === workOrder.vendorId) {
-      toast({
-        title: 'No changes',
+      toast('No changes', {
         description: 'This vendor is already assigned',
       })
       return
@@ -289,15 +267,12 @@ function WorkOrderDetail() {
       })
 
       const vendor = vendorsData?.vendors.find(v => v.id === selectedVendorId)
-      toast({
-        title: 'Vendor Assigned',
+      toast.success('Vendor Assigned', {
         description: `${vendor?.companyName || 'Vendor'} has been assigned to this work order`,
       })
     } catch {
-      toast({
-        title: 'Error',
+      toast.error('Error', {
         description: 'Failed to assign vendor',
-        variant: 'destructive',
       })
     }
   }
@@ -333,7 +308,7 @@ function WorkOrderDetail() {
           {workOrder.status !== 'COMPLETED' && workOrder.status !== 'CANCELLED' && (
             <Button onClick={handleMarkComplete} disabled={updateMutation.isPending}>
               {updateMutation.isPending ? (
-                <LuLoader2 className='mr-2 size-4 animate-spin' />
+                <LuLoaderCircle className='mr-2 size-4 animate-spin' />
               ) : (
                 <LuCheck className='mr-2 size-4' />
               )}
@@ -525,7 +500,7 @@ function WorkOrderDetail() {
                     disabled={commentMutation.isPending || !newComment.trim()}
                   >
                     {commentMutation.isPending ? (
-                      <LuLoader2 className='mr-2 size-4 animate-spin' />
+                      <LuLoaderCircle className='mr-2 size-4 animate-spin' />
                     ) : (
                       <LuSend className='mr-2 size-4' />
                     )}
@@ -580,7 +555,7 @@ function WorkOrderDetail() {
                 onClick={handleStatusUpdate}
                 disabled={updateMutation.isPending || newStatus === workOrder.status}
               >
-                {updateMutation.isPending && <LuLoader2 className='mr-2 size-4 animate-spin' />}
+                {updateMutation.isPending && <LuLoaderCircle className='mr-2 size-4 animate-spin' />}
                 Update Status
               </Button>
             </CardContent>
@@ -624,7 +599,7 @@ function WorkOrderDetail() {
                 onClick={handleAssignVendor}
                 disabled={updateMutation.isPending || selectedVendorId === (workOrder.vendorId || '')}
               >
-                {updateMutation.isPending && <LuLoader2 className='mr-2 size-4 animate-spin' />}
+                {updateMutation.isPending && <LuLoaderCircle className='mr-2 size-4 animate-spin' />}
                 <LuWrench className='mr-2 size-4' />
                 {selectedVendorId ? 'Update Assignment' : 'Remove Vendor'}
               </Button>
@@ -649,16 +624,13 @@ function WorkOrderDetail() {
                     photoType='initial'
                     existingPhotos={workOrder.photoUrls || []}
                     onSuccess={() => {
-                      toast({
-                        title: 'Photo Uploaded',
+                      toast.success('Photo Uploaded', {
                         description: 'Issue photo has been added successfully',
                       })
                     }}
                     onError={(error) => {
-                      toast({
-                        title: 'Upload Failed',
+                      toast.error('Upload Failed', {
                         description: error.message,
-                        variant: 'destructive',
                       })
                     }}
                   />
@@ -669,16 +641,13 @@ function WorkOrderDetail() {
                     photoType='completion'
                     completionPhotos={workOrder.completionPhotos || []}
                     onSuccess={() => {
-                      toast({
-                        title: 'Photo Uploaded',
+                      toast.success('Photo Uploaded', {
                         description: 'Completion photo has been added successfully',
                       })
                     }}
                     onError={(error) => {
-                      toast({
-                        title: 'Upload Failed',
+                      toast.error('Upload Failed', {
                         description: error.message,
-                        variant: 'destructive',
                       })
                     }}
                   />
@@ -728,7 +697,7 @@ function WorkOrderDetail() {
                 onClick={handleSaveCost}
                 disabled={updateMutation.isPending || !actualCost}
               >
-                {updateMutation.isPending && <LuLoader2 className='mr-2 size-4 animate-spin' />}
+                {updateMutation.isPending && <LuLoaderCircle className='mr-2 size-4 animate-spin' />}
                 Save Cost
               </Button>
             </CardContent>

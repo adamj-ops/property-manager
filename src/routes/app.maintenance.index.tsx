@@ -8,7 +8,7 @@ import {
   LuClock,
   LuEye,
   LuList,
-  LuLoader2,
+  LuLoaderCircle,
   LuPencil,
   LuPlus,
   LuTriangleAlert,
@@ -48,7 +48,7 @@ import {
   DropdownMenuSeparator,
 } from '~/components/ui/dropdown-menu'
 import { Skeleton } from '~/components/ui/skeleton'
-import { useToast } from '~/components/ui/use-toast'
+import { toast } from 'sonner'
 
 import {
   useMaintenanceRequestsQuery,
@@ -483,7 +483,6 @@ function MaintenanceDataTable({ filters, setFilters }: { filters: Partial<Mainte
 // Create work order drawer
 function CreateWorkOrderDrawer({ open, onOpenChange }: { open: boolean; onOpenChange: (open: boolean) => void }) {
   const navigate = useNavigate()
-  const { toast } = useToast()
   const createMutation = useCreateMaintenanceRequest()
 
   const [selectedPropertyId, setSelectedPropertyId] = useState<string>('')
@@ -507,10 +506,8 @@ function CreateWorkOrderDrawer({ open, onOpenChange }: { open: boolean; onOpenCh
 
   const handleSubmit = async () => {
     if (!formData.unitId || !formData.title || !formData.description || !formData.category) {
-      toast({
-        title: 'Validation Error',
+      toast.error('Validation Error', {
         description: 'Please fill in all required fields',
-        variant: 'destructive',
       })
       return
     }
@@ -526,8 +523,7 @@ function CreateWorkOrderDrawer({ open, onOpenChange }: { open: boolean; onOpenCh
         preferredTimes: formData.preferredTimes || undefined,
       })
 
-      toast({
-        title: 'Work Order Created',
+      toast.success('Work Order Created', {
         description: `Work order ${result.requestNumber} has been created successfully.`,
       })
 
@@ -546,11 +542,9 @@ function CreateWorkOrderDrawer({ open, onOpenChange }: { open: boolean; onOpenCh
 
       // Navigate to the new work order
       navigate({ to: '/app/maintenance/$workOrderId', params: { workOrderId: result.id } })
-    } catch (error) {
-      toast({
-        title: 'Error',
+    } catch {
+      toast.error('Error', {
         description: 'Failed to create work order. Please try again.',
-        variant: 'destructive',
       })
     }
   }
@@ -686,7 +680,7 @@ function CreateWorkOrderDrawer({ open, onOpenChange }: { open: boolean; onOpenCh
           </div>
           <DrawerFooter>
             <Button onClick={handleSubmit} disabled={createMutation.isPending}>
-              {createMutation.isPending && <LuLoader2 className='mr-2 size-4 animate-spin' />}
+              {createMutation.isPending && <LuLoaderCircle className='mr-2 size-4 animate-spin' />}
               Create Work Order
             </Button>
             <DrawerClose asChild>

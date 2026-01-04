@@ -7,7 +7,7 @@ import {
   LuBuilding2,
   LuCalendar,
   LuCheck,
-  LuLoader2,
+  LuLoaderCircle,
   LuMail,
   LuMapPin,
   LuPencil,
@@ -30,7 +30,7 @@ import { Separator } from '~/components/ui/separator'
 import { Skeleton } from '~/components/ui/skeleton'
 import { Textarea } from '~/components/ui/textarea'
 import { Typography } from '~/components/ui/typography'
-import { useToast } from '~/components/ui/use-toast'
+import { toast } from 'sonner'
 
 import {
   useVendorQuery,
@@ -109,7 +109,6 @@ function VendorSkeleton() {
 function VendorDetail() {
   const { vendorId } = Route.useParams()
   const navigate = useNavigate()
-  const { toast } = useToast()
 
   const { data: vendor } = useVendorQuery(vendorId)
   const updateMutation = useUpdateVendor()
@@ -144,16 +143,13 @@ function VendorDetail() {
         categories: selectedCategories,
       })
 
-      toast({
-        title: 'Vendor Updated',
+      toast.success('Vendor Updated', {
         description: 'Vendor details have been saved successfully.',
       })
       setIsEditing(false)
     } catch {
-      toast({
-        title: 'Error',
+      toast.error('Error', {
         description: 'Failed to update vendor. Please try again.',
-        variant: 'destructive',
       })
     }
   }
@@ -165,15 +161,12 @@ function VendorDetail() {
         status: newStatus,
       })
 
-      toast({
-        title: 'Status Updated',
+      toast.success('Status Updated', {
         description: `Vendor is now ${statusConfig[newStatus]?.label || newStatus}.`,
       })
     } catch {
-      toast({
-        title: 'Error',
+      toast.error('Error', {
         description: 'Failed to update status.',
-        variant: 'destructive',
       })
     }
   }
@@ -181,16 +174,13 @@ function VendorDetail() {
   const handleDeactivate = async () => {
     try {
       await deleteMutation.mutateAsync(vendorId)
-      toast({
-        title: 'Vendor Deactivated',
+      toast.success('Vendor Deactivated', {
         description: 'Vendor has been deactivated.',
       })
       navigate({ to: '/app/maintenance/vendors' })
     } catch {
-      toast({
-        title: 'Error',
+      toast.error('Error', {
         description: 'Failed to deactivate vendor.',
-        variant: 'destructive',
       })
     }
   }
@@ -247,7 +237,7 @@ function VendorDetail() {
               </Button>
               <Button onClick={handleSave} disabled={updateMutation.isPending}>
                 {updateMutation.isPending ? (
-                  <LuLoader2 className='mr-2 size-4 animate-spin' />
+                  <LuLoaderCircle className='mr-2 size-4 animate-spin' />
                 ) : (
                   <LuCheck className='mr-2 size-4' />
                 )}

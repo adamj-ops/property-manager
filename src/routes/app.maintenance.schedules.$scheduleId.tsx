@@ -7,7 +7,7 @@ import {
   LuCalendar,
   LuCheck,
   LuClock,
-  LuLoader2,
+  LuLoaderCircle,
   LuPause,
   LuPlay,
   LuTrash2,
@@ -25,7 +25,7 @@ import { Separator } from '~/components/ui/separator'
 import { Skeleton } from '~/components/ui/skeleton'
 import { Textarea } from '~/components/ui/textarea'
 import { Typography } from '~/components/ui/typography'
-import { useToast } from '~/components/ui/use-toast'
+import { toast } from 'sonner'
 
 import {
   useScheduleQuery,
@@ -99,7 +99,6 @@ function ScheduleSkeleton() {
 function ScheduleDetail() {
   const { scheduleId } = Route.useParams()
   const navigate = Route.useNavigate()
-  const { toast } = useToast()
 
   const { data: schedule } = useScheduleQuery(scheduleId)
   const { data: vendorsData } = useVendorsQuery({ status: 'ACTIVE' })
@@ -124,17 +123,14 @@ function ScheduleDetail() {
         id: scheduleId,
         isActive: !schedule.isActive,
       })
-      toast({
-        title: schedule.isActive ? 'Schedule Paused' : 'Schedule Activated',
+      toast.success(schedule.isActive ? 'Schedule Paused' : 'Schedule Activated', {
         description: schedule.isActive
           ? 'The schedule has been paused'
           : 'The schedule is now active',
       })
     } catch {
-      toast({
-        title: 'Error',
+      toast.error('Error', {
         description: 'Failed to update schedule',
-        variant: 'destructive',
       })
     }
   }
@@ -142,15 +138,12 @@ function ScheduleDetail() {
   const handleExecuteNow = async () => {
     try {
       await executeMutation.mutateAsync(scheduleId)
-      toast({
-        title: 'Work Order Created',
+      toast.success('Work Order Created', {
         description: 'A new work order has been created from this schedule',
       })
     } catch {
-      toast({
-        title: 'Error',
+      toast.error('Error', {
         description: 'Failed to create work order',
-        variant: 'destructive',
       })
     }
   }
@@ -163,15 +156,12 @@ function ScheduleDetail() {
         vendorId: editData.vendorId || undefined,
       })
       setIsEditing(false)
-      toast({
-        title: 'Schedule Updated',
+      toast.success('Schedule Updated', {
         description: 'The schedule has been updated successfully',
       })
     } catch {
-      toast({
-        title: 'Error',
+      toast.error('Error', {
         description: 'Failed to update schedule',
-        variant: 'destructive',
       })
     }
   }
@@ -181,16 +171,13 @@ function ScheduleDetail() {
 
     try {
       await deleteMutation.mutateAsync(scheduleId)
-      toast({
-        title: 'Schedule Deleted',
+      toast.success('Schedule Deleted', {
         description: 'The schedule has been deleted',
       })
       navigate({ to: '/app/maintenance/schedules' })
     } catch {
-      toast({
-        title: 'Error',
+      toast.error('Error', {
         description: 'Failed to delete schedule',
-        variant: 'destructive',
       })
     }
   }
@@ -224,7 +211,7 @@ function ScheduleDetail() {
             disabled={executeMutation.isPending}
           >
             {executeMutation.isPending ? (
-              <LuLoader2 className='mr-2 size-4 animate-spin' />
+              <LuLoaderCircle className='mr-2 size-4 animate-spin' />
             ) : (
               <LuPlay className='mr-2 size-4' />
             )}

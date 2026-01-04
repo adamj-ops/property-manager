@@ -7,7 +7,7 @@ import {
   LuCalendar,
   LuCheck,
   LuEye,
-  LuLoader2,
+  LuLoaderCircle,
   LuMail,
   LuPencil,
   LuPhone,
@@ -50,7 +50,7 @@ import {
   DropdownMenuLabel,
   DropdownMenuSeparator,
 } from '~/components/ui/dropdown-menu'
-import { useToast } from '~/components/ui/use-toast'
+import { toast } from 'sonner'
 
 import {
   useVendorsQuery,
@@ -432,7 +432,6 @@ function CreateVendorDialog({
   onOpenChange: (open: boolean) => void
 }) {
   const navigate = useNavigate()
-  const { toast } = useToast()
   const createMutation = useCreateVendor()
 
   const [formData, setFormData] = useState<Partial<CreateVendorInput>>({
@@ -448,10 +447,8 @@ function CreateVendorDialog({
 
   const handleSubmit = async () => {
     if (!formData.companyName || !formData.contactName || !formData.email || !formData.phone || selectedCategories.length === 0) {
-      toast({
-        title: 'Validation Error',
+      toast.error('Validation Error', {
         description: 'Please fill in all required fields',
-        variant: 'destructive',
       })
       return
     }
@@ -467,8 +464,7 @@ function CreateVendorDialog({
         paymentTerms: formData.paymentTerms || 30,
       } as CreateVendorInput)
 
-      toast({
-        title: 'Vendor Created',
+      toast.success('Vendor Created', {
         description: `${result.companyName} has been added successfully.`,
       })
 
@@ -485,10 +481,8 @@ function CreateVendorDialog({
 
       navigate({ to: '/app/maintenance/vendors/$vendorId', params: { vendorId: result.id } })
     } catch {
-      toast({
-        title: 'Error',
+      toast.error('Error', {
         description: 'Failed to create vendor. Please try again.',
-        variant: 'destructive',
       })
     }
   }
@@ -597,7 +591,7 @@ function CreateVendorDialog({
             Cancel
           </Button>
           <Button onClick={handleSubmit} disabled={createMutation.isPending}>
-            {createMutation.isPending && <LuLoader2 className='mr-2 size-4 animate-spin' />}
+            {createMutation.isPending && <LuLoaderCircle className='mr-2 size-4 animate-spin' />}
             Add Vendor
           </Button>
         </DialogFooter>
