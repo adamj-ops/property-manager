@@ -590,6 +590,266 @@ src/components/financials/
 
 ---
 
-**Document Version:** 1.0
+---
+
+## Linear Issue Updates
+
+Use this section to update Linear issues with implementation progress and notes.
+
+### EPM-34: Record Rent Payments (8 pts)
+
+**Recommended Status:** `In Progress` → `In Review`
+
+**Notes to Add:**
+```
+Implementation Update (Jan 4, 2026):
+
+✅ COMPLETED:
+- Connected payment form to real createPayment API
+- Added tenant/lease selection dropdown with real data from useLeasesQuery
+- Payment list now uses usePaymentsQuery with real data
+- Added payment allocation support (RENT, LATE_FEE, PET_RENT, PARKING, UTILITIES, OTHER)
+- Reference number field for check payments implemented
+- Added payment type badges and status indicators
+
+📁 Files Modified:
+- src/routes/app.financials.payments.tsx (connected to real API)
+- src/services/payments.query.ts (added React Query hooks)
+
+🔲 REMAINING (Phase 2):
+- Receipt generation (PDF via react-pdf)
+- Receipt email via SendGrid
+- "Mark as Bounced" action
+- Pagination for large datasets
+```
+
+---
+
+### EPM-35: Rent Collection Dashboard (8 pts)
+
+**Recommended Status:** `In Progress` → `In Review`
+
+**Notes to Add:**
+```
+Implementation Update (Jan 4, 2026):
+
+✅ COMPLETED:
+- Dashboard connected to real APIs via React Query hooks:
+  - usePaymentStatsQuery (expected, collected, pending, late amounts)
+  - useRentRollQuery (all active leases with payment status)
+  - useExpenseSummaryQuery (expense totals for the period)
+  - useDepositStatsQuery (security deposit totals and interest)
+- Replaced all mock data with real database queries
+- Stats cards show real collection metrics
+- Quick links to all financial subpages
+
+📁 Files Modified:
+- src/routes/app.financials.index.tsx (connected to real stats)
+- src/services/payments.query.ts (added usePaymentStatsQuery, useRentRollQuery)
+- src/services/expenses.query.ts (NEW - added useExpenseSummaryQuery)
+- src/services/security-deposits.query.ts (NEW - added useDepositStatsQuery)
+
+🔲 REMAINING (Phase 2):
+- Date range selector for stats
+- "Send Reminder" button integration with Communications
+- Property filtering dropdown
+```
+
+---
+
+### EPM-36: Security Deposit Management (13 pts)
+
+**Recommended Status:** `Backlog` → `In Review`
+
+**Notes to Add:**
+```
+Implementation Update (Jan 4, 2026):
+
+✅ COMPLETED:
+- Full service layer created:
+  - src/services/security-deposits.schema.ts (Zod validation)
+  - src/services/security-deposits.api.ts (server functions)
+  - src/services/security-deposits.query.ts (React Query hooks)
+- MN Statute 504B.178 compliance implemented:
+  - 1% annual simple interest calculation
+  - Daily interest accrual: (deposit * 0.01 * days) / 365
+  - 21-day disposition deadline tracking
+- Security deposits management page created:
+  - src/routes/app.financials.deposits.tsx
+  - Shows total deposits held, interest accrued, pending dispositions
+  - Deposit list with status badges (Active, Pending Return, Returned)
+  - Action buttons for interest payments and dispositions
+- API functions:
+  - getSecurityDeposits() - list with interest calculations
+  - getSecurityDeposit() - single deposit details
+  - recordInterestPayment() - annual interest payments
+  - createDisposition() - move-out disposition with deductions
+  - getDepositStats() - dashboard stats
+
+📁 Files Created:
+- src/services/security-deposits.schema.ts
+- src/services/security-deposits.api.ts
+- src/services/security-deposits.query.ts
+- src/routes/app.financials.deposits.tsx
+
+🔲 REMAINING (Phase 2):
+- Disposition letter PDF generation
+- Auto-alert when 21-day deadline approaching
+- Interest payment email notifications
+- Database migration for SecurityDepositInterest and DepositDisposition models
+```
+
+---
+
+### EPM-37: Late Fee Automation (5 pts)
+
+**Recommended Status:** `Backlog` → `In Progress`
+
+**Notes to Add:**
+```
+Implementation Update (Jan 4, 2026):
+
+✅ COMPLETED:
+- Full service layer created:
+  - src/services/late-fees.schema.ts (Zod validation)
+  - src/services/late-fees.api.ts (server functions)
+  - src/services/late-fees.query.ts (React Query hooks)
+- MN Statute 504B.177 compliance implemented:
+  - Late fee cap: Greater of $50 or 8% of monthly rent
+  - Grace period tracking (default 5 days)
+- API functions:
+  - calculateLateFee() - computes fee with MN compliance
+  - applyLateFee() - creates late fee payment record
+  - waiveLateFee() - manager override with reason tracking
+  - getLateFees() - list late fees by lease/property
+  - getLateFeeStats() - dashboard statistics
+  - checkAndApplyLateFees() - bulk check all leases
+
+📁 Files Created:
+- src/services/late-fees.schema.ts
+- src/services/late-fees.api.ts
+- src/services/late-fees.query.ts
+
+🔲 REMAINING:
+- BullMQ background job for daily auto-check (runs at 6 AM)
+- Late fee notification email template
+- Waive late fee dialog component
+- Job queue infrastructure setup (Redis + BullMQ)
+```
+
+---
+
+### EPM-38: Expense Tracking (8 pts)
+
+**Recommended Status:** `In Progress` → `In Review`
+
+**Notes to Add:**
+```
+Implementation Update (Jan 4, 2026):
+
+✅ COMPLETED:
+- Full service layer created:
+  - src/services/expenses.schema.ts (Zod validation with 16 categories)
+  - src/services/expenses.api.ts (server functions)
+  - src/services/expenses.query.ts (React Query hooks)
+- Expenses page connected to real API:
+  - useExpensesQuery - list with filtering
+  - useExpenseStatsQuery - totals and category breakdown
+  - useExpenseSummaryQuery - period summaries
+- Add Expense form with:
+  - Property selection from usePropertiesQuery
+  - Category dropdown (16 expense categories)
+  - Amount, date, description, notes fields
+  - Vendor field (optional)
+- Category breakdown shows real data from database
+- API functions:
+  - getExpenses() - list with filters
+  - getExpense() - single expense detail
+  - createExpense() - add new expense
+  - updateExpense() - modify existing
+  - deleteExpense() - remove expense
+  - markExpensePaid() - update payment status
+  - getExpenseStats() - category totals
+  - getExpenseSummary() - period summary
+
+📁 Files Created:
+- src/services/expenses.schema.ts
+- src/services/expenses.api.ts
+- src/services/expenses.query.ts
+
+📁 Files Modified:
+- src/routes/app.financials.expenses.tsx (connected to real API)
+
+🔲 REMAINING (Phase 2):
+- Receipt/invoice upload to Supabase Storage
+- Link expense to maintenance work order
+- Recurring expense automation
+- Export to CSV
+```
+
+---
+
+### EPM-72: Financial Reports (13 pts) - Phase 2
+
+**Recommended Status:** Keep as `Backlog`
+
+**Notes to Add:**
+```
+Dependency Check (Jan 4, 2026):
+
+✅ Dependencies now ready:
+- EPM-34 (Rent Payments) - In Review
+- EPM-35 (Dashboard) - In Review
+- EPM-38 (Expense Tracking) - In Review
+
+📋 Ready to start after MVP review. Key deliverables:
+- Income statement (revenue - expenses = NOI)
+- Cash flow report
+- Rent roll report
+- Delinquency report
+- Expense breakdown by category
+- Date range selection
+- Export to PDF/CSV
+```
+
+---
+
+### EPM-73: Budget vs Actual (8 pts) - Phase 2
+
+**Recommended Status:** Keep as `Backlog`
+
+**Notes to Add:**
+```
+Dependency Check (Jan 4, 2026):
+
+⏳ Waiting on:
+- EPM-72 (Financial Reports) - Required first
+
+📋 Can begin after EPM-72 is complete. Key deliverables:
+- Budget model in database
+- Annual/monthly budget setting
+- Variance reporting ($ and %)
+- Over-budget alerts
+```
+
+---
+
+## Summary for Linear
+
+| Issue | Current Status | New Status | Action |
+|-------|---------------|------------|--------|
+| EPM-34 | In Progress | **In Review** | Add implementation notes, move to review |
+| EPM-35 | In Progress | **In Review** | Add implementation notes, move to review |
+| EPM-36 | Backlog | **In Review** | Add implementation notes, move to review |
+| EPM-37 | Backlog | **In Progress** | Add notes, needs background job work |
+| EPM-38 | In Progress | **In Review** | Add implementation notes, move to review |
+| EPM-72 | Backlog | Backlog | Add dependency update note |
+| EPM-73 | Backlog | Backlog | Add dependency update note |
+
+**Overall Epic 4 Progress:** ~75% MVP complete (4 of 5 stories ready for review)
+
+---
+
+**Document Version:** 1.1
 **Author:** Claude Code Agent
 **Last Updated:** January 4, 2026
