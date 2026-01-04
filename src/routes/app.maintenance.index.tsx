@@ -61,6 +61,7 @@ import {
 import { usePropertiesQuery } from '~/services/properties.query'
 import { useUnitsQuery } from '~/services/units.query'
 import { EmergencyAlertBanner } from '~/components/maintenance/emergency-alert-banner'
+import { WorkOrderCalendar } from '~/components/maintenance/work-order-calendar'
 import type { MaintenanceFilters, MaintenanceCategory, MaintenancePriority } from '~/services/maintenance.schema'
 
 export const Route = createFileRoute('/app/maintenance/')({
@@ -411,8 +412,73 @@ function TableSkeleton() {
   )
 }
 
+// View toggle toolbar component
+interface ViewToolbarProps {
+  filters: Partial<MaintenanceFilters>
+  setFilters: (f: Partial<MaintenanceFilters>) => void
+  viewMode: 'list' | 'calendar'
+  setViewMode: (mode: 'list' | 'calendar') => void
+}
+
+function ViewToolbar({ filters, setFilters, viewMode, setViewMode }: ViewToolbarProps) {
+  return (
+    <div className='flex gap-2'>
+      <Button
+        variant={viewMode === 'list' ? 'outline' : 'ghost'}
+        size='sm'
+        onClick={() => setViewMode('list')}
+      >
+        <LuList className='mr-2 size-4' />
+        List
+      </Button>
+      <Button
+        variant={viewMode === 'calendar' ? 'outline' : 'ghost'}
+        size='sm'
+        onClick={() => setViewMode('calendar')}
+      >
+        <LuCalendar className='mr-2 size-4' />
+        Calendar
+      </Button>
+      <div className='border-l mx-2' />
+      <Button
+        variant={!filters.status ? 'outline' : 'ghost'}
+        size='sm'
+        onClick={() => setFilters({ ...filters, status: undefined })}
+      >
+        All
+      </Button>
+      <Button
+        variant={filters.status === 'SUBMITTED' ? 'outline' : 'ghost'}
+        size='sm'
+        onClick={() => setFilters({ ...filters, status: 'SUBMITTED' })}
+      >
+        Open
+      </Button>
+      <Button
+        variant={filters.status === 'IN_PROGRESS' ? 'outline' : 'ghost'}
+        size='sm'
+        onClick={() => setFilters({ ...filters, status: 'IN_PROGRESS' })}
+      >
+        In Progress
+      </Button>
+      <Button
+        variant={filters.status === 'COMPLETED' ? 'outline' : 'ghost'}
+        size='sm'
+        onClick={() => setFilters({ ...filters, status: 'COMPLETED' })}
+      >
+        Completed
+      </Button>
+    </div>
+  )
+}
+
 // Data table component
-function MaintenanceDataTable({ filters, setFilters }: { filters: Partial<MaintenanceFilters>; setFilters: (f: Partial<MaintenanceFilters>) => void }) {
+function MaintenanceDataTable({
+  filters,
+  setFilters,
+  viewMode,
+  setViewMode,
+}: ViewToolbarProps) {
   const { data } = useMaintenanceRequestsQuery(filters)
 
   // Transform the data to match our type
@@ -430,45 +496,12 @@ function MaintenanceDataTable({ filters, setFilters }: { filters: Partial<Mainte
               searchKey='title'
               searchPlaceholder='Search work orders...'
               actionComponent={
-                <div className='flex gap-2'>
-                  <Button variant='outline' size='sm'>
-                    <LuList className='mr-2 size-4' />
-                    List
-                  </Button>
-                  <Button variant='ghost' size='sm'>
-                    <LuCalendar className='mr-2 size-4' />
-                    Calendar
-                  </Button>
-                  <div className='border-l mx-2' />
-                  <Button
-                    variant={!filters.status ? 'outline' : 'ghost'}
-                    size='sm'
-                    onClick={() => setFilters({ ...filters, status: undefined })}
-                  >
-                    All
-                  </Button>
-                  <Button
-                    variant={filters.status === 'SUBMITTED' ? 'outline' : 'ghost'}
-                    size='sm'
-                    onClick={() => setFilters({ ...filters, status: 'SUBMITTED' })}
-                  >
-                    Open
-                  </Button>
-                  <Button
-                    variant={filters.status === 'IN_PROGRESS' ? 'outline' : 'ghost'}
-                    size='sm'
-                    onClick={() => setFilters({ ...filters, status: 'IN_PROGRESS' })}
-                  >
-                    In Progress
-                  </Button>
-                  <Button
-                    variant={filters.status === 'COMPLETED' ? 'outline' : 'ghost'}
-                    size='sm'
-                    onClick={() => setFilters({ ...filters, status: 'COMPLETED' })}
-                  >
-                    Completed
-                  </Button>
-                </div>
+                <ViewToolbar
+                  filters={filters}
+                  setFilters={setFilters}
+                  viewMode={viewMode}
+                  setViewMode={setViewMode}
+                />
               }
             />
           )}
@@ -480,6 +513,46 @@ function MaintenanceDataTable({ filters, setFilters }: { filters: Partial<Mainte
         )}
       </CardContent>
     </Card>
+  )
+}
+
+// Calendar view component
+function MaintenanceCalendarView({
+  filters,
+  setFilters,
+  viewMode,
+  setViewMode,
+}: ViewToolbarProps) {
+  // Fetch all work orders (with high limit for calendar)
+  const { data } = useMaintenanceRequestsQuery({ ...filters, limit: 500 })
+
+  // Transform the data
+  const requests = useMemo(() => data.requests as unknown as MaintenanceRequest[], [data.requests])
+
+  return (
+    <div className='space-y-4'>
+      {/* Toolbar */}
+      <Card>
+        <CardContent className='py-4'>
+          <div className='flex items-center justify-between'>
+            <ViewToolbar
+              filters={filters}
+              setFilters={setFilters}
+              viewMode={viewMode}
+              setViewMode={setViewMode}
+            />
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Calendar */}
+      <WorkOrderCalendar workOrders={requests} />
+
+      {/* Info */}
+      <div className='text-sm text-muted-foreground'>
+        Showing {requests.filter(r => r.scheduledDate).length} scheduled work orders of {data.total} total
+      </div>
+    </div>
   )
 }
 
@@ -699,6 +772,7 @@ function CreateWorkOrderDrawer({ open, onOpenChange }: { open: boolean; onOpenCh
 function MaintenanceListPage() {
   const [drawerOpen, setDrawerOpen] = useState(false)
   const [filters, setFilters] = useState<Partial<MaintenanceFilters>>({})
+  const [viewMode, setViewMode] = useState<'list' | 'calendar'>('list')
 
   return (
     <div className='w-full max-w-7xl space-y-6 py-6'>
@@ -725,10 +799,47 @@ function MaintenanceListPage() {
         <MaintenanceStats />
       </Suspense>
 
-      {/* Data Table */}
-      <Suspense fallback={<TableSkeleton />}>
-        <MaintenanceDataTable filters={filters} setFilters={setFilters} />
-      </Suspense>
+      {/* View Toggle and Content */}
+      {viewMode === 'list' ? (
+        <Suspense fallback={<TableSkeleton />}>
+          <MaintenanceDataTable
+            filters={filters}
+            setFilters={setFilters}
+            viewMode={viewMode}
+            setViewMode={setViewMode}
+          />
+        </Suspense>
+      ) : (
+        <Suspense fallback={<CalendarSkeleton />}>
+          <MaintenanceCalendarView
+            filters={filters}
+            setFilters={setFilters}
+            viewMode={viewMode}
+            setViewMode={setViewMode}
+          />
+        </Suspense>
+      )}
+    </div>
+  )
+}
+
+function CalendarSkeleton() {
+  return (
+    <div className='rounded-lg border'>
+      <div className='flex items-center justify-between border-b p-4'>
+        <Skeleton className='h-7 w-40' />
+        <Skeleton className='h-8 w-20' />
+      </div>
+      <div className='grid grid-cols-7 border-b'>
+        {[...Array(7)].map((_, i) => (
+          <Skeleton key={i} className='h-8 w-full' />
+        ))}
+      </div>
+      <div className='grid grid-cols-7'>
+        {[...Array(35)].map((_, i) => (
+          <Skeleton key={i} className='h-[120px] w-full' />
+        ))}
+      </div>
     </div>
   )
 }
