@@ -11,9 +11,9 @@ Use this checklist to track implementation progress for Epic 2: Tenant Managemen
 
 | Issue | Backend | Frontend | Tests | Status |
 |-------|---------|----------|-------|--------|
-| EPM-21: Tenant Profile | ✅ | 🔶 | ⬜ | In Progress |
-| EPM-24: Tenant List | ✅ | 🔶 | ⬜ | In Progress |
-| EPM-20: Create Lease | ✅ | 🔶 | ⬜ | In Progress |
+| EPM-21: Tenant Profile | ✅ | ✅ | ⬜ | **DONE** (Sprint 1) |
+| EPM-24: Tenant List | ✅ | ✅ | ⬜ | **DONE** (Sprint 1) |
+| EPM-20: Create Lease | ✅ | ✅ | ⬜ | **DONE** (Sprint 1) |
 | EPM-22: Expiration Tracking | ✅ | ⬜ | ⬜ | Not Started |
 | EPM-23: Lease Renewal | ⬜ | ⬜ | ⬜ | Not Started |
 | EPM-25: Tenant Detail | ✅ | ⬜ | ⬜ | Not Started |
@@ -22,6 +22,15 @@ Use this checklist to track implementation progress for Epic 2: Tenant Managemen
 | EPM-28: Move-Out Process | ⬜ | ⬜ | ⬜ | Not Started |
 
 **Legend:** ✅ Complete | 🔶 Partial | ⬜ Not Started
+
+---
+
+## Sprint 1 Completed (2026-01-04)
+
+### Commit: `bb7ca4f`
+- EPM-21: Tenant create form wired to API with validation
+- EPM-24: Tenant list using live API data with inline editing
+- EPM-20: 5-step lease creation wizard connected to API
 
 ---
 
@@ -43,18 +52,18 @@ Use this checklist to track implementation progress for Epic 2: Tenant Managemen
 - [ ] Add audit logging to create/update
 - [ ] Add better error codes for validation failures
 
-### Frontend 🔶
+### Frontend ✅
 - [x] `src/routes/app.tenants.new.tsx` - Form shell exists
-- [ ] Wire form to `useCreateTenant` mutation
-- [ ] Use TanStack Form with `createTenantSchema`
-- [ ] Add property/unit dropdown with live API data
-- [ ] Add co-tenant dynamic form section
-- [ ] Add employment info collapsible section
-- [ ] Add vehicle info collapsible section
-- [ ] Add SSN input with masking
-- [ ] Add success toast on creation
-- [ ] Navigate to tenant detail on success
-- [ ] Add form draft persistence (localStorage)
+- [x] Wire form to `useCreateTenant` mutation
+- [x] Use TanStack Form with `createTenantSchema`
+- [x] Add property/unit dropdown with live API data
+- [ ] Add co-tenant dynamic form section (deferred)
+- [x] Add employment info collapsible section
+- [x] Add vehicle info collapsible section
+- [x] Add SSN input with masking (last 4 only)
+- [x] Add success toast on creation
+- [x] Navigate to tenant detail on success
+- [ ] Add form draft persistence (localStorage) (nice-to-have)
 
 ### Tests
 - [ ] Unit: Email uniqueness validation
@@ -74,18 +83,18 @@ Use this checklist to track implementation progress for Epic 2: Tenant Managemen
 - [ ] Add property filter (via lease/unit join)
 - [ ] Add CSV export endpoint
 
-### Frontend 🔶
+### Frontend ✅
 - [x] `src/routes/app.tenants.index.tsx` - Data table exists
 - [x] Column definitions
 - [x] Search UI
 - [x] Filter dropdowns
-- [ ] Replace mock data with API call (`tenantsQueryOptions`)
-- [ ] Wire search input to filter param
-- [ ] Wire property filter to API
-- [ ] Add loading skeleton
-- [ ] Add empty state component
-- [ ] Wire inline editing to `useUpdateTenant`
-- [ ] Wire CSV export button
+- [x] Replace mock data with API call (`tenantsQueryOptions`)
+- [x] Wire search input to filter param
+- [ ] Wire property filter to API (needs backend update)
+- [x] Add loading skeleton
+- [x] Add empty state component
+- [x] Wire inline editing to `useUpdateTenant`
+- [x] Wire CSV export button (local export working)
 
 ### Tests
 - [ ] Unit: Filter combinations
@@ -108,24 +117,24 @@ Use this checklist to track implementation progress for Epic 2: Tenant Managemen
 - [ ] Add `finalizeLease` endpoint (DRAFT → PENDING_SIGNATURE)
 - [ ] Integrate document generation (EPM-43)
 
-### Frontend 🔶
+### Frontend ✅
 - [x] `src/routes/app.leases.new.tsx` - Multi-step form shell
 - [x] Template selection UI
 - [x] Addenda selection UI
 - [x] Progress steps UI
-- [ ] Wire property dropdown to `propertiesQueryOptions`
-- [ ] Wire unit dropdown to `unitsQueryOptions` (filtered by property)
-- [ ] Wire tenant dropdown to `tenantsQueryOptions`
-- [ ] Add "Create New Tenant" inline option
-- [ ] Wire form to `useCreateLease` mutation
-- [ ] Add date validation (startDate < endDate)
-- [ ] Add overlap check before submit
-- [ ] Implement multi-step state management
-- [ ] Add form persistence between steps
-- [ ] Wire template selection to API
-- [ ] Wire addenda multi-select to API
-- [ ] Add review step with summary
-- [ ] Trigger document generation on finalization
+- [x] Wire property dropdown to `propertiesQueryOptions`
+- [x] Wire unit dropdown to `unitsQueryOptions` (filtered by property, vacant only)
+- [x] Wire tenant dropdown to `tenantsQueryOptions`
+- [x] Add "Create New Tenant" inline option (redirects to tenant form)
+- [x] Wire form to `useCreateLease` mutation
+- [x] Add date validation (auto-calculate end date)
+- [ ] Add overlap check before submit (backend validation exists)
+- [x] Implement multi-step state management (5 steps)
+- [ ] Add form persistence between steps (nice-to-have)
+- [x] Wire template selection to API
+- [x] Wire addenda multi-select to API
+- [x] Add review step with summary
+- [ ] Trigger document generation on finalization (needs integration)
 
 ### Tests
 - [ ] Unit: Date validation
