@@ -13,6 +13,8 @@ import {
   updateUnit,
   deleteUnit,
   bulkDeleteUnits,
+  type UnitWithDetails,
+  type UnitFull,
 } from '~/services/units.api'
 import { propertyKeys } from '~/services/properties.query'
 import type {
@@ -22,6 +24,12 @@ import type {
   BulkCreateUnitsInput,
   BulkDeleteUnitsInput,
 } from '~/services/units.schema'
+
+// Default filter values to satisfy required schema fields
+const defaultFilters: Pick<UnitFilters, 'offset' | 'limit'> = {
+  offset: 0,
+  limit: 50,
+}
 
 // Query keys
 export const unitKeys = {
@@ -33,20 +41,22 @@ export const unitKeys = {
 }
 
 // Query options
-export const unitsQueryOptions = (filters: UnitFilters = {}) =>
-  queryOptions({
-    queryKey: unitKeys.list(filters),
-    queryFn: () => getUnits({ data: filters }),
+export const unitsQueryOptions = (filters: Partial<UnitFilters> = {}) => {
+  const mergedFilters = { ...defaultFilters, ...filters }
+  return queryOptions({
+    queryKey: unitKeys.list(mergedFilters),
+    queryFn: () => getUnits({ data: mergedFilters }) as Promise<{ units: UnitWithDetails[]; total: number; limit: number; offset: number }>,
   })
+}
 
 export const unitQueryOptions = (id: string) =>
   queryOptions({
     queryKey: unitKeys.detail(id),
-    queryFn: () => getUnit({ data: { id } }),
+    queryFn: () => getUnit({ data: { id } }) as Promise<UnitFull>,
   })
 
 // Hooks
-export const useUnitsQuery = (filters: UnitFilters = {}) => {
+export const useUnitsQuery = (filters: Partial<UnitFilters> = {}) => {
   return useSuspenseQuery(unitsQueryOptions(filters))
 }
 

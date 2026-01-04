@@ -12,6 +12,8 @@ import {
   createProperty,
   updateProperty,
   deleteProperty,
+  type PropertyWithDetails,
+  type PropertyWithUnits,
 } from '~/services/properties.api'
 import type {
   CreatePropertyInput,
@@ -33,13 +35,13 @@ export const propertyKeys = {
 export const propertiesQueryOptions = (filters: PropertyFilters = {}) =>
   queryOptions({
     queryKey: propertyKeys.list(filters),
-    queryFn: () => getProperties({ data: filters }),
+    queryFn: () => getProperties({ data: filters }) as Promise<{ properties: PropertyWithUnits[]; total: number; limit: number; offset: number }>,
   })
 
 export const propertyQueryOptions = (id: string) =>
   queryOptions({
     queryKey: propertyKeys.detail(id),
-    queryFn: () => getProperty({ data: { id } }),
+    queryFn: () => getProperty({ data: { id } }) as Promise<PropertyWithDetails>,
   })
 
 export const propertyStatsQueryOptions = () =>

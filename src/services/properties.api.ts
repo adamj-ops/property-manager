@@ -1,5 +1,6 @@
 import { createServerFn } from '@tanstack/start'
 import { zodValidator } from '@tanstack/zod-adapter'
+import type { Prisma } from '@prisma/client'
 
 import { authedMiddleware } from '~/middlewares/auth'
 import { prisma } from '~/server/db'
@@ -9,6 +10,51 @@ import {
   propertyFiltersSchema,
   propertyIdSchema,
 } from '~/services/properties.schema'
+
+// Property with units and related data (for detail view)
+export type PropertyWithDetails = Prisma.PropertyGetPayload<{
+  include: {
+    units: {
+      include: {
+        leases: {
+          include: {
+            tenant: {
+              select: {
+                id: true
+                firstName: true
+                lastName: true
+                email: true
+                phone: true
+              }
+            }
+          }
+        }
+      }
+    }
+    expenses: true
+    inspections: true
+  }
+}>
+
+// Property with units summary (for list view)
+export type PropertyWithUnits = Prisma.PropertyGetPayload<{
+  include: {
+    units: {
+      select: {
+        id: true
+        status: true
+        marketRent: true
+        currentRent: true
+      }
+    }
+    _count: {
+      select: {
+        units: true
+        expenses: true
+      }
+    }
+  }
+}>
 
 // Get all properties for the authenticated user
 export const getProperties = createServerFn({ method: 'GET' })

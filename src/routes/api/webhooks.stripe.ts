@@ -395,7 +395,7 @@ async function handleInvoicePaymentSucceeded(invoice: Stripe.Invoice) {
       tenantId: lease.tenantId,
       leaseId: lease.id,
       type: 'RENT',
-      method: 'ONLINE',
+      method: 'ONLINE_PORTAL',
       status: 'COMPLETED',
       amount,
       appliedAmount: amount,

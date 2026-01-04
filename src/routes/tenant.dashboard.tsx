@@ -98,7 +98,7 @@ function TenantDashboardPage() {
               </Link>
             </Button>
             <Button asChild variant='outline' size='lg'>
-              <Link to='/tenant/maintenance'>
+              <Link to={'/tenant/maintenance' as '/app/maintenance'}>
                 <LuWrench className='mr-2 size-4' />
                 Submit Maintenance Request
               </Link>
@@ -150,7 +150,7 @@ function TenantDashboardPage() {
             <div className='flex items-center justify-between'>
               <CardTitle>Recent Payments</CardTitle>
               <Button asChild variant='ghost' size='sm'>
-                <Link to='/tenant/payments/history'>View All</Link>
+                <Link to={'/tenant/payments/history' as '/tenant/payments'}>View All</Link>
               </Button>
             </div>
           </CardHeader>

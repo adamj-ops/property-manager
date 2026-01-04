@@ -3,7 +3,7 @@ import { status } from 'http-status'
 import { setResponseStatus } from 'vinxi/http'
 
 import { getAuth } from '~/services/auth.api'
-import type { Auth } from '~/services/auth.api'
+import type { Authenticated } from '~/services/auth.api'
 
 export const Role = {
   Admin: 'admin',
@@ -33,7 +33,7 @@ export const authedMiddleware = createMiddleware()
 
     return next({
       context: {
-        auth: context.auth as Auth,
+        auth: context.auth as Authenticated,
       },
     })
   })
@@ -41,7 +41,6 @@ export const authedMiddleware = createMiddleware()
 export const adminMiddleware = createMiddleware()
   .middleware([authedMiddleware])
   .server(async ({ next, context }) => {
-    // @ts-expect-error https://github.com/TanStack/router/issues/2780
     if (context.auth.user.role !== Role.Admin) {
       setResponseStatus(status.UNAUTHORIZED)
       throw new Error('Unauthorized')

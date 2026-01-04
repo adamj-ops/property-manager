@@ -67,6 +67,8 @@ function NewPropertyPage() {
       parkingSpaces: undefined,
       amenities: [],
       notes: undefined,
+      leadPaintDisclosure: false,
+      builtBefore1978: false,
     },
     onSubmit: async ({ value }) => {
       try {
