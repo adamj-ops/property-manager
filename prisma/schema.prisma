@@ -495,6 +495,11 @@ model Lease {
   tenantId String @db.Uuid
   tenant   Tenant @relation(fields: [tenantId], references: [id])
 
+  // Renewal Tracking
+  renewedFromLeaseId String? @db.Uuid @map("renewed_from_lease_id")
+  renewedFromLease   Lease?  @relation("LeaseRenewal", fields: [renewedFromLeaseId], references: [id])
+  renewedToLease     Lease?  @relation("LeaseRenewal")
+
   coTenants   LeaseTenant[]
   addenda     LeaseAddendum[]
   payments    Payment[]
@@ -504,6 +509,7 @@ model Lease {
   @@index([tenantId])
   @@index([status])
   @@index([endDate])
+  @@index([renewedFromLeaseId])
   @@map("pm_leases")
 }
 
