@@ -212,5 +212,3 @@ function DuplicateContent({
   )
 }
 
-export { TemplateDuplicateDialog }
-

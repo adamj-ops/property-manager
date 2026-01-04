@@ -27,8 +27,10 @@ export function DocumentGenerator({ leaseId }: DocumentGeneratorProps) {
   const handleGenerate = async () => {
     try {
       const result = await generatePdf.mutateAsync({
-        leaseId,
-        addendumIds: [], // TODO: Allow user to select addenda
+        data: {
+          leaseId,
+          addendumIds: [], // TODO: Allow user to select addenda
+        },
       })
 
       toast.success('Lease document generated successfully')
@@ -46,12 +48,13 @@ export function DocumentGenerator({ leaseId }: DocumentGeneratorProps) {
   }
 
   const handleDownload = () => {
-    if (lease?.leaseDocumentUrl) {
-      window.open(lease.leaseDocumentUrl, '_blank')
+    const documentUrl = (lease as { leaseDocumentUrl?: string })?.leaseDocumentUrl
+    if (documentUrl) {
+      window.open(documentUrl, '_blank')
     }
   }
 
-  const hasDocument = !!lease?.leaseDocumentUrl
+  const hasDocument = !!(lease as { leaseDocumentUrl?: string })?.leaseDocumentUrl
 
   return (
     <Card>

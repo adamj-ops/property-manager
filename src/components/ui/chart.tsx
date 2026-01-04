@@ -109,7 +109,7 @@ const ChartTooltip = RechartsPrimitive.Tooltip
 
 interface ChartTooltipContentProps
   extends ComponentProps<typeof RechartsPrimitive.Tooltip>,
-    ComponentProps<'div'> {
+    Omit<ComponentProps<'div'>, 'content'> {
   hideLabel?: boolean
   hideIndicator?: boolean
   indicator?: 'line' | 'dot' | 'dashed'

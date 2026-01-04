@@ -12,6 +12,7 @@ import type { Country } from 'react-phone-number-input'
 
 import type { Theme } from '~/components/theme'
 import type { NavItem } from '~/components/ui/sidebar-nav-builder'
+import type { ValidLink } from '~/components/ui/link'
 import type { Locale } from '~/libs/i18n'
 
 export interface LanguageOption {
@@ -66,7 +67,7 @@ export const tenantNavigation: readonly NavItem[] = [
           {
             type: 'link',
             name: 'navigation.payment-history',
-            link: '/tenant/payments/history',
+            link: '/tenant/payments/history' as ValidLink,
           },
         ],
       },
@@ -84,7 +85,7 @@ export const tenantNavigation: readonly NavItem[] = [
           {
             type: 'link',
             name: 'navigation.lease-details',
-            link: '/tenant/lease',
+            link: '/tenant/lease' as ValidLink,
           },
         ],
       },
@@ -96,7 +97,7 @@ export const tenantNavigation: readonly NavItem[] = [
           {
             type: 'link',
             name: 'navigation.maintenance-requests',
-            link: '/tenant/maintenance',
+            link: '/tenant/maintenance' as ValidLink,
           },
         ],
       },
