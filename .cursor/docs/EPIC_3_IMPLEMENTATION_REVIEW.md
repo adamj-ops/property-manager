@@ -2,7 +2,7 @@
 
 **Date:** 2026-01-04
 **Branch:** `claude/epic-3-review-planning-Pqak1`
-**Status:** ~85% Complete (MVP Core Features Done)
+**Status:** ~90% Complete (MVP Core Features Done)
 **Total Story Points:** 42 (MVP), 49 (Full)
 
 ---
@@ -20,15 +20,27 @@
 | Vendor list route | ✅ Done | `/app/maintenance/vendors` |
 | Vendor detail route | ✅ Done | `/app/maintenance/vendors/$vendorId` |
 | Status history tracking (EPM-32) | ✅ Done | Auto-records on status changes |
+| **Photo upload for work orders** | ✅ Done | Issue photos + completion photos with Supabase Storage |
+| **Vendor assignment dropdown** | ✅ Done | Can assign/unassign vendors from work order detail |
 
-### Files Created
+### Files Created (Session 2)
+- `src/components/maintenance/photo-upload.tsx` - Reusable photo upload component
+- `src/components/ui/tabs.tsx` - Simple tabs component for photo type switching
+
+### Files Modified (Session 2)
+- `src/services/maintenance.api.ts` - Added photo upload functions (createMaintenancePhotoUploadUrl, confirmMaintenancePhotoUpload, getMaintenancePhotoUrls)
+- `src/services/maintenance.schema.ts` - Added photoUploadRequestSchema, photoUrlsSchema types
+- `src/services/maintenance.query.ts` - Added photo upload hooks (useMaintenancePhotoUpload)
+- `src/routes/app.maintenance.$workOrderId.tsx` - Integrated photo upload component, vendor assignment dropdown
+
+### Files Created (Session 1)
 - `src/services/vendors.schema.ts` - Zod validators for vendors
 - `src/services/vendors.api.ts` - Server functions for vendor CRUD
 - `src/services/vendors.query.ts` - React Query hooks for vendors
 - `src/routes/app.maintenance.vendors.tsx` - Vendor list page
 - `src/routes/app.maintenance.vendors.$vendorId.tsx` - Vendor detail page
 
-### Files Modified
+### Files Modified (Session 1)
 - `src/routes/app.maintenance.index.tsx` - Wired to real API
 - `src/routes/app.maintenance.$workOrderId.tsx` - Wired to real API
 - `src/services/maintenance.api.ts` - Added status history tracking

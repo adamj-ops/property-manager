@@ -9,7 +9,13 @@ import {
   maintenanceFiltersSchema,
   maintenanceIdSchema,
   addCommentSchema,
+  photoUploadRequestSchema,
 } from '~/services/maintenance.schema'
+import {
+  createUploadUrl,
+  createDownloadUrl,
+  validateFile,
+} from '~/server/storage'
 
 // Get all maintenance requests
 export const getMaintenanceRequests = createServerFn({ method: 'GET' })
@@ -293,4 +299,162 @@ export const getMaintenanceStats = createServerFn({ method: 'GET' })
     ])
 
     return { open, inProgress, completedLast30Days: completed, emergencyOpen: emergency }
+  })
+
+// Allowed photo types
+const ALLOWED_PHOTO_TYPES = ['image/jpeg', 'image/png', 'image/gif', 'image/webp']
+const MAX_PHOTO_SIZE = 10 * 1024 * 1024 // 10MB
+
+// Create photo upload URL
+export const createMaintenancePhotoUploadUrl = createServerFn({ method: 'POST' })
+  .middleware([authedMiddleware])
+  .validator(zodValidator(photoUploadRequestSchema))
+  .handler(async ({ context, data }) => {
+    // Verify the maintenance request exists and belongs to user
+    const request = await prisma.maintenanceRequest.findFirst({
+      where: {
+        id: data.requestId,
+        unit: { property: { managerId: context.auth.user.id } },
+      },
+    })
+
+    if (!request) {
+      throw new Error('Maintenance request not found')
+    }
+
+    // Validate file
+    const validation = validateFile(
+      {
+        size: data.fileSize,
+        type: data.mimeType,
+        name: data.fileName,
+      },
+      ALLOWED_PHOTO_TYPES
+    )
+
+    if (!validation.valid) {
+      throw new Error(validation.error)
+    }
+
+    if (data.fileSize > MAX_PHOTO_SIZE) {
+      throw new Error(`Photo size exceeds maximum of ${MAX_PHOTO_SIZE / 1024 / 1024}MB`)
+    }
+
+    // Generate signed upload URL
+    const uploadResult = await createUploadUrl(
+      context.auth.user.id,
+      data.fileName,
+      data.mimeType,
+      {
+        propertyId: request.unitId,
+        documentType: `maintenance/${data.photoType}`,
+      }
+    )
+
+    return {
+      signedUrl: uploadResult.signedUrl,
+      token: uploadResult.token,
+      path: uploadResult.path,
+    }
+  })
+
+// Confirm photo upload and update maintenance request
+export const confirmMaintenancePhotoUpload = createServerFn({ method: 'POST' })
+  .middleware([authedMiddleware])
+  .validator(
+    zodValidator(
+      photoUploadRequestSchema.pick({ requestId: true, photoType: true }).extend({
+        storagePath: photoUploadRequestSchema.shape.fileName,
+      })
+    )
+  )
+  .handler(async ({ context, data }) => {
+    // Verify ownership
+    const request = await prisma.maintenanceRequest.findFirst({
+      where: {
+        id: data.requestId,
+        unit: { property: { managerId: context.auth.user.id } },
+      },
+    })
+
+    if (!request) {
+      throw new Error('Maintenance request not found')
+    }
+
+    // Generate public URL for the uploaded photo
+    const photoUrl = await createDownloadUrl(data.storagePath)
+
+    // Update the maintenance request with the new photo URL
+    const fieldToUpdate = data.photoType === 'completion' ? 'completionPhotos' : 'photoUrls'
+    const currentPhotos = (request[fieldToUpdate] as string[]) || []
+
+    // Store the storage path instead of signed URL for persistence
+    // We'll generate fresh signed URLs when displaying
+    const updatedRequest = await prisma.maintenanceRequest.update({
+      where: { id: data.requestId },
+      data: {
+        [fieldToUpdate]: [...currentPhotos, data.storagePath],
+      },
+    })
+
+    return {
+      photoUrl,
+      storagePath: data.storagePath,
+      request: updatedRequest,
+    }
+  })
+
+// Get signed download URLs for maintenance photos
+export const getMaintenancePhotoUrls = createServerFn({ method: 'GET' })
+  .middleware([authedMiddleware])
+  .validator(zodValidator(maintenanceIdSchema))
+  .handler(async ({ context, data }) => {
+    // Verify ownership
+    const request = await prisma.maintenanceRequest.findFirst({
+      where: {
+        id: data.id,
+        unit: { property: { managerId: context.auth.user.id } },
+      },
+      select: {
+        photoUrls: true,
+        completionPhotos: true,
+      },
+    })
+
+    if (!request) {
+      throw new Error('Maintenance request not found')
+    }
+
+    // Generate signed URLs for all photos
+    const photoUrls = await Promise.all(
+      (request.photoUrls || []).map(async (path) => {
+        try {
+          // Check if it's already a URL (legacy data) or a storage path
+          if (path.startsWith('http')) {
+            return path
+          }
+          return await createDownloadUrl(path)
+        } catch {
+          return null
+        }
+      })
+    )
+
+    const completionPhotoUrls = await Promise.all(
+      (request.completionPhotos || []).map(async (path) => {
+        try {
+          if (path.startsWith('http')) {
+            return path
+          }
+          return await createDownloadUrl(path)
+        } catch {
+          return null
+        }
+      })
+    )
+
+    return {
+      photoUrls: photoUrls.filter(Boolean) as string[],
+      completionPhotoUrls: completionPhotoUrls.filter(Boolean) as string[],
+    }
   })

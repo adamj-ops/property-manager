@@ -1,6 +1,6 @@
 'use client'
 
-import { createFileRoute, useNavigate } from '@tanstack/react-router'
+import { createFileRoute } from '@tanstack/react-router'
 import { Suspense, useState } from 'react'
 import {
   LuArrowLeft,
@@ -12,7 +12,6 @@ import {
   LuMessageSquare,
   LuPhone,
   LuSend,
-  LuUpload,
   LuUser,
   LuWrench,
 } from 'react-icons/lu'
@@ -26,9 +25,11 @@ import { Link } from '~/components/ui/link'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '~/components/ui/select'
 import { Separator } from '~/components/ui/separator'
 import { Skeleton } from '~/components/ui/skeleton'
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '~/components/ui/tabs'
 import { Textarea } from '~/components/ui/textarea'
 import { Typography } from '~/components/ui/typography'
 import { useToast } from '~/components/ui/use-toast'
+import { MaintenancePhotoUpload } from '~/components/maintenance/photo-upload'
 
 import {
   useMaintenanceRequestQuery,
@@ -36,11 +37,15 @@ import {
   useAddMaintenanceComment,
   maintenanceRequestQueryOptions,
 } from '~/services/maintenance.query'
+import { useVendorsQuery, vendorsQueryOptions } from '~/services/vendors.query'
 import type { MaintenanceStatus } from '~/services/maintenance.schema'
 
 export const Route = createFileRoute('/app/maintenance/$workOrderId')({
   loader: async ({ params, context }) => {
-    await context.queryClient.ensureQueryData(maintenanceRequestQueryOptions(params.workOrderId))
+    await Promise.all([
+      context.queryClient.ensureQueryData(maintenanceRequestQueryOptions(params.workOrderId)),
+      context.queryClient.ensureQueryData(vendorsQueryOptions({ status: 'ACTIVE' })),
+    ])
   },
   component: WorkOrderDetailPage,
 })
@@ -108,10 +113,10 @@ function WorkOrderSkeleton() {
 // Work order detail component
 function WorkOrderDetail() {
   const { workOrderId } = Route.useParams()
-  const navigate = useNavigate()
   const { toast } = useToast()
 
   const { data: workOrder } = useMaintenanceRequestQuery(workOrderId)
+  const { data: vendorsData } = useVendorsQuery({ status: 'ACTIVE' })
   const updateMutation = useUpdateMaintenanceRequest()
   const commentMutation = useAddMaintenanceComment()
 
@@ -120,6 +125,7 @@ function WorkOrderDetail() {
   const [newComment, setNewComment] = useState('')
   const [isInternalComment, setIsInternalComment] = useState(false)
   const [actualCost, setActualCost] = useState<string>(workOrder.actualCost?.toString() || '')
+  const [selectedVendorId, setSelectedVendorId] = useState<string>(workOrder.vendorId || '')
 
   const priority = priorityConfig[workOrder.priority] || priorityConfig.MEDIUM
   const status = statusConfig[workOrder.status] || statusConfig.SUBMITTED
@@ -241,6 +247,56 @@ function WorkOrderDetail() {
       toast({
         title: 'Error',
         description: 'Failed to add comment',
+        variant: 'destructive',
+      })
+    }
+  }
+
+  const handleAssignVendor = async () => {
+    if (!selectedVendorId) {
+      // Clear vendor assignment
+      try {
+        await updateMutation.mutateAsync({
+          id: workOrderId,
+          vendorId: undefined,
+        })
+        toast({
+          title: 'Vendor Removed',
+          description: 'Vendor assignment has been cleared',
+        })
+      } catch {
+        toast({
+          title: 'Error',
+          description: 'Failed to remove vendor',
+          variant: 'destructive',
+        })
+      }
+      return
+    }
+
+    if (selectedVendorId === workOrder.vendorId) {
+      toast({
+        title: 'No changes',
+        description: 'This vendor is already assigned',
+      })
+      return
+    }
+
+    try {
+      await updateMutation.mutateAsync({
+        id: workOrderId,
+        vendorId: selectedVendorId,
+      })
+
+      const vendor = vendorsData?.vendors.find(v => v.id === selectedVendorId)
+      toast({
+        title: 'Vendor Assigned',
+        description: `${vendor?.companyName || 'Vendor'} has been assigned to this work order`,
+      })
+    } catch {
+      toast({
+        title: 'Error',
+        description: 'Failed to assign vendor',
         variant: 'destructive',
       })
     }
@@ -530,6 +586,51 @@ function WorkOrderDetail() {
             </CardContent>
           </Card>
 
+          {/* Assign Vendor */}
+          <Card>
+            <CardHeader>
+              <CardTitle>Assign Vendor</CardTitle>
+              <CardDescription>Assign a vendor to handle this work order</CardDescription>
+            </CardHeader>
+            <CardContent className='space-y-4'>
+              <div className='space-y-2'>
+                <Label>Vendor</Label>
+                <Select
+                  value={selectedVendorId}
+                  onValueChange={setSelectedVendorId}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder='Select a vendor' />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value=''>No vendor assigned</SelectItem>
+                    {vendorsData?.vendors.map((vendor) => (
+                      <SelectItem key={vendor.id} value={vendor.id}>
+                        {vendor.companyName}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              {workOrder.vendor && (
+                <div className='rounded-lg bg-muted p-3 text-sm'>
+                  <p className='font-medium'>{workOrder.vendor.companyName}</p>
+                  <p className='text-muted-foreground'>{workOrder.vendor.phone}</p>
+                </div>
+              )}
+              <Button
+                className='w-full'
+                variant='outline'
+                onClick={handleAssignVendor}
+                disabled={updateMutation.isPending || selectedVendorId === (workOrder.vendorId || '')}
+              >
+                {updateMutation.isPending && <LuLoader2 className='mr-2 size-4 animate-spin' />}
+                <LuWrench className='mr-2 size-4' />
+                {selectedVendorId ? 'Update Assignment' : 'Remove Vendor'}
+              </Button>
+            </CardContent>
+          </Card>
+
           {/* Photos */}
           <Card>
             <CardHeader>
@@ -537,41 +638,52 @@ function WorkOrderDetail() {
               <CardDescription>Attach photos of the issue or completed work</CardDescription>
             </CardHeader>
             <CardContent>
-              {/* Display existing photos */}
-              {workOrder.photoUrls && workOrder.photoUrls.length > 0 && (
-                <div className='grid grid-cols-2 gap-2 mb-4'>
-                  {workOrder.photoUrls.map((url, idx) => (
-                    <img
-                      key={idx}
-                      src={url}
-                      alt={`Work order photo ${idx + 1}`}
-                      className='rounded-lg object-cover aspect-square'
-                    />
-                  ))}
-                </div>
-              )}
-              {workOrder.completionPhotos && workOrder.completionPhotos.length > 0 && (
-                <div className='mb-4'>
-                  <p className='text-sm font-medium mb-2'>Completion Photos</p>
-                  <div className='grid grid-cols-2 gap-2'>
-                    {workOrder.completionPhotos.map((url, idx) => (
-                      <img
-                        key={idx}
-                        src={url}
-                        alt={`Completion photo ${idx + 1}`}
-                        className='rounded-lg object-cover aspect-square'
-                      />
-                    ))}
-                  </div>
-                </div>
-              )}
-              <div className='rounded-lg border-2 border-dashed p-8 text-center'>
-                <LuUpload className='mx-auto size-8 text-muted-foreground' />
-                <p className='mt-2 text-sm text-muted-foreground'>Drag and drop or click to upload</p>
-                <Button variant='outline' size='sm' className='mt-4'>
-                  Upload Photos
-                </Button>
-              </div>
+              <Tabs defaultValue='issue' className='w-full'>
+                <TabsList className='grid w-full grid-cols-2'>
+                  <TabsTrigger value='issue'>Issue Photos</TabsTrigger>
+                  <TabsTrigger value='completion'>Completion</TabsTrigger>
+                </TabsList>
+                <TabsContent value='issue' className='mt-4'>
+                  <MaintenancePhotoUpload
+                    requestId={workOrderId}
+                    photoType='initial'
+                    existingPhotos={workOrder.photoUrls || []}
+                    onSuccess={() => {
+                      toast({
+                        title: 'Photo Uploaded',
+                        description: 'Issue photo has been added successfully',
+                      })
+                    }}
+                    onError={(error) => {
+                      toast({
+                        title: 'Upload Failed',
+                        description: error.message,
+                        variant: 'destructive',
+                      })
+                    }}
+                  />
+                </TabsContent>
+                <TabsContent value='completion' className='mt-4'>
+                  <MaintenancePhotoUpload
+                    requestId={workOrderId}
+                    photoType='completion'
+                    completionPhotos={workOrder.completionPhotos || []}
+                    onSuccess={() => {
+                      toast({
+                        title: 'Photo Uploaded',
+                        description: 'Completion photo has been added successfully',
+                      })
+                    }}
+                    onError={(error) => {
+                      toast({
+                        title: 'Upload Failed',
+                        description: error.message,
+                        variant: 'destructive',
+                      })
+                    }}
+                  />
+                </TabsContent>
+              </Tabs>
             </CardContent>
           </Card>
 

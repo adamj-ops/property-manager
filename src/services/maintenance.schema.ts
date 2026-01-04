@@ -96,6 +96,21 @@ export const addCommentSchema = z.object({
 export type MaintenanceStatus = z.infer<typeof maintenanceStatusEnum>
 export type MaintenancePriority = z.infer<typeof maintenancePriorityEnum>
 export type MaintenanceCategory = z.infer<typeof maintenanceCategoryEnum>
+// Photo upload schemas
+export const photoUploadRequestSchema = z.object({
+  requestId: z.string().uuid(),
+  fileName: z.string().min(1),
+  fileSize: z.number().int().positive(),
+  mimeType: z.string().min(1),
+  photoType: z.enum(['initial', 'completion']).default('initial'),
+})
+
+export const photoUrlsSchema = z.object({
+  requestId: z.string().uuid(),
+  photoType: z.enum(['initial', 'completion']).optional(),
+})
+
 export type CreateMaintenanceInput = z.infer<typeof createMaintenanceSchema>
 export type UpdateMaintenanceInput = z.infer<typeof updateMaintenanceSchema>
 export type MaintenanceFilters = z.infer<typeof maintenanceFiltersSchema>
+export type PhotoUploadRequest = z.infer<typeof photoUploadRequestSchema>

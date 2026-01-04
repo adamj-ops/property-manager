@@ -12,11 +12,15 @@ import {
   createMaintenanceRequest,
   updateMaintenanceRequest,
   addMaintenanceComment,
+  createMaintenancePhotoUploadUrl,
+  confirmMaintenancePhotoUpload,
+  getMaintenancePhotoUrls,
 } from '~/services/maintenance.api'
 import type {
   CreateMaintenanceInput,
   UpdateMaintenanceInput,
   MaintenanceFilters,
+  PhotoUploadRequest,
 } from '~/services/maintenance.schema'
 
 // Query keys
@@ -102,4 +106,78 @@ export const useAddMaintenanceComment = () => {
       queryClient.invalidateQueries({ queryKey: maintenanceKeys.detail(variables.requestId) })
     },
   })
+}
+
+// Photo upload hooks
+export const useCreateMaintenancePhotoUploadUrl = () => {
+  return useMutation({
+    mutationFn: (data: PhotoUploadRequest) => createMaintenancePhotoUploadUrl({ data }),
+  })
+}
+
+export const useConfirmMaintenancePhotoUpload = () => {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: (data: { requestId: string; storagePath: string; photoType?: 'initial' | 'completion' }) =>
+      confirmMaintenancePhotoUpload({ data }),
+    onSuccess: (_, variables) => {
+      queryClient.invalidateQueries({ queryKey: maintenanceKeys.detail(variables.requestId) })
+    },
+  })
+}
+
+export const useGetMaintenancePhotoUrls = () => {
+  return useMutation({
+    mutationFn: (id: string) => getMaintenancePhotoUrls({ data: { id } }),
+  })
+}
+
+// Combined photo upload hook that handles the full flow
+export const useMaintenancePhotoUpload = () => {
+  const createUploadUrl = useCreateMaintenancePhotoUploadUrl()
+  const confirmUpload = useConfirmMaintenancePhotoUpload()
+
+  const uploadPhoto = async (
+    file: File,
+    requestId: string,
+    photoType: 'initial' | 'completion' = 'initial'
+  ) => {
+    // Step 1: Get signed upload URL
+    const { signedUrl, path } = await createUploadUrl.mutateAsync({
+      requestId,
+      fileName: file.name,
+      fileSize: file.size,
+      mimeType: file.type,
+      photoType,
+    })
+
+    // Step 2: Upload file directly to Supabase Storage
+    const uploadResponse = await fetch(signedUrl, {
+      method: 'PUT',
+      headers: {
+        'Content-Type': file.type,
+      },
+      body: file,
+    })
+
+    if (!uploadResponse.ok) {
+      throw new Error('Failed to upload photo to storage')
+    }
+
+    // Step 3: Confirm upload and update maintenance request
+    const result = await confirmUpload.mutateAsync({
+      requestId,
+      storagePath: path,
+      photoType,
+    })
+
+    return result
+  }
+
+  return {
+    uploadPhoto,
+    isLoading: createUploadUrl.isPending || confirmUpload.isPending,
+    error: createUploadUrl.error || confirmUpload.error,
+  }
 }
