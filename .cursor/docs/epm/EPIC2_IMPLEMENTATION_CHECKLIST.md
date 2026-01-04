@@ -14,9 +14,9 @@ Use this checklist to track implementation progress for Epic 2: Tenant Managemen
 | EPM-21: Tenant Profile | ✅ | ✅ | ⬜ | **DONE** (Sprint 1) |
 | EPM-24: Tenant List | ✅ | ✅ | ⬜ | **DONE** (Sprint 1) |
 | EPM-20: Create Lease | ✅ | ✅ | ⬜ | **DONE** (Sprint 1) |
-| EPM-22: Expiration Tracking | ✅ | ⬜ | ⬜ | Not Started |
-| EPM-23: Lease Renewal | ⬜ | ⬜ | ⬜ | Not Started |
-| EPM-25: Tenant Detail | ✅ | ⬜ | ⬜ | Not Started |
+| EPM-22: Expiration Tracking | ✅ | ✅ | ⬜ | **DONE** (Sprint 2) |
+| EPM-23: Lease Renewal | ✅ | ✅ | ⬜ | **DONE** (Sprint 2) |
+| EPM-25: Tenant Detail | ✅ | ✅ | ⬜ | **DONE** (Sprint 2) |
 | EPM-26: Pet Application | ⬜ | ⬜ | ⬜ | Not Started |
 | EPM-27: Move-In Inspection | ⬜ | ⬜ | ⬜ | Not Started |
 | EPM-28: Move-Out Process | ⬜ | ⬜ | ⬜ | Not Started |
@@ -34,12 +34,23 @@ Use this checklist to track implementation progress for Epic 2: Tenant Managemen
 
 ---
 
+## Sprint 2 Completed (2026-01-04)
+
+### Commit: `ff67a39`
+- EPM-25: Tenant detail page wired to API with live data
+- EPM-22: Expiring leases dashboard widget with 30/60/90 day tabs
+- EPM-23: Lease renewal workflow with wizard dialog
+- Database migration `007_add_lease_renewal_link.sql` added
+- Prisma schema updated with `renewedFromLeaseId` relation
+
+---
+
 ## Database Migrations Needed
 
-- [ ] **`00X_leases_renewal_link.sql`** - Add `renewed_from_lease_id` column to leases
+- [x] **`007_add_lease_renewal_link.sql`** - Add `renewed_from_lease_id` column to leases
 - [ ] **`00X_move_out_damage_items.sql`** - Create damage items table
 - [ ] **`00X_deposit_disposition_letters.sql`** - Create disposition letters table
-- [ ] Update `prisma/schema.prisma` with new models
+- [x] Update `prisma/schema.prisma` with renewal relation
 
 ---
 
@@ -144,19 +155,19 @@ Use this checklist to track implementation progress for Epic 2: Tenant Managemen
 
 ---
 
-## EPM-22: Lease Expiration Tracking (8 pts)
+## EPM-22: Lease Expiration Tracking (8 pts) ✅
 
 ### Backend ✅
 - [x] `getExpiringLeases` returns grouped buckets (30/60/90 days)
 - [ ] Add notification trigger integration (EPM-6)
 
-### Frontend ⬜
-- [ ] Create `src/components/dashboard/expiring-leases-widget.tsx`
-- [ ] Add widget to dashboard
-- [ ] Wire `src/routes/app.leases.index.tsx` to API (replace mock)
-- [ ] Add expiration badges with color coding
-- [ ] Add "Renew" quick action button
-- [ ] Add expiration date filter
+### Frontend ✅
+- [x] Create `src/components/dashboard/expiring-leases-widget.tsx`
+- [x] Add widget to dashboard (replaces static "Urgent Items")
+- [x] Wire `src/routes/app.leases.index.tsx` to API (replace mock)
+- [x] Add expiration badges with color coding
+- [x] Add "Renew" quick action button
+- [x] Add expiration date filter (URL search params)
 
 ### Tests
 - [ ] Unit: Date bucket logic
@@ -165,28 +176,27 @@ Use this checklist to track implementation progress for Epic 2: Tenant Managemen
 
 ---
 
-## EPM-23: Lease Renewal Workflow (8 pts)
+## EPM-23: Lease Renewal Workflow (8 pts) ✅
 
-### Database ⬜
-- [ ] Create migration `00X_leases_renewal_link.sql`
-- [ ] Update Prisma schema with `renewedFromLeaseId`
+### Database ✅
+- [x] Create migration `007_add_lease_renewal_link.sql`
+- [x] Update Prisma schema with `renewedFromLeaseId`
 
-### Backend ⬜
-- [ ] Create `src/services/lease-renewals.api.ts`
-  - [ ] `createLeaseRenewalFromLease(leaseId, newTerms)`
-  - [ ] `finalizeLeaseRenewal(leaseId)`
-- [ ] Create `src/services/lease-renewals.schema.ts`
-  - [ ] `createLeaseRenewalFromLeaseSchema`
-  - [ ] `finalizeLeaseRenewalSchema`
-- [ ] Create `src/services/lease-renewals.query.ts`
+### Backend ✅
+- [x] Create `src/services/lease-renewals.api.ts`
+  - [x] `createLeaseRenewal(leaseId, newTerms)`
+  - [x] `getLeaseRenewalHistory(leaseId)`
+- [x] Create `src/services/lease-renewals.schema.ts`
+  - [x] `createLeaseRenewalSchema`
+- [x] Create `src/services/lease-renewals.query.ts`
 
-### Frontend ⬜
-- [ ] Add "Renew Lease" button on lease detail
-- [ ] Create `src/components/leases/renewal-wizard.tsx`
-- [ ] Pre-populate form with current lease terms
-- [ ] Allow adjustment of rent, dates
-- [ ] Show rent increase calculation
-- [ ] Add renewal history section on lease detail
+### Frontend ✅
+- [x] Add "Renew Lease" button on lease detail
+- [x] Create `src/components/leases/renewal-wizard.tsx`
+- [x] Pre-populate form with current lease terms
+- [x] Allow adjustment of rent, dates, duration
+- [x] Show rent increase calculation
+- [ ] Add renewal history section on lease detail (deferred)
 
 ### Tests
 - [ ] Unit: Renewal linking
@@ -195,22 +205,22 @@ Use this checklist to track implementation progress for Epic 2: Tenant Managemen
 
 ---
 
-## EPM-25: Tenant Detail Page (8 pts)
+## EPM-25: Tenant Detail Page (8 pts) ✅
 
 ### Backend ✅
 - [x] `getTenant` includes related data
 
-### Frontend ⬜
-- [ ] Wire `src/routes/app.tenants.$tenantId.tsx` to API
-- [ ] Create overview section (editable inline)
-- [ ] Create active lease section
-- [ ] Create payment history table
-- [ ] Create maintenance requests section
-- [ ] Create documents section
-- [ ] Create pets section
-- [ ] Create communication log section
-- [ ] Add loading skeleton
-- [ ] Add error state
+### Frontend ✅
+- [x] Wire `src/routes/app.tenants.$tenantId.tsx` to API
+- [x] Create overview section with contact info
+- [x] Create active lease section with financial summary
+- [x] Create payment history table
+- [x] Create maintenance requests section
+- [x] Create documents section
+- [x] Create pets section
+- [ ] Create communication log section (deferred - needs comm service)
+- [x] Add loading skeleton
+- [x] Add error state
 
 ### Tests
 - [ ] Unit: Component rendering
