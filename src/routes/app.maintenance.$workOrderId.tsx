@@ -1,12 +1,17 @@
-import { createFileRoute } from '@tanstack/react-router'
+'use client'
+
+import { createFileRoute, useNavigate } from '@tanstack/react-router'
+import { Suspense, useState } from 'react'
 import {
   LuArrowLeft,
   LuCalendar,
   LuCheck,
   LuClock,
   LuDollarSign,
+  LuLoader2,
   LuMessageSquare,
   LuPhone,
+  LuSend,
   LuUpload,
   LuUser,
   LuWrench,
@@ -15,52 +20,231 @@ import {
 import { Badge } from '~/components/ui/badge'
 import { Button } from '~/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '~/components/ui/card'
+import { Input } from '~/components/ui/input'
+import { Label } from '~/components/ui/label'
 import { Link } from '~/components/ui/link'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '~/components/ui/select'
 import { Separator } from '~/components/ui/separator'
+import { Skeleton } from '~/components/ui/skeleton'
 import { Textarea } from '~/components/ui/textarea'
 import { Typography } from '~/components/ui/typography'
+import { useToast } from '~/components/ui/use-toast'
+
+import {
+  useMaintenanceRequestQuery,
+  useUpdateMaintenanceRequest,
+  useAddMaintenanceComment,
+  maintenanceRequestQueryOptions,
+} from '~/services/maintenance.query'
+import type { MaintenanceStatus } from '~/services/maintenance.schema'
 
 export const Route = createFileRoute('/app/maintenance/$workOrderId')({
+  loader: async ({ params, context }) => {
+    await context.queryClient.ensureQueryData(maintenanceRequestQueryOptions(params.workOrderId))
+  },
   component: WorkOrderDetailPage,
 })
 
-// Mock data
-const workOrder = {
-  id: '2889',
-  title: 'Water leak in bathroom',
-  description: 'Water stain on ceiling near shower, possible leak from above. Tenant reports it has been getting worse over the past few days.',
-  unit: '204',
-  property: 'Humboldt Court Community',
-  propertyId: '1',
-  tenant: {
-    name: 'Emily Rodriguez',
-    phone: '(612) 555-0156',
-    email: 'emily.r@email.com',
-  },
-  category: 'Plumbing',
-  priority: 'high',
-  status: 'in_progress',
-  createdAt: '2024-12-30T16:15:00',
-  assignedTo: {
-    name: 'City Plumbing Co.',
-    phone: '(612) 555-1234',
-    contact: 'John Smith',
-  },
-  estimatedCost: 450,
-  accessPermission: true,
-  preferredTimes: 'Weekdays 9am-5pm',
+// Config maps
+const priorityConfig: Record<string, { label: string; variant: 'destructive' | 'secondary' | 'outline' | 'default' }> = {
+  EMERGENCY: { label: 'Emergency', variant: 'destructive' },
+  HIGH: { label: 'High', variant: 'destructive' },
+  MEDIUM: { label: 'Medium', variant: 'secondary' },
+  LOW: { label: 'Low', variant: 'outline' },
 }
 
-const statusHistory = [
-  { status: 'Created', time: '2024-12-30T16:15:00', user: 'Emily Rodriguez (Tenant)' },
-  { status: 'Assigned', time: '2024-12-30T16:45:00', user: 'Property Manager' },
-  { status: 'Scheduled', time: '2024-12-30T17:00:00', user: 'City Plumbing Co.' },
-  { status: 'In Progress', time: '2024-12-31T09:00:00', user: 'John Smith' },
-]
+const statusConfig: Record<string, { label: string; className: string }> = {
+  SUBMITTED: { label: 'Submitted', className: 'bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-200' },
+  ACKNOWLEDGED: { label: 'Acknowledged', className: 'bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200' },
+  SCHEDULED: { label: 'Scheduled', className: 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200' },
+  IN_PROGRESS: { label: 'In Progress', className: 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200' },
+  PENDING_PARTS: { label: 'Pending Parts', className: 'bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-200' },
+  ON_HOLD: { label: 'On Hold', className: 'bg-amber-100 text-amber-800 dark:bg-amber-900 dark:text-amber-200' },
+  COMPLETED: { label: 'Completed', className: 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200' },
+  CANCELLED: { label: 'Cancelled', className: 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200' },
+}
 
-function WorkOrderDetailPage() {
+const categoryLabels: Record<string, string> = {
+  PLUMBING: 'Plumbing',
+  ELECTRICAL: 'Electrical',
+  HVAC: 'HVAC',
+  APPLIANCE: 'Appliance',
+  STRUCTURAL: 'Structural',
+  PEST_CONTROL: 'Pest Control',
+  LANDSCAPING: 'Landscaping',
+  CLEANING: 'Cleaning',
+  PAINTING: 'Painting',
+  FLOORING: 'Flooring',
+  WINDOWS_DOORS: 'Windows/Doors',
+  ROOF: 'Roof',
+  SAFETY: 'Safety',
+  OTHER: 'Other',
+}
+
+// Skeleton component
+function WorkOrderSkeleton() {
+  return (
+    <div className='w-full max-w-7xl space-y-6 py-6'>
+      <div className='flex items-center gap-4'>
+        <Skeleton className='h-10 w-10' />
+        <div className='space-y-2'>
+          <Skeleton className='h-8 w-64' />
+          <Skeleton className='h-4 w-48' />
+        </div>
+      </div>
+      <div className='grid gap-6 lg:grid-cols-3'>
+        <div className='lg:col-span-2 space-y-6'>
+          <Skeleton className='h-96 w-full' />
+        </div>
+        <div className='space-y-6'>
+          <Skeleton className='h-48 w-full' />
+          <Skeleton className='h-48 w-full' />
+        </div>
+      </div>
+    </div>
+  )
+}
+
+// Work order detail component
+function WorkOrderDetail() {
   const { workOrderId } = Route.useParams()
+  const navigate = useNavigate()
+  const { toast } = useToast()
+
+  const { data: workOrder } = useMaintenanceRequestQuery(workOrderId)
+  const updateMutation = useUpdateMaintenanceRequest()
+  const commentMutation = useAddMaintenanceComment()
+
+  const [newStatus, setNewStatus] = useState<MaintenanceStatus | ''>(workOrder.status as MaintenanceStatus)
+  const [statusNote, setStatusNote] = useState('')
+  const [newComment, setNewComment] = useState('')
+  const [isInternalComment, setIsInternalComment] = useState(false)
+  const [actualCost, setActualCost] = useState<string>(workOrder.actualCost?.toString() || '')
+
+  const priority = priorityConfig[workOrder.priority] || priorityConfig.MEDIUM
+  const status = statusConfig[workOrder.status] || statusConfig.SUBMITTED
+
+  const handleStatusUpdate = async () => {
+    if (!newStatus || newStatus === workOrder.status) {
+      toast({
+        title: 'No changes',
+        description: 'Please select a different status',
+      })
+      return
+    }
+
+    try {
+      await updateMutation.mutateAsync({
+        id: workOrderId,
+        status: newStatus,
+      })
+
+      // Add a comment about the status change if there's a note
+      if (statusNote.trim()) {
+        await commentMutation.mutateAsync({
+          requestId: workOrderId,
+          content: `Status changed to ${statusConfig[newStatus]?.label || newStatus}: ${statusNote}`,
+          isInternal: true,
+        })
+        setStatusNote('')
+      }
+
+      toast({
+        title: 'Status Updated',
+        description: `Work order status changed to ${statusConfig[newStatus]?.label || newStatus}`,
+      })
+    } catch {
+      toast({
+        title: 'Error',
+        description: 'Failed to update status',
+        variant: 'destructive',
+      })
+    }
+  }
+
+  const handleMarkComplete = async () => {
+    try {
+      const cost = actualCost ? parseFloat(actualCost) : undefined
+      await updateMutation.mutateAsync({
+        id: workOrderId,
+        status: 'COMPLETED',
+        actualCost: cost,
+        completedAt: new Date(),
+      })
+
+      toast({
+        title: 'Work Order Completed',
+        description: 'The work order has been marked as complete',
+      })
+    } catch {
+      toast({
+        title: 'Error',
+        description: 'Failed to complete work order',
+        variant: 'destructive',
+      })
+    }
+  }
+
+  const handleSaveCost = async () => {
+    const cost = parseFloat(actualCost)
+    if (isNaN(cost) || cost < 0) {
+      toast({
+        title: 'Invalid Cost',
+        description: 'Please enter a valid cost amount',
+        variant: 'destructive',
+      })
+      return
+    }
+
+    try {
+      await updateMutation.mutateAsync({
+        id: workOrderId,
+        actualCost: cost,
+      })
+
+      toast({
+        title: 'Cost Saved',
+        description: `Actual cost updated to $${cost.toFixed(2)}`,
+      })
+    } catch {
+      toast({
+        title: 'Error',
+        description: 'Failed to save cost',
+        variant: 'destructive',
+      })
+    }
+  }
+
+  const handleAddComment = async () => {
+    if (!newComment.trim()) {
+      toast({
+        title: 'Empty Comment',
+        description: 'Please enter a comment',
+        variant: 'destructive',
+      })
+      return
+    }
+
+    try {
+      await commentMutation.mutateAsync({
+        requestId: workOrderId,
+        content: newComment,
+        isInternal: isInternalComment,
+      })
+
+      setNewComment('')
+      toast({
+        title: 'Comment Added',
+        description: 'Your comment has been added',
+      })
+    } catch {
+      toast({
+        title: 'Error',
+        description: 'Failed to add comment',
+        variant: 'destructive',
+      })
+    }
+  }
 
   return (
     <div className='w-full max-w-7xl space-y-6 py-6'>
@@ -73,23 +257,33 @@ function WorkOrderDetailPage() {
         </Button>
         <div className='flex-1'>
           <div className='flex items-center gap-3'>
-            <Typography.H2>Work Order #{workOrder.id}</Typography.H2>
-            <Badge variant='destructive'>High Priority</Badge>
-            <Badge className='bg-blue-100 text-blue-800'>In Progress</Badge>
+            <Typography.H2>Work Order {workOrder.requestNumber}</Typography.H2>
+            <Badge variant={priority.variant}>{priority.label}</Badge>
+            <Badge className={status.className}>{status.label}</Badge>
           </div>
           <Typography.Muted>
-            Unit {workOrder.unit} • {workOrder.property}
+            Unit {workOrder.unit.unitNumber} • {workOrder.unit.property.name}
           </Typography.Muted>
         </div>
         <div className='flex gap-2'>
-          <Button variant='outline'>
-            <LuPhone className='mr-2 size-4' />
-            Call Vendor
-          </Button>
-          <Button>
-            <LuCheck className='mr-2 size-4' />
-            Mark Complete
-          </Button>
+          {workOrder.vendor?.phone && (
+            <Button variant='outline' asChild>
+              <a href={`tel:${workOrder.vendor.phone}`}>
+                <LuPhone className='mr-2 size-4' />
+                Call Vendor
+              </a>
+            </Button>
+          )}
+          {workOrder.status !== 'COMPLETED' && workOrder.status !== 'CANCELLED' && (
+            <Button onClick={handleMarkComplete} disabled={updateMutation.isPending}>
+              {updateMutation.isPending ? (
+                <LuLoader2 className='mr-2 size-4 animate-spin' />
+              ) : (
+                <LuCheck className='mr-2 size-4' />
+              )}
+              Mark Complete
+            </Button>
+          )}
         </div>
       </div>
 
@@ -117,63 +311,171 @@ function WorkOrderDetailPage() {
             <div className='grid gap-4 md:grid-cols-2'>
               <div className='space-y-1'>
                 <p className='text-sm text-muted-foreground'>Category</p>
-                <p className='font-medium'>{workOrder.category}</p>
+                <p className='font-medium'>{categoryLabels[workOrder.category] || workOrder.category}</p>
               </div>
               <div className='space-y-1'>
                 <p className='text-sm text-muted-foreground'>Priority</p>
-                <Badge variant='destructive'>{workOrder.priority}</Badge>
+                <Badge variant={priority.variant}>{priority.label}</Badge>
               </div>
               <div className='space-y-1'>
                 <p className='text-sm text-muted-foreground'>Estimated Cost</p>
-                <p className='font-medium'>${workOrder.estimatedCost}</p>
+                <p className='font-medium'>
+                  {workOrder.estimatedCost ? `$${Number(workOrder.estimatedCost).toFixed(2)}` : 'Not set'}
+                </p>
               </div>
               <div className='space-y-1'>
                 <p className='text-sm text-muted-foreground'>Access Permission</p>
-                <p className='font-medium'>{workOrder.accessPermission ? 'Yes' : 'No'}</p>
+                <p className='font-medium'>{workOrder.permissionToEnter ? 'Yes' : 'No'}</p>
               </div>
+              {workOrder.scheduledDate && (
+                <div className='space-y-1'>
+                  <p className='text-sm text-muted-foreground'>Scheduled Date</p>
+                  <p className='font-medium flex items-center gap-2'>
+                    <LuCalendar className='size-4' />
+                    {new Date(workOrder.scheduledDate).toLocaleDateString()}
+                    {workOrder.scheduledTime && ` at ${workOrder.scheduledTime}`}
+                  </p>
+                </div>
+              )}
+              {workOrder.completedAt && (
+                <div className='space-y-1'>
+                  <p className='text-sm text-muted-foreground'>Completed</p>
+                  <p className='font-medium text-green-600'>
+                    {new Date(workOrder.completedAt).toLocaleString()}
+                  </p>
+                </div>
+              )}
             </div>
 
             <Separator />
 
             {/* Tenant Info */}
-            <div className='space-y-3'>
-              <h4 className='text-sm font-medium flex items-center gap-2'>
-                <LuUser className='size-4' />
-                Tenant Information
-              </h4>
-              <div className='rounded-lg bg-muted p-4'>
-                <p className='font-medium'>{workOrder.tenant.name}</p>
-                <p className='text-sm text-muted-foreground'>Unit {workOrder.unit}</p>
-                <div className='mt-2 flex gap-4'>
-                  <Button variant='outline' size='sm'>
-                    <LuPhone className='mr-2 size-4' />
-                    {workOrder.tenant.phone}
-                  </Button>
-                  <Button variant='outline' size='sm' asChild>
-                    <Link to='/app/communications'>
-                      <LuMessageSquare className='mr-2 size-4' />
-                      Message
-                    </Link>
-                  </Button>
+            {workOrder.tenant && (
+              <>
+                <div className='space-y-3'>
+                  <h4 className='text-sm font-medium flex items-center gap-2'>
+                    <LuUser className='size-4' />
+                    Tenant Information
+                  </h4>
+                  <div className='rounded-lg bg-muted p-4'>
+                    <p className='font-medium'>
+                      {workOrder.tenant.firstName} {workOrder.tenant.lastName}
+                    </p>
+                    <p className='text-sm text-muted-foreground'>Unit {workOrder.unit.unitNumber}</p>
+                    <div className='mt-2 flex gap-4'>
+                      {workOrder.tenant.phone && (
+                        <Button variant='outline' size='sm' asChild>
+                          <a href={`tel:${workOrder.tenant.phone}`}>
+                            <LuPhone className='mr-2 size-4' />
+                            {workOrder.tenant.phone}
+                          </a>
+                        </Button>
+                      )}
+                      <Button variant='outline' size='sm' asChild>
+                        <Link to='/app/communications'>
+                          <LuMessageSquare className='mr-2 size-4' />
+                          Message
+                        </Link>
+                      </Button>
+                    </div>
+                  </div>
                 </div>
-              </div>
-            </div>
 
-            <Separator />
+                <Separator />
+              </>
+            )}
 
             {/* Vendor Info */}
-            <div className='space-y-3'>
+            {workOrder.vendor && (
+              <>
+                <div className='space-y-3'>
+                  <h4 className='text-sm font-medium flex items-center gap-2'>
+                    <LuWrench className='size-4' />
+                    Assigned Vendor
+                  </h4>
+                  <div className='rounded-lg bg-muted p-4'>
+                    <p className='font-medium'>{workOrder.vendor.companyName}</p>
+                    <p className='text-sm text-muted-foreground'>
+                      Contact: {workOrder.vendor.phone}
+                    </p>
+                    <Button variant='outline' size='sm' className='mt-2' asChild>
+                      <a href={`tel:${workOrder.vendor.phone}`}>
+                        <LuPhone className='mr-2 size-4' />
+                        {workOrder.vendor.phone}
+                      </a>
+                    </Button>
+                  </div>
+                </div>
+
+                <Separator />
+              </>
+            )}
+
+            {/* Comments Section */}
+            <div className='space-y-4'>
               <h4 className='text-sm font-medium flex items-center gap-2'>
-                <LuWrench className='size-4' />
-                Assigned Vendor
+                <LuMessageSquare className='size-4' />
+                Comments & Notes ({workOrder.comments?.length || 0})
               </h4>
-              <div className='rounded-lg bg-muted p-4'>
-                <p className='font-medium'>{workOrder.assignedTo.name}</p>
-                <p className='text-sm text-muted-foreground'>Contact: {workOrder.assignedTo.contact}</p>
-                <Button variant='outline' size='sm' className='mt-2'>
-                  <LuPhone className='mr-2 size-4' />
-                  {workOrder.assignedTo.phone}
-                </Button>
+
+              {/* Existing Comments */}
+              {workOrder.comments && workOrder.comments.length > 0 && (
+                <div className='space-y-3'>
+                  {workOrder.comments.map((comment) => (
+                    <div
+                      key={comment.id}
+                      className={`rounded-lg p-3 ${
+                        comment.isInternal ? 'bg-amber-50 dark:bg-amber-950 border border-amber-200 dark:border-amber-800' : 'bg-muted'
+                      }`}
+                    >
+                      <div className='flex items-center justify-between'>
+                        <p className='text-sm font-medium'>
+                          {comment.authorName}
+                          {comment.isInternal && (
+                            <span className='ml-2 text-xs text-amber-600'>(Internal)</span>
+                          )}
+                        </p>
+                        <p className='text-xs text-muted-foreground'>
+                          {new Date(comment.createdAt).toLocaleString()}
+                        </p>
+                      </div>
+                      <p className='mt-1 text-sm'>{comment.content}</p>
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              {/* Add Comment Form */}
+              <div className='space-y-3'>
+                <Textarea
+                  placeholder='Add a comment...'
+                  value={newComment}
+                  onChange={(e) => setNewComment(e.target.value)}
+                  className='min-h-20'
+                />
+                <div className='flex items-center justify-between'>
+                  <label className='flex items-center gap-2 text-sm'>
+                    <input
+                      type='checkbox'
+                      checked={isInternalComment}
+                      onChange={(e) => setIsInternalComment(e.target.checked)}
+                      className='rounded'
+                    />
+                    Internal note (not visible to tenant)
+                  </label>
+                  <Button
+                    size='sm'
+                    onClick={handleAddComment}
+                    disabled={commentMutation.isPending || !newComment.trim()}
+                  >
+                    {commentMutation.isPending ? (
+                      <LuLoader2 className='mr-2 size-4 animate-spin' />
+                    ) : (
+                      <LuSend className='mr-2 size-4' />
+                    )}
+                    Add Comment
+                  </Button>
+                </div>
               </div>
             </div>
           </CardContent>
@@ -188,23 +490,43 @@ function WorkOrderDetailPage() {
             </CardHeader>
             <CardContent className='space-y-4'>
               <div className='space-y-2'>
-                <Select defaultValue='in_progress'>
+                <Label>Status</Label>
+                <Select
+                  value={newStatus}
+                  onValueChange={(value) => setNewStatus(value as MaintenanceStatus)}
+                >
                   <SelectTrigger>
                     <SelectValue placeholder='Select status' />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value='open'>Open</SelectItem>
-                    <SelectItem value='scheduled'>Scheduled</SelectItem>
-                    <SelectItem value='in_progress'>In Progress</SelectItem>
-                    <SelectItem value='completed'>Completed</SelectItem>
-                    <SelectItem value='cancelled'>Cancelled</SelectItem>
+                    <SelectItem value='SUBMITTED'>Submitted</SelectItem>
+                    <SelectItem value='ACKNOWLEDGED'>Acknowledged</SelectItem>
+                    <SelectItem value='SCHEDULED'>Scheduled</SelectItem>
+                    <SelectItem value='IN_PROGRESS'>In Progress</SelectItem>
+                    <SelectItem value='PENDING_PARTS'>Pending Parts</SelectItem>
+                    <SelectItem value='ON_HOLD'>On Hold</SelectItem>
+                    <SelectItem value='COMPLETED'>Completed</SelectItem>
+                    <SelectItem value='CANCELLED'>Cancelled</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
               <div className='space-y-2'>
-                <Textarea placeholder='Add notes about this update...' className='min-h-20' />
+                <Label>Status Note (optional)</Label>
+                <Textarea
+                  placeholder='Add notes about this update...'
+                  className='min-h-20'
+                  value={statusNote}
+                  onChange={(e) => setStatusNote(e.target.value)}
+                />
               </div>
-              <Button className='w-full'>Update Status</Button>
+              <Button
+                className='w-full'
+                onClick={handleStatusUpdate}
+                disabled={updateMutation.isPending || newStatus === workOrder.status}
+              >
+                {updateMutation.isPending && <LuLoader2 className='mr-2 size-4 animate-spin' />}
+                Update Status
+              </Button>
             </CardContent>
           </Card>
 
@@ -215,6 +537,34 @@ function WorkOrderDetailPage() {
               <CardDescription>Attach photos of the issue or completed work</CardDescription>
             </CardHeader>
             <CardContent>
+              {/* Display existing photos */}
+              {workOrder.photoUrls && workOrder.photoUrls.length > 0 && (
+                <div className='grid grid-cols-2 gap-2 mb-4'>
+                  {workOrder.photoUrls.map((url, idx) => (
+                    <img
+                      key={idx}
+                      src={url}
+                      alt={`Work order photo ${idx + 1}`}
+                      className='rounded-lg object-cover aspect-square'
+                    />
+                  ))}
+                </div>
+              )}
+              {workOrder.completionPhotos && workOrder.completionPhotos.length > 0 && (
+                <div className='mb-4'>
+                  <p className='text-sm font-medium mb-2'>Completion Photos</p>
+                  <div className='grid grid-cols-2 gap-2'>
+                    {workOrder.completionPhotos.map((url, idx) => (
+                      <img
+                        key={idx}
+                        src={url}
+                        alt={`Completion photo ${idx + 1}`}
+                        className='rounded-lg object-cover aspect-square'
+                      />
+                    ))}
+                  </div>
+                </div>
+              )}
               <div className='rounded-lg border-2 border-dashed p-8 text-center'>
                 <LuUpload className='mx-auto size-8 text-muted-foreground' />
                 <p className='mt-2 text-sm text-muted-foreground'>Drag and drop or click to upload</p>
@@ -234,19 +584,39 @@ function WorkOrderDetailPage() {
               <div className='grid gap-4 text-sm'>
                 <div className='flex justify-between'>
                   <span className='text-muted-foreground'>Estimated</span>
-                  <span>${workOrder.estimatedCost}</span>
+                  <span>
+                    {workOrder.estimatedCost ? `$${Number(workOrder.estimatedCost).toFixed(2)}` : '-'}
+                  </span>
                 </div>
+                {workOrder.actualCost && (
+                  <div className='flex justify-between'>
+                    <span className='text-muted-foreground'>Current Actual</span>
+                    <span className='font-medium'>${Number(workOrder.actualCost).toFixed(2)}</span>
+                  </div>
+                )}
                 <Separator />
-                <div className='flex items-center gap-2'>
-                  <LuDollarSign className='size-4 text-muted-foreground' />
-                  <input
-                    type='number'
-                    placeholder='Actual cost'
-                    className='flex-1 rounded border px-3 py-2 text-sm'
-                  />
+                <div className='space-y-2'>
+                  <Label>Actual Cost</Label>
+                  <div className='flex items-center gap-2'>
+                    <LuDollarSign className='size-4 text-muted-foreground' />
+                    <Input
+                      type='number'
+                      placeholder='0.00'
+                      value={actualCost}
+                      onChange={(e) => setActualCost(e.target.value)}
+                      step='0.01'
+                      min='0'
+                    />
+                  </div>
                 </div>
               </div>
-              <Button variant='outline' className='w-full'>
+              <Button
+                variant='outline'
+                className='w-full'
+                onClick={handleSaveCost}
+                disabled={updateMutation.isPending || !actualCost}
+              >
+                {updateMutation.isPending && <LuLoader2 className='mr-2 size-4 animate-spin' />}
                 Save Cost
               </Button>
             </CardContent>
@@ -255,32 +625,50 @@ function WorkOrderDetailPage() {
       </div>
 
       {/* Status History */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Status History</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className='space-y-4'>
-            {statusHistory.map((entry, i) => (
-              <div key={i} className='flex items-start gap-4'>
-                <div className='mt-1'>
-                  <div className='size-2 rounded-full bg-primary' />
-                </div>
-                <div className='flex-1'>
-                  <div className='flex items-center gap-2'>
-                    <span className='font-medium'>{entry.status}</span>
-                    <span className='text-sm text-muted-foreground flex items-center gap-1'>
-                      <LuClock className='size-3' />
-                      {new Date(entry.time).toLocaleString()}
-                    </span>
+      {workOrder.statusHistory && workOrder.statusHistory.length > 0 && (
+        <Card>
+          <CardHeader>
+            <CardTitle>Status History</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className='space-y-4'>
+              {workOrder.statusHistory.map((entry, i) => (
+                <div key={entry.id || i} className='flex items-start gap-4'>
+                  <div className='mt-1'>
+                    <div className='size-2 rounded-full bg-primary' />
                   </div>
-                  <p className='text-sm text-muted-foreground'>{entry.user}</p>
+                  <div className='flex-1'>
+                    <div className='flex items-center gap-2'>
+                      <span className='font-medium'>
+                        {entry.fromStatus ? `${statusConfig[entry.fromStatus]?.label || entry.fromStatus} → ` : ''}
+                        {statusConfig[entry.toStatus]?.label || entry.toStatus}
+                      </span>
+                      <span className='text-sm text-muted-foreground flex items-center gap-1'>
+                        <LuClock className='size-3' />
+                        {new Date(entry.createdAt).toLocaleString()}
+                      </span>
+                    </div>
+                    <p className='text-sm text-muted-foreground'>
+                      By {entry.changedByName} ({entry.changedByType})
+                    </p>
+                    {entry.notes && (
+                      <p className='text-sm text-muted-foreground mt-1'>{entry.notes}</p>
+                    )}
+                  </div>
                 </div>
-              </div>
-            ))}
-          </div>
-        </CardContent>
-      </Card>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+      )}
     </div>
+  )
+}
+
+function WorkOrderDetailPage() {
+  return (
+    <Suspense fallback={<WorkOrderSkeleton />}>
+      <WorkOrderDetail />
+    </Suspense>
   )
 }

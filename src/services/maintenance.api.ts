@@ -109,6 +109,9 @@ export const getMaintenanceRequest = createServerFn({ method: 'GET' })
         expenses: {
           orderBy: { expenseDate: 'desc' },
         },
+        statusHistory: {
+          orderBy: { createdAt: 'desc' },
+        },
       },
     })
 
@@ -137,15 +140,32 @@ export const createMaintenanceRequest = createServerFn({ method: 'POST' })
       throw new Error('Unit not found')
     }
 
-    const request = await prisma.maintenanceRequest.create({
-      data: {
-        ...data,
-        createdById: context.auth.user.id,
-      },
-      include: {
-        unit: { include: { property: true } },
-        tenant: true,
-      },
+    // Create request with initial status history in a transaction
+    const request = await prisma.$transaction(async (tx) => {
+      const newRequest = await tx.maintenanceRequest.create({
+        data: {
+          ...data,
+          createdById: context.auth.user.id,
+        },
+        include: {
+          unit: { include: { property: true } },
+          tenant: true,
+        },
+      })
+
+      // Create initial status history entry
+      await tx.workOrderStatusHistory.create({
+        data: {
+          requestId: newRequest.id,
+          fromStatus: null,
+          toStatus: 'SUBMITTED',
+          changedByName: context.auth.user.name,
+          changedByType: 'staff',
+          notes: 'Work order created',
+        },
+      })
+
+      return newRequest
     })
 
     return request
@@ -175,14 +195,38 @@ export const updateMaintenanceRequest = createServerFn({ method: 'POST' })
       updateData.completedAt = new Date()
     }
 
-    const request = await prisma.maintenanceRequest.update({
-      where: { id },
-      data: updateData,
-      include: {
-        unit: { include: { property: true } },
-        tenant: true,
-        vendor: true,
-      },
+    // Check if status is changing
+    const statusChanged = updateData.status && updateData.status !== existing.status
+
+    // Use transaction to update request and record status history
+    const request = await prisma.$transaction(async (tx) => {
+      // Record status history if status changed
+      if (statusChanged) {
+        await tx.workOrderStatusHistory.create({
+          data: {
+            requestId: id,
+            fromStatus: existing.status,
+            toStatus: updateData.status!,
+            changedByName: context.auth.user.name,
+            changedByType: 'staff',
+          },
+        })
+      }
+
+      // Update the maintenance request
+      return tx.maintenanceRequest.update({
+        where: { id },
+        data: updateData,
+        include: {
+          unit: { include: { property: true } },
+          tenant: true,
+          vendor: true,
+          statusHistory: {
+            orderBy: { createdAt: 'desc' },
+            take: 10,
+          },
+        },
+      })
     })
 
     return request
