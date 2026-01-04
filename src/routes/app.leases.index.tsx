@@ -1,7 +1,7 @@
 import { createFileRoute, useNavigate } from '@tanstack/react-router'
 import { useSuspenseQuery } from '@tanstack/react-query'
 import { useMemo, useState } from 'react'
-import { LuCalendar, LuFileText, LuFilter, LuLoader2, LuPlus, LuSearch } from 'react-icons/lu'
+import { LuCalendar, LuFileText, LuFilter, LuLoaderCircle, LuPlus, LuSearch } from 'react-icons/lu'
 import { z } from 'zod'
 
 import { Badge } from '~/components/ui/badge'
@@ -33,7 +33,7 @@ export const Route = createFileRoute('/app/leases/')({
 function LeasesListLoading() {
   return (
     <div className='flex h-96 w-full items-center justify-center'>
-      <LuLoader2 className='size-8 animate-spin text-muted-foreground' />
+      <LuLoaderCircle className='size-8 animate-spin text-muted-foreground' />
     </div>
   )
 }

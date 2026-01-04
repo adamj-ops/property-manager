@@ -55,6 +55,8 @@ const zhTW: Messages = {
     'my-lease': '我的租約',
     'lease-details': '租約詳情',
     'maintenance-requests': '維修申請',
+    'pets': '寵物',
+    'inspections': '檢查',
   },
   auth: {
     'name': '名稱',

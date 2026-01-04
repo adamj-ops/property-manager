@@ -6,7 +6,7 @@ import {
   LuDog,
   LuDollarSign,
   LuFileText,
-  LuLoader2,
+  LuLoaderCircle,
   LuMail,
   LuMessageSquare,
   LuPhone,
@@ -32,7 +32,7 @@ export const Route = createFileRoute('/app/tenants/$tenantId')({
 function TenantDetailLoading() {
   return (
     <div className='flex h-96 w-full items-center justify-center'>
-      <LuLoader2 className='size-8 animate-spin text-muted-foreground' />
+      <LuLoaderCircle className='size-8 animate-spin text-muted-foreground' />
     </div>
   )
 }

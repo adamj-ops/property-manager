@@ -4,7 +4,7 @@ import {
   LuCheck,
   LuDog,
   LuFish,
-  LuMoreVertical,
+  LuEllipsis,
   LuPawPrint,
   LuX,
 } from 'react-icons/lu'
@@ -121,7 +121,7 @@ export function PetCard({
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   <Button variant='ghost' size='icon' className='size-8'>
-                    <LuMoreVertical className='size-4' />
+                    <LuEllipsis className='size-4' />
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align='end'>

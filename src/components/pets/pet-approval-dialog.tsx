@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { LuCheck, LuLoader2, LuX } from 'react-icons/lu'
+import { LuCheck, LuLoaderCircle, LuX } from 'react-icons/lu'
 import { toast } from 'sonner'
 
 import { Badge } from '~/components/ui/badge'
@@ -218,7 +218,7 @@ export function PetApprovalDialog({
           {mode === 'approve' && (
             <Button onClick={handleApprove} disabled={isLoading}>
               {isLoading ? (
-                <LuLoader2 className='mr-2 size-4 animate-spin' />
+                <LuLoaderCircle className='mr-2 size-4 animate-spin' />
               ) : (
                 <LuCheck className='mr-2 size-4' />
               )}
@@ -232,7 +232,7 @@ export function PetApprovalDialog({
               disabled={isLoading || !denialReason.trim()}
             >
               {isLoading ? (
-                <LuLoader2 className='mr-2 size-4 animate-spin' />
+                <LuLoaderCircle className='mr-2 size-4 animate-spin' />
               ) : (
                 <LuX className='mr-2 size-4' />
               )}
@@ -242,7 +242,7 @@ export function PetApprovalDialog({
           {mode === 'remove' && (
             <Button variant='secondary' onClick={handleRemove} disabled={isLoading}>
               {isLoading ? (
-                <LuLoader2 className='mr-2 size-4 animate-spin' />
+                <LuLoaderCircle className='mr-2 size-4 animate-spin' />
               ) : null}
               Mark as Removed
             </Button>

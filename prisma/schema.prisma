@@ -496,7 +496,7 @@ model Lease {
   tenant   Tenant @relation(fields: [tenantId], references: [id])
 
   // Renewal Tracking
-  renewedFromLeaseId String? @db.Uuid @map("renewed_from_lease_id")
+  renewedFromLeaseId String? @unique @db.Uuid @map("renewed_from_lease_id")
   renewedFromLease   Lease?  @relation("LeaseRenewal", fields: [renewedFromLeaseId], references: [id])
   renewedToLease     Lease?  @relation("LeaseRenewal")
 

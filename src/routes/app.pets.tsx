@@ -5,7 +5,7 @@ import { z } from 'zod'
 import {
   LuDog,
   LuFilter,
-  LuLoader2,
+  LuLoaderCircle,
   LuPawPrint,
   LuPlus,
   LuSearch,
@@ -39,7 +39,7 @@ export const Route = createFileRoute('/app/pets')({
 function PetsListLoading() {
   return (
     <div className='flex h-96 w-full items-center justify-center'>
-      <LuLoader2 className='size-8 animate-spin text-muted-foreground' />
+      <LuLoaderCircle className='size-8 animate-spin text-muted-foreground' />
     </div>
   )
 }

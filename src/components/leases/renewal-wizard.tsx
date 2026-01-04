@@ -1,6 +1,6 @@
 import { useNavigate } from '@tanstack/react-router'
 import { useState } from 'react'
-import { LuArrowRight, LuCalendar, LuDollarSign, LuLoader2, LuRefreshCw } from 'react-icons/lu'
+import { LuArrowRight, LuCalendar, LuDollarSign, LuLoaderCircle, LuRefreshCw } from 'react-icons/lu'
 import { toast } from 'sonner'
 
 import { Badge } from '~/components/ui/badge'
@@ -279,7 +279,7 @@ export function RenewalWizard({ lease, open, onOpenChange }: RenewalWizardProps)
           <Button onClick={handleSubmit} disabled={createRenewal.isPending}>
             {createRenewal.isPending ? (
               <>
-                <LuLoader2 className='mr-2 size-4 animate-spin' />
+                <LuLoaderCircle className='mr-2 size-4 animate-spin' />
                 Creating...
               </>
             ) : (

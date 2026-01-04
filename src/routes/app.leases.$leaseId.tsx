@@ -7,7 +7,7 @@ import {
   LuDollarSign,
   LuDownload,
   LuFileText,
-  LuLoader2,
+  LuLoaderCircle,
   LuPencil,
   LuRefreshCw,
   LuUser,
@@ -34,7 +34,7 @@ export const Route = createFileRoute('/app/leases/$leaseId')({
 function LeaseDetailLoading() {
   return (
     <div className='flex h-96 w-full items-center justify-center'>
-      <LuLoader2 className='size-8 animate-spin text-muted-foreground' />
+      <LuLoaderCircle className='size-8 animate-spin text-muted-foreground' />
     </div>
   )
 }

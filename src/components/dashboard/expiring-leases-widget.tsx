@@ -1,5 +1,5 @@
 import { useSuspenseQuery } from '@tanstack/react-query'
-import { LuCalendar, LuLoader2, LuRefreshCw } from 'react-icons/lu'
+import { LuCalendar, LuLoaderCircle, LuRefreshCw } from 'react-icons/lu'
 
 import { Badge } from '~/components/ui/badge'
 import { Button } from '~/components/ui/button'
@@ -101,7 +101,7 @@ export function ExpiringLeasesWidget() {
           </CardTitle>
         </CardHeader>
         <CardContent className='flex items-center justify-center py-8'>
-          <LuLoader2 className='size-6 animate-spin text-muted-foreground' />
+          <LuLoaderCircle className='size-6 animate-spin text-muted-foreground' />
         </CardContent>
       </Card>
     )
@@ -242,7 +242,7 @@ export function ExpiringLeasesWidgetSkeleton() {
         </CardTitle>
       </CardHeader>
       <CardContent className='flex items-center justify-center py-8'>
-        <LuLoader2 className='size-6 animate-spin text-muted-foreground' />
+        <LuLoaderCircle className='size-6 animate-spin text-muted-foreground' />
       </CardContent>
     </Card>
   )

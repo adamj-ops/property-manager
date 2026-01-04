@@ -4,7 +4,7 @@ import { zodValidator } from '@tanstack/zod-adapter'
 import {
   LuDog,
   LuCat,
-  LuLoader2,
+  LuLoaderCircle,
   LuSave,
 } from 'react-icons/lu'
 import { toast } from 'sonner'
@@ -312,7 +312,7 @@ export function PetApplicationForm({
                 <Button type='submit' disabled={!canSubmit || isSubmitting}>
                   {isSubmitting ? (
                     <>
-                      <LuLoader2 className='mr-2 size-4 animate-spin' />
+                      <LuLoaderCircle className='mr-2 size-4 animate-spin' />
                       Submitting...
                     </>
                   ) : (
