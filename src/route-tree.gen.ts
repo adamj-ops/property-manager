@@ -59,6 +59,7 @@ import { Route as AppFinancialsPaymentsImport } from './routes/app.financials.pa
 import { Route as AppFinancialsExpensesImport } from './routes/app.financials.expenses'
 import { Route as AppPropertiesPropertyIdIndexImport } from './routes/app.properties.$propertyId.index'
 import { Route as AppPropertiesPropertyIdUnitsImport } from './routes/app.properties.$propertyId.units'
+import { Route as AppPropertiesPropertyIdUnitsNewImport } from './routes/app.properties.$propertyId.units.new'
 
 // Create/Update Routes
 
@@ -350,6 +351,13 @@ const AppPropertiesPropertyIdUnitsRoute =
     id: '/units',
     path: '/units',
     getParentRoute: () => AppPropertiesPropertyIdRoute,
+  } as any)
+
+const AppPropertiesPropertyIdUnitsNewRoute =
+  AppPropertiesPropertyIdUnitsNewImport.update({
+    id: '/new',
+    path: '/new',
+    getParentRoute: () => AppPropertiesPropertyIdUnitsRoute,
   } as any)
 
 // Populate the FileRoutesByPath interface
@@ -692,6 +700,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppPropertiesPropertyIdIndexImport
       parentRoute: typeof AppPropertiesPropertyIdImport
     }
+    '/app/properties/$propertyId/units/new': {
+      id: '/app/properties/$propertyId/units/new'
+      path: '/new'
+      fullPath: '/app/properties/$propertyId/units/new'
+      preLoaderRoute: typeof AppPropertiesPropertyIdUnitsNewImport
+      parentRoute: typeof AppPropertiesPropertyIdUnitsImport
+    }
   }
 }
 
@@ -759,14 +774,29 @@ const AppMaintenanceRouteWithChildren = AppMaintenanceRoute._addFileChildren(
   AppMaintenanceRouteChildren,
 )
 
+interface AppPropertiesPropertyIdUnitsRouteChildren {
+  AppPropertiesPropertyIdUnitsNewRoute: typeof AppPropertiesPropertyIdUnitsNewRoute
+}
+
+const AppPropertiesPropertyIdUnitsRouteChildren: AppPropertiesPropertyIdUnitsRouteChildren =
+  {
+    AppPropertiesPropertyIdUnitsNewRoute: AppPropertiesPropertyIdUnitsNewRoute,
+  }
+
+const AppPropertiesPropertyIdUnitsRouteWithChildren =
+  AppPropertiesPropertyIdUnitsRoute._addFileChildren(
+    AppPropertiesPropertyIdUnitsRouteChildren,
+  )
+
 interface AppPropertiesPropertyIdRouteChildren {
-  AppPropertiesPropertyIdUnitsRoute: typeof AppPropertiesPropertyIdUnitsRoute
+  AppPropertiesPropertyIdUnitsRoute: typeof AppPropertiesPropertyIdUnitsRouteWithChildren
   AppPropertiesPropertyIdIndexRoute: typeof AppPropertiesPropertyIdIndexRoute
 }
 
 const AppPropertiesPropertyIdRouteChildren: AppPropertiesPropertyIdRouteChildren =
   {
-    AppPropertiesPropertyIdUnitsRoute: AppPropertiesPropertyIdUnitsRoute,
+    AppPropertiesPropertyIdUnitsRoute:
+      AppPropertiesPropertyIdUnitsRouteWithChildren,
     AppPropertiesPropertyIdIndexRoute: AppPropertiesPropertyIdIndexRoute,
   }
 
@@ -949,8 +979,9 @@ export interface FileRoutesByFullPath {
   '/app/maintenance/': typeof AppMaintenanceIndexRoute
   '/app/properties/': typeof AppPropertiesIndexRoute
   '/app/tenants/': typeof AppTenantsIndexRoute
-  '/app/properties/$propertyId/units': typeof AppPropertiesPropertyIdUnitsRoute
+  '/app/properties/$propertyId/units': typeof AppPropertiesPropertyIdUnitsRouteWithChildren
   '/app/properties/$propertyId/': typeof AppPropertiesPropertyIdIndexRoute
+  '/app/properties/$propertyId/units/new': typeof AppPropertiesPropertyIdUnitsNewRoute
 }
 
 export interface FileRoutesByTo {
@@ -994,8 +1025,9 @@ export interface FileRoutesByTo {
   '/app/maintenance': typeof AppMaintenanceIndexRoute
   '/app/properties': typeof AppPropertiesIndexRoute
   '/app/tenants': typeof AppTenantsIndexRoute
-  '/app/properties/$propertyId/units': typeof AppPropertiesPropertyIdUnitsRoute
+  '/app/properties/$propertyId/units': typeof AppPropertiesPropertyIdUnitsRouteWithChildren
   '/app/properties/$propertyId': typeof AppPropertiesPropertyIdIndexRoute
+  '/app/properties/$propertyId/units/new': typeof AppPropertiesPropertyIdUnitsNewRoute
 }
 
 export interface FileRoutesById {
@@ -1046,8 +1078,9 @@ export interface FileRoutesById {
   '/app/maintenance/': typeof AppMaintenanceIndexRoute
   '/app/properties/': typeof AppPropertiesIndexRoute
   '/app/tenants/': typeof AppTenantsIndexRoute
-  '/app/properties/$propertyId/units': typeof AppPropertiesPropertyIdUnitsRoute
+  '/app/properties/$propertyId/units': typeof AppPropertiesPropertyIdUnitsRouteWithChildren
   '/app/properties/$propertyId/': typeof AppPropertiesPropertyIdIndexRoute
+  '/app/properties/$propertyId/units/new': typeof AppPropertiesPropertyIdUnitsNewRoute
 }
 
 export interface FileRouteTypes {
@@ -1101,6 +1134,7 @@ export interface FileRouteTypes {
     | '/app/tenants/'
     | '/app/properties/$propertyId/units'
     | '/app/properties/$propertyId/'
+    | '/app/properties/$propertyId/units/new'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -1145,6 +1179,7 @@ export interface FileRouteTypes {
     | '/app/tenants'
     | '/app/properties/$propertyId/units'
     | '/app/properties/$propertyId'
+    | '/app/properties/$propertyId/units/new'
   id:
     | '__root__'
     | '/'
@@ -1195,6 +1230,7 @@ export interface FileRouteTypes {
     | '/app/tenants/'
     | '/app/properties/$propertyId/units'
     | '/app/properties/$propertyId/'
+    | '/app/properties/$propertyId/units/new'
   fileRoutesById: FileRoutesById
 }
 
@@ -1483,11 +1519,18 @@ export const routeTree = rootRoute
     },
     "/app/properties/$propertyId/units": {
       "filePath": "app.properties.$propertyId.units.tsx",
-      "parent": "/app/properties/$propertyId"
+      "parent": "/app/properties/$propertyId",
+      "children": [
+        "/app/properties/$propertyId/units/new"
+      ]
     },
     "/app/properties/$propertyId/": {
       "filePath": "app.properties.$propertyId.index.tsx",
       "parent": "/app/properties/$propertyId"
+    },
+    "/app/properties/$propertyId/units/new": {
+      "filePath": "app.properties.$propertyId.units.new.tsx",
+      "parent": "/app/properties/$propertyId/units"
     }
   }
 }
