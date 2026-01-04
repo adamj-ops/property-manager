@@ -219,6 +219,3 @@ function PreviewContent({ templateId }: { templateId: string }) {
     </>
   )
 }
-
-export { TemplatePreviewDialog }
-

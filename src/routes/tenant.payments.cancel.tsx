@@ -1,7 +1,7 @@
 'use client'
 
 import { createFileRoute, Link } from '@tanstack/react-router'
-import { LuAlertCircle, LuCreditCard, LuHome } from 'react-icons/lu'
+import { LuCircleAlert, LuCreditCard, LuHouse } from 'react-icons/lu'
 
 import { Button } from '~/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '~/components/ui/card'
@@ -20,7 +20,7 @@ function PaymentCancelPage() {
       <Card className='border-yellow-500/20 bg-yellow-500/5'>
         <CardHeader className='text-center'>
           <div className='mx-auto mb-4 flex size-16 items-center justify-center rounded-full bg-yellow-500/10'>
-            <LuAlertCircle className='size-8 text-yellow-600' />
+            <LuCircleAlert className='size-8 text-yellow-600' />
           </div>
           <CardTitle className='text-2xl'>Payment Cancelled</CardTitle>
           <CardDescription>Your payment was not processed</CardDescription>
@@ -47,7 +47,7 @@ function PaymentCancelPage() {
           <div className='flex gap-4'>
             <Button asChild variant='outline' className='flex-1'>
               <Link to='/tenant/dashboard'>
-                <LuHome className='mr-2 size-4' />
+                <LuHouse className='mr-2 size-4' />
                 Return to Dashboard
               </Link>
             </Button>

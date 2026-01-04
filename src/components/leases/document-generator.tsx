@@ -5,7 +5,7 @@
  */
 
 import { useState } from 'react'
-import { LuFileText, LuLoader2, LuDownload } from 'react-icons/lu'
+import { LuFileText, LuLoader, LuDownload } from 'react-icons/lu'
 import { toast } from 'sonner'
 
 import { Button } from '~/components/ui/button'
@@ -82,7 +82,7 @@ export function DocumentGenerator({ leaseId }: DocumentGeneratorProps) {
                 disabled={generatePdf.isPending}
               >
                 {generatePdf.isPending ? (
-                  <LuLoader2 className='mr-2 size-4 animate-spin' />
+                  <LuLoader className='mr-2 size-4 animate-spin' />
                 ) : (
                   <LuFileText className='mr-2 size-4' />
                 )}
@@ -106,7 +106,7 @@ export function DocumentGenerator({ leaseId }: DocumentGeneratorProps) {
             >
               {generatePdf.isPending ? (
                 <>
-                  <LuLoader2 className='mr-2 size-4 animate-spin' />
+                  <LuLoader className='mr-2 size-4 animate-spin' />
                   Generating...
                 </>
               ) : (

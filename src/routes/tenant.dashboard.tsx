@@ -1,7 +1,7 @@
 'use client'
 
 import { createFileRoute, Link } from '@tanstack/react-router'
-import { LuAlertCircle, LuCalendar, LuCreditCard, LuFileText, LuHome, LuWrench } from 'react-icons/lu'
+import { LuCircleAlert, LuCalendar, LuCreditCard, LuFileText, LuHouse, LuWrench } from 'react-icons/lu'
 import { format } from 'date-fns'
 
 import { Badge } from '~/components/ui/badge'
@@ -120,7 +120,7 @@ function TenantDashboardPage() {
         <Card className='border-yellow-500/20 bg-yellow-500/5'>
           <CardHeader>
             <CardTitle className='flex items-center gap-2'>
-              <LuAlertCircle className='size-5 text-yellow-600' />
+              <LuCircleAlert className='size-5 text-yellow-600' />
               Important Notices
             </CardTitle>
           </CardHeader>

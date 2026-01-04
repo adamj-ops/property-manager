@@ -192,6 +192,13 @@ interface Metadata {
   }
 }
 
+export function formatCurrency(amount: number | string, currency = 'USD'): string {
+  return new Intl.NumberFormat('en-US', {
+    style: 'currency',
+    currency,
+  }).format(Number(amount))
+}
+
 export function createMetadata(metadata: Metadata): Meta[] {
   const meta: Meta[] = []
 

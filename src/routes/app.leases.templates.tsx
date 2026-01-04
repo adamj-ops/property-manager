@@ -13,7 +13,7 @@ import {
   LuEye,
   LuFileText,
   LuFilter,
-  LuMoreHorizontal,
+  LuEllipsis,
   LuPencil,
   LuPlus,
   LuSearch,
@@ -282,7 +282,7 @@ function LeaseTemplatesPage() {
                       <DropdownMenu>
                         <DropdownMenuTrigger asChild>
                           <Button variant="ghost" size="icon">
-                            <LuMoreHorizontal className="size-4" />
+                            <LuEllipsis className="size-4" />
                           </Button>
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end">
