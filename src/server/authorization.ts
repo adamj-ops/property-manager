@@ -24,7 +24,7 @@ export class AuthorizationError extends Error {
   public statusCode: number
   public code: string
 
-  constructor(message: string, code = 'FORBIDDEN', statusCode = status.FORBIDDEN) {
+  constructor(message: string, code = 'FORBIDDEN', statusCode: number = status.FORBIDDEN) {
     super(message)
     this.name = 'AuthorizationError'
     this.code = code
@@ -106,9 +106,10 @@ export function requirePropertyAccess() {
     .middleware([authedMiddleware])
     .server(async ({ next, context, data }) => {
       // Extract propertyId from various possible locations in data
+      const dataObj = data as Record<string, unknown> | undefined
       const propertyId =
-        (data as { propertyId?: string })?.propertyId ||
-        (data as { id?: string })?.id
+        (dataObj?.propertyId as string | undefined) ||
+        (dataObj?.id as string | undefined)
 
       if (!propertyId) {
         setResponseStatus(status.BAD_REQUEST)
@@ -164,7 +165,8 @@ export function requireUnitAccess() {
   return createMiddleware()
     .middleware([authedMiddleware])
     .server(async ({ next, context, data }) => {
-      const unitId = (data as { unitId?: string })?.unitId
+      const dataObj = data as Record<string, unknown> | undefined
+      const unitId = dataObj?.unitId as string | undefined
 
       if (!unitId) {
         setResponseStatus(status.BAD_REQUEST)
@@ -227,7 +229,8 @@ export function requireTenantAccess() {
   return createMiddleware()
     .middleware([authedMiddleware])
     .server(async ({ next, context, data }) => {
-      const tenantId = (data as { tenantId?: string })?.tenantId
+      const dataObj = data as Record<string, unknown> | undefined
+      const tenantId = dataObj?.tenantId as string | undefined
 
       if (!tenantId) {
         setResponseStatus(status.BAD_REQUEST)
@@ -285,7 +288,8 @@ export function requireLeaseAccess() {
   return createMiddleware()
     .middleware([authedMiddleware])
     .server(async ({ next, context, data }) => {
-      const leaseId = (data as { leaseId?: string })?.leaseId
+      const dataObj = data as Record<string, unknown> | undefined
+      const leaseId = dataObj?.leaseId as string | undefined
 
       if (!leaseId) {
         setResponseStatus(status.BAD_REQUEST)
@@ -343,9 +347,10 @@ export function requireMaintenanceRequestAccess() {
   return createMiddleware()
     .middleware([authedMiddleware])
     .server(async ({ next, context, data }) => {
+      const dataObj = data as Record<string, unknown> | undefined
       const requestId =
-        (data as { requestId?: string })?.requestId ||
-        (data as { id?: string })?.id
+        (dataObj?.requestId as string | undefined) ||
+        (dataObj?.id as string | undefined)
 
       if (!requestId) {
         setResponseStatus(status.BAD_REQUEST)
@@ -430,9 +435,8 @@ export function requireResourceAccess(
   return createMiddleware()
     .middleware([authedMiddleware])
     .server(async ({ next, context, data }) => {
-      const resourceId = (data as Record<string, unknown>)?.[idField] as
-        | string
-        | undefined
+      const dataObj = data as Record<string, unknown> | undefined
+      const resourceId = dataObj?.[idField] as string | undefined
 
       if (!resourceId) {
         setResponseStatus(status.BAD_REQUEST)

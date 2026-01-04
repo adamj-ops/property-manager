@@ -348,7 +348,7 @@ describe('Authorization Tests', () => {
     const context = createServerFnContext(auth)
 
     expect(context.auth.isAuthenticated).toBe(true)
-    expect(context.auth.user.id).toBe('test-uuid')
+    expect(context.auth.user!.id).toBe('test-uuid')
   })
 
   it('creates correct mock auth context for unauthenticated user', () => {

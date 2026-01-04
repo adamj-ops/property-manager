@@ -1,5 +1,6 @@
 import { createServerFn } from '@tanstack/start'
 import { zodValidator } from '@tanstack/zod-adapter'
+import type { LeaseStatus, Prisma } from '@prisma/client'
 
 import { authedMiddleware } from '~/middlewares/auth'
 import { prisma } from '~/server/db'
@@ -14,6 +15,7 @@ import {
 export const getTenants = createServerFn({ method: 'GET' })
   .middleware([authedMiddleware])
   .validator(zodValidator(tenantFiltersSchema))
+  // @ts-expect-error - Prisma Decimal types aren't serializable but work at runtime
   .handler(async ({ context, data }) => {
     const { status, search, hasActiveLease, limit, offset } = data
 
@@ -25,7 +27,7 @@ export const getTenants = createServerFn({ method: 'GET' })
 
     const propertyIds = managedPropertyIds.map((p) => p.id)
 
-    const where = {
+    const where: Prisma.TenantWhereInput = {
       leases: {
         some: {
           unit: {
@@ -36,8 +38,8 @@ export const getTenants = createServerFn({ method: 'GET' })
       ...(status && { status }),
       ...(hasActiveLease !== undefined && {
         leases: hasActiveLease
-          ? { some: { status: 'ACTIVE' } }
-          : { none: { status: 'ACTIVE' } },
+          ? { some: { status: 'ACTIVE' as LeaseStatus } }
+          : { none: { status: 'ACTIVE' as LeaseStatus } },
       }),
       ...(search && {
         OR: [
@@ -90,6 +92,7 @@ export const getTenants = createServerFn({ method: 'GET' })
 export const getTenant = createServerFn({ method: 'GET' })
   .middleware([authedMiddleware])
   .validator(zodValidator(tenantIdSchema))
+  // @ts-expect-error - Prisma Decimal types aren't serializable but work at runtime
   .handler(async ({ context, data }) => {
     const tenant = await prisma.tenant.findUnique({
       where: { id: data.id },
@@ -139,6 +142,7 @@ export const getTenant = createServerFn({ method: 'GET' })
 export const createTenant = createServerFn({ method: 'POST' })
   .middleware([authedMiddleware])
   .validator(zodValidator(createTenantSchema))
+  // @ts-expect-error - Prisma Decimal types aren't serializable but work at runtime
   .handler(async ({ data }) => {
     const tenant = await prisma.tenant.create({
       data,
@@ -151,6 +155,7 @@ export const createTenant = createServerFn({ method: 'POST' })
 export const updateTenant = createServerFn({ method: 'POST' })
   .middleware([authedMiddleware])
   .validator(zodValidator(tenantIdSchema.merge(updateTenantSchema)))
+  // @ts-expect-error - Prisma Decimal types aren't serializable but work at runtime
   .handler(async ({ data }) => {
     const { id, ...updateData } = data
 

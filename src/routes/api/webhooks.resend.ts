@@ -17,7 +17,7 @@ export const APIRoute = createAPIFileRoute('/api/webhooks/resend')({
     let payload: { type?: ResendEventType; data?: { id?: string } }
 
     try {
-      payload = await request.json()
+      payload = await request.json() as { type?: ResendEventType; data?: { id?: string } }
     } catch (error) {
       logger.error('Resend webhook: invalid JSON', { error })
       return new Response('invalid payload', { status: 400 })

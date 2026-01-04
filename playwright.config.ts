@@ -52,29 +52,48 @@ export default defineConfig({
 
   // Configure projects for major browsers
   projects: [
-    // Desktop browsers
+    // Authentication setup - runs first to establish session
     {
-      name: 'chromium',
+      name: 'setup',
+      testMatch: /.*\.setup\.ts/,
+    },
+
+    // Unauthenticated tests - no dependencies, no stored state
+    {
+      name: 'unauthenticated',
+      testMatch: /auth\.spec\.ts/,
       use: { ...devices['Desktop Chrome'] },
     },
+
+    // Authenticated tests - depend on setup, use stored auth state
+    {
+      name: 'chromium',
+      use: {
+        ...devices['Desktop Chrome'],
+        storageState: 'tests/.auth/user.json',
+      },
+      dependencies: ['setup'],
+      testIgnore: /auth\.spec\.ts/,
+    },
+
     // Uncomment to add more browsers
     // {
     //   name: 'firefox',
-    //   use: { ...devices['Desktop Firefox'] },
+    //   use: {
+    //     ...devices['Desktop Firefox'],
+    //     storageState: 'tests/.auth/user.json',
+    //   },
+    //   dependencies: ['setup'],
+    //   testIgnore: /auth\.spec\.ts/,
     // },
     // {
     //   name: 'webkit',
-    //   use: { ...devices['Desktop Safari'] },
-    // },
-
-    // Mobile viewports
-    // {
-    //   name: 'Mobile Chrome',
-    //   use: { ...devices['Pixel 5'] },
-    // },
-    // {
-    //   name: 'Mobile Safari',
-    //   use: { ...devices['iPhone 12'] },
+    //   use: {
+    //     ...devices['Desktop Safari'],
+    //     storageState: 'tests/.auth/user.json',
+    //   },
+    //   dependencies: ['setup'],
+    //   testIgnore: /auth\.spec\.ts/,
     // },
   ],
 

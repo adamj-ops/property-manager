@@ -28,6 +28,7 @@ interface NavItemMenu extends NavItemBase {
 interface NavItemLink extends NavItemBase {
   type: 'link'
   link: ValidLink
+  icon?: IconType
 }
 
 interface SidebarNavBuilderProps {
@@ -74,7 +75,16 @@ function SidebarNavBuilder({ navigation }: SidebarNavBuilderProps) {
             )
 
           case 'link':
-            return (
+            return item.icon ? (
+              <SidebarMenuItem key={item.name}>
+                <SidebarMenuButton asChild>
+                  <Link to={item.link}>
+                    <item.icon />
+                    <span>{t(item.name)}</span>
+                  </Link>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
+            ) : (
               <SidebarMenuSubItem key={item.name}>
                 <SidebarMenuSubButton asChild>
                   <Link to={item.link}>

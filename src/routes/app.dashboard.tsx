@@ -11,7 +11,7 @@ import {
 import { Badge } from '~/components/ui/badge'
 import { Button } from '~/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '~/components/ui/card'
-import { Link } from '~/components/ui/link'
+import { Link, type ValidLink } from '~/components/ui/link'
 import { Typography } from '~/components/ui/typography'
 
 export const Route = createFileRoute('/app/dashboard')({
@@ -250,7 +250,7 @@ interface UrgentItemProps {
   title: string
   description: string
   action: string
-  actionLink: string
+  actionLink: ValidLink
   priority: 'high' | 'medium' | 'low'
 }
 

@@ -1,15 +1,14 @@
 import { createFileRoute } from '@tanstack/react-router'
+import { Suspense } from 'react'
 import {
   LuArrowLeft,
   LuBuilding2,
-  LuCalendar,
   LuDollarSign,
   LuPencil,
   LuFileText,
   LuHouse,
   LuMapPin,
   LuMessageSquare,
-  LuTrendingUp,
   LuUsers,
   LuWrench,
 } from 'react-icons/lu'
@@ -18,49 +17,66 @@ import { Badge } from '~/components/ui/badge'
 import { Button } from '~/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '~/components/ui/card'
 import { Link } from '~/components/ui/link'
+import { Skeleton } from '~/components/ui/skeleton'
 import { Typography } from '~/components/ui/typography'
+import { usePropertyQuery } from '~/services/properties.query'
+import type { PropertyType } from '~/services/properties.schema'
 
 export const Route = createFileRoute('/app/properties/$propertyId/')({
   component: PropertyDetailPage,
 })
 
-// Mock data for a property
-const property = {
-  id: '1',
-  name: 'Humboldt Court Community',
-  address: '1234 Humboldt Ave N',
-  city: 'Brooklyn Center',
-  state: 'MN',
-  zipCode: '55430',
-  type: 'Multi-Family',
-  totalUnits: 45,
-  occupiedUnits: 42,
-  monthlyRevenue: 42350,
-  expectedRevenue: 45000,
-  yearBuilt: 1975,
-  sqFt: 45000,
-  lotSize: '2.5 acres',
-  parking: '90 spaces',
-  amenities: ['Laundry Facility', 'Community Room', 'Playground', 'Parking'],
-}
-
-const recentActivity = [
-  { type: 'payment', description: 'Rent payment received - Unit 305', time: '2 hours ago' },
-  { type: 'maintenance', description: 'Work order completed - Unit 210', time: '5 hours ago' },
-  { type: 'lease', description: 'Lease renewed - Unit 402', time: '1 day ago' },
-  { type: 'inspection', description: 'Quarterly inspection - Unit 101', time: '2 days ago' },
-]
-
-const upcomingLeaseExpirations = [
-  { unit: '101', tenant: 'Sarah Johnson', expiresIn: 31 },
-  { unit: '305', tenant: 'James Parker', expiresIn: 45 },
-  { unit: '402', tenant: 'David Kim', expiresIn: 60 },
-]
-
 function PropertyDetailPage() {
   const { propertyId } = Route.useParams()
-  const occupancyRate = Math.round((property.occupiedUnits / property.totalUnits) * 100)
-  const collectionRate = Math.round((property.monthlyRevenue / property.expectedRevenue) * 100)
+
+  return (
+    <Suspense fallback={<PageSkeleton />}>
+      <PropertyContent propertyId={propertyId} />
+    </Suspense>
+  )
+}
+
+function PropertyContent({ propertyId }: { propertyId: string }) {
+  const { data: property } = usePropertyQuery(propertyId)
+
+  // Calculate stats from units
+  const totalUnits = property.units.length
+  const occupiedUnits = property.units.filter((u) => u.leases.some((l) => l.status === 'ACTIVE')).length
+  const occupancyRate = totalUnits > 0 ? Math.round((occupiedUnits / totalUnits) * 100) : 0
+
+  const monthlyRevenue = property.units
+    .filter((u) => u.leases.some((l) => l.status === 'ACTIVE'))
+    .reduce((sum, u) => sum + Number(u.currentRent || u.marketRent), 0)
+
+  const expectedRevenue = property.units.reduce(
+    (sum, u) => sum + Number(u.marketRent),
+    0
+  )
+
+  const collectionRate =
+    expectedRevenue > 0 ? Math.round((monthlyRevenue / expectedRevenue) * 100) : 0
+
+  // Get leases expiring in next 90 days
+  const now = new Date()
+  const ninetyDaysFromNow = new Date(now.getTime() + 90 * 24 * 60 * 60 * 1000)
+
+  const expiringLeases = property.units
+    .flatMap((unit) =>
+      unit.leases
+        .filter((lease) => {
+          if (lease.status !== 'ACTIVE') return false
+          const endDate = new Date(lease.endDate)
+          return endDate >= now && endDate <= ninetyDaysFromNow
+        })
+        .map((lease) => ({
+          unitNumber: unit.unitNumber,
+          tenant: lease.tenant,
+          endDate: new Date(lease.endDate),
+          expiresIn: Math.ceil((new Date(lease.endDate).getTime() - now.getTime()) / (24 * 60 * 60 * 1000)),
+        }))
+    )
+    .sort((a, b) => a.expiresIn - b.expiresIn)
+    .slice(0, 5)
 
   return (
     <div className='w-full max-w-7xl space-y-6 py-6'>
@@ -74,12 +90,12 @@ function PropertyDetailPage() {
         <div className='flex-1'>
           <div className='flex items-center gap-3'>
             <Typography.H2>{property.name}</Typography.H2>
-            <Badge>{property.type}</Badge>
+            <Badge>{formatPropertyType(property.type)}</Badge>
           </div>
           <div className='flex items-center gap-2 text-muted-foreground'>
             <LuMapPin className='size-4' />
             <Typography.Muted>
-              {property.address}, {property.city}, {property.state} {property.zipCode}
+              {property.addressLine1}, {property.city}, {property.state} {property.zipCode}
             </Typography.Muted>
           </div>
         </div>
@@ -109,7 +125,7 @@ function PropertyDetailPage() {
           <CardContent>
             <div className='text-2xl font-bold'>{occupancyRate}%</div>
             <p className='text-xs text-muted-foreground'>
-              {property.occupiedUnits} of {property.totalUnits} units
+              {occupiedUnits} of {totalUnits} units
             </p>
           </CardContent>
         </Card>
@@ -119,8 +135,8 @@ function PropertyDetailPage() {
             <LuDollarSign className='size-4 text-muted-foreground' />
           </CardHeader>
           <CardContent>
-            <div className='text-2xl font-bold'>${property.monthlyRevenue.toLocaleString()}</div>
-            <p className='text-xs text-muted-foreground'>{collectionRate}% collected</p>
+            <div className='text-2xl font-bold'>${monthlyRevenue.toLocaleString()}</div>
+            <p className='text-xs text-muted-foreground'>{collectionRate}% of expected</p>
           </CardContent>
         </Card>
         <Card>
@@ -129,18 +145,22 @@ function PropertyDetailPage() {
             <LuUsers className='size-4 text-muted-foreground' />
           </CardHeader>
           <CardContent>
-            <div className='text-2xl font-bold'>{property.occupiedUnits}</div>
-            <p className='text-xs text-muted-foreground'>3 leases expiring soon</p>
+            <div className='text-2xl font-bold'>{occupiedUnits}</div>
+            <p className='text-xs text-muted-foreground'>
+              {expiringLeases.length} leases expiring soon
+            </p>
           </CardContent>
         </Card>
         <Card>
           <CardHeader className='flex flex-row items-center justify-between pb-2'>
-            <CardTitle className='text-sm font-medium'>Open Work Orders</CardTitle>
-            <LuWrench className='size-4 text-muted-foreground' />
+            <CardTitle className='text-sm font-medium'>Total Units</CardTitle>
+            <LuHouse className='size-4 text-muted-foreground' />
           </CardHeader>
           <CardContent>
-            <div className='text-2xl font-bold'>3</div>
-            <p className='text-xs text-muted-foreground'>1 high priority</p>
+            <div className='text-2xl font-bold'>{totalUnits}</div>
+            <p className='text-xs text-muted-foreground'>
+              {totalUnits - occupiedUnits} vacant
+            </p>
           </CardContent>
         </Card>
       </div>
@@ -157,31 +177,45 @@ function PropertyDetailPage() {
               <div className='space-y-3'>
                 <div>
                   <p className='text-sm text-muted-foreground'>Year Built</p>
-                  <p className='font-medium'>{property.yearBuilt}</p>
+                  <p className='font-medium'>{property.yearBuilt || 'N/A'}</p>
                 </div>
                 <div>
                   <p className='text-sm text-muted-foreground'>Total Square Footage</p>
-                  <p className='font-medium'>{property.sqFt.toLocaleString()} sq ft</p>
+                  <p className='font-medium'>
+                    {property.totalSqFt ? `${property.totalSqFt.toLocaleString()} sq ft` : 'N/A'}
+                  </p>
                 </div>
                 <div>
                   <p className='text-sm text-muted-foreground'>Lot Size</p>
-                  <p className='font-medium'>{property.lotSize}</p>
+                  <p className='font-medium'>
+                    {property.lotSize ? `${property.lotSize} acres` : 'N/A'}
+                  </p>
                 </div>
               </div>
               <div className='space-y-3'>
                 <div>
-                  <p className='text-sm text-muted-foreground'>Parking</p>
-                  <p className='font-medium'>{property.parking}</p>
+                  <p className='text-sm text-muted-foreground'>Parking Spaces</p>
+                  <p className='font-medium'>
+                    {property.parkingSpaces ? `${property.parkingSpaces} spaces` : 'N/A'}
+                  </p>
                 </div>
                 <div>
                   <p className='text-sm text-muted-foreground'>Amenities</p>
                   <div className='flex flex-wrap gap-1'>
-                    {property.amenities.map(amenity => (
-                      <Badge key={amenity} variant='secondary'>
-                        {amenity}
-                      </Badge>
-                    ))}
+                    {property.amenities && property.amenities.length > 0 ? (
+                      property.amenities.map((amenity) => (
+                        <Badge key={amenity} variant='secondary'>
+                          {amenity}
+                        </Badge>
+                      ))
+                    ) : (
+                      <span className='text-sm text-muted-foreground'>None listed</span>
+                    )}
                   </div>
+                </div>
+                <div>
+                  <p className='text-sm text-muted-foreground'>Status</p>
+                  <Badge variant='outline'>{property.status}</Badge>
                 </div>
               </div>
             </div>
@@ -194,6 +228,12 @@ function PropertyDetailPage() {
             <CardTitle>Quick Actions</CardTitle>
           </CardHeader>
           <CardContent className='grid gap-2'>
+            <Button variant='outline' className='justify-start' asChild>
+              <Link to='/app/properties/$propertyId/units/new' params={{ propertyId }}>
+                <LuHouse className='mr-2 size-4' />
+                Add Unit
+              </Link>
+            </Button>
             <Button variant='outline' className='justify-start' asChild>
               <Link to='/app/tenants/new'>
                 <LuUsers className='mr-2 size-4' />
@@ -222,35 +262,63 @@ function PropertyDetailPage() {
         </Card>
       </div>
 
-      {/* Activity and Expiring Leases */}
+      {/* Units Overview and Expiring Leases */}
       <div className='grid gap-6 lg:grid-cols-2'>
-        {/* Recent Activity */}
+        {/* Units Overview */}
         <Card>
           <CardHeader>
-            <CardTitle>Recent Activity</CardTitle>
-            <CardDescription>Latest updates for this property</CardDescription>
+            <div className='flex items-center justify-between'>
+              <div>
+                <CardTitle>Units Overview</CardTitle>
+                <CardDescription>Unit breakdown by status</CardDescription>
+              </div>
+              <Button variant='ghost' size='sm' asChild>
+                <Link to='/app/properties/$propertyId/units' params={{ propertyId }}>
+                  View All
+                </Link>
+              </Button>
+            </div>
           </CardHeader>
           <CardContent>
             <div className='space-y-4'>
-              {recentActivity.map((activity, index) => (
-                <div key={index} className='flex items-start gap-4'>
-                  <div
-                    className={`mt-1 size-2 rounded-full ${
-                      activity.type === 'payment'
-                        ? 'bg-green-500'
-                        : activity.type === 'maintenance'
-                          ? 'bg-yellow-500'
-                          : activity.type === 'lease'
-                            ? 'bg-blue-500'
-                            : 'bg-purple-500'
-                    }`}
-                  />
-                  <div className='flex-1'>
-                    <p className='text-sm'>{activity.description}</p>
-                    <p className='text-xs text-muted-foreground'>{activity.time}</p>
+              {property.units.slice(0, 5).map((unit) => {
+                const activeLease = unit.leases.find((l) => l.status === 'ACTIVE')
+                const tenant = activeLease?.tenant
+
+                return (
+                  <div key={unit.id} className='flex items-center justify-between'>
+                    <div>
+                      <p className='text-sm font-medium'>Unit {unit.unitNumber}</p>
+                      <p className='text-xs text-muted-foreground'>
+                        {tenant
+                          ? `${tenant.firstName} ${tenant.lastName}`
+                          : 'Vacant'}
+                      </p>
+                    </div>
+                    <div className='flex items-center gap-2'>
+                      <Badge
+                        variant={activeLease ? 'default' : 'secondary'}
+                        className={activeLease ? 'bg-green-500' : ''}
+                      >
+                        {activeLease ? 'Occupied' : 'Vacant'}
+                      </Badge>
+                      <span className='text-sm font-medium'>
+                        ${Number(unit.currentRent || unit.marketRent).toLocaleString()}
+                      </span>
+                    </div>
                   </div>
+                )
+              })}
+              {property.units.length === 0 && (
+                <div className='text-center py-4'>
+                  <p className='text-sm text-muted-foreground'>No units added yet</p>
+                  <Button variant='outline' size='sm' className='mt-2' asChild>
+                    <Link to='/app/properties/$propertyId/units/new' params={{ propertyId }}>
+                      Add First Unit
+                    </Link>
+                  </Button>
                 </div>
-              ))}
+              )}
             </div>
           </CardContent>
         </Card>
@@ -270,28 +338,106 @@ function PropertyDetailPage() {
           </CardHeader>
           <CardContent>
             <div className='space-y-4'>
-              {upcomingLeaseExpirations.map(lease => (
-                <div key={lease.unit} className='flex items-center justify-between'>
-                  <div>
-                    <p className='text-sm font-medium'>Unit {lease.unit}</p>
-                    <p className='text-xs text-muted-foreground'>{lease.tenant}</p>
+              {expiringLeases.length > 0 ? (
+                expiringLeases.map((lease) => (
+                  <div key={`${lease.unitNumber}-${lease.tenant?.id}`} className='flex items-center justify-between'>
+                    <div>
+                      <p className='text-sm font-medium'>Unit {lease.unitNumber}</p>
+                      <p className='text-xs text-muted-foreground'>
+                        {lease.tenant?.firstName} {lease.tenant?.lastName}
+                      </p>
+                    </div>
+                    <div className='flex items-center gap-2'>
+                      <Badge
+                        variant={
+                          lease.expiresIn <= 30
+                            ? 'destructive'
+                            : lease.expiresIn <= 60
+                              ? 'secondary'
+                              : 'outline'
+                        }
+                      >
+                        {lease.expiresIn} days
+                      </Badge>
+                      <Button variant='ghost' size='sm'>
+                        Renew
+                      </Button>
+                    </div>
                   </div>
-                  <div className='flex items-center gap-2'>
-                    <Badge
-                      variant={lease.expiresIn <= 30 ? 'destructive' : lease.expiresIn <= 60 ? 'secondary' : 'outline'}
-                    >
-                      {lease.expiresIn} days
-                    </Badge>
-                    <Button variant='ghost' size='sm'>
-                      Renew
-                    </Button>
-                  </div>
+                ))
+              ) : (
+                <div className='text-center py-4'>
+                  <p className='text-sm text-muted-foreground'>
+                    No leases expiring in the next 90 days
+                  </p>
                 </div>
-              ))}
+              )}
             </div>
           </CardContent>
         </Card>
       </div>
     </div>
   )
+}
+
+function PageSkeleton() {
+  return (
+    <div className='w-full max-w-7xl space-y-6 py-6'>
+      <div className='flex items-center gap-4'>
+        <Skeleton className='size-10' />
+        <div className='flex-1 space-y-2'>
+          <Skeleton className='h-8 w-64' />
+          <Skeleton className='h-4 w-48' />
+        </div>
+        <div className='flex gap-2'>
+          <Skeleton className='h-10 w-20' />
+          <Skeleton className='h-10 w-32' />
+        </div>
+      </div>
+      <div className='grid gap-4 md:grid-cols-2 lg:grid-cols-4'>
+        {Array.from({ length: 4 }).map((_, i) => (
+          <Card key={i}>
+            <CardHeader className='pb-2'>
+              <Skeleton className='h-4 w-24' />
+            </CardHeader>
+            <CardContent>
+              <Skeleton className='h-8 w-16' />
+              <Skeleton className='mt-1 h-3 w-32' />
+            </CardContent>
+          </Card>
+        ))}
+      </div>
+      <div className='grid gap-6 lg:grid-cols-3'>
+        <Card className='lg:col-span-2'>
+          <CardHeader>
+            <Skeleton className='h-6 w-32' />
+          </CardHeader>
+          <CardContent>
+            <Skeleton className='h-32 w-full' />
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader>
+            <Skeleton className='h-6 w-24' />
+          </CardHeader>
+          <CardContent>
+            <Skeleton className='h-40 w-full' />
+          </CardContent>
+        </Card>
+      </div>
+    </div>
+  )
+}
+
+function formatPropertyType(type: PropertyType): string {
+  const typeMap: Record<PropertyType, string> = {
+    SINGLE_FAMILY: 'Single Family',
+    MULTI_FAMILY: 'Multi-Family',
+    APARTMENT: 'Apartment',
+    CONDO: 'Condo',
+    TOWNHOUSE: 'Townhouse',
+    COMMERCIAL: 'Commercial',
+    MIXED_USE: 'Mixed Use',
+  }
+  return typeMap[type] || type
 }

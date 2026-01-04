@@ -12,6 +12,8 @@ import {
   createProperty,
   updateProperty,
   deleteProperty,
+  type PropertyWithDetails,
+  type PropertyWithUnits,
 } from '~/services/properties.api'
 import type {
   CreatePropertyInput,
@@ -29,17 +31,22 @@ export const propertyKeys = {
   stats: () => [...propertyKeys.all, 'stats'] as const,
 }
 
+// Default filters
+const defaultPropertyFilters: Pick<PropertyFilters, 'offset' | 'limit'> = { offset: 0, limit: 50 }
+
 // Query options
-export const propertiesQueryOptions = (filters: PropertyFilters = {}) =>
-  queryOptions({
-    queryKey: propertyKeys.list(filters),
-    queryFn: () => getProperties({ data: filters }),
+export const propertiesQueryOptions = (filters: Partial<PropertyFilters> = {}) => {
+  const mergedFilters: PropertyFilters = { ...defaultPropertyFilters, ...filters }
+  return queryOptions({
+    queryKey: propertyKeys.list(mergedFilters),
+    queryFn: () => getProperties({ data: mergedFilters }) as Promise<{ properties: PropertyWithUnits[]; total: number; limit: number; offset: number }>,
   })
+}
 
 export const propertyQueryOptions = (id: string) =>
   queryOptions({
     queryKey: propertyKeys.detail(id),
-    queryFn: () => getProperty({ data: { id } }),
+    queryFn: () => getProperty({ data: { id } }) as Promise<PropertyWithDetails>,
   })
 
 export const propertyStatsQueryOptions = () =>
@@ -49,7 +56,7 @@ export const propertyStatsQueryOptions = () =>
   })
 
 // Hooks
-export const usePropertiesQuery = (filters: PropertyFilters = {}) => {
+export const usePropertiesQuery = (filters: Partial<PropertyFilters> = {}) => {
   return useSuspenseQuery(propertiesQueryOptions(filters))
 }
 
@@ -79,7 +86,53 @@ export const useUpdateProperty = () => {
   return useMutation({
     mutationFn: ({ id, ...data }: UpdatePropertyInput & { id: string }) =>
       updateProperty({ data: { id, ...data } }),
-    onSuccess: (_, variables) => {
+    // Optimistic update
+    onMutate: async (newData) => {
+      // Cancel any outgoing refetches
+      await queryClient.cancelQueries({ queryKey: propertyKeys.lists() })
+      await queryClient.cancelQueries({ queryKey: propertyKeys.detail(newData.id) })
+
+      // Snapshot the previous value
+      const previousLists = queryClient.getQueriesData({ queryKey: propertyKeys.lists() })
+      const previousDetail = queryClient.getQueryData(propertyKeys.detail(newData.id))
+
+      // Optimistically update lists
+      queryClient.setQueriesData(
+        { queryKey: propertyKeys.lists() },
+        (old: { properties: PropertyWithUnits[]; total: number } | undefined) => {
+          if (!old) return old
+          return {
+            ...old,
+            properties: old.properties.map((p) =>
+              p.id === newData.id ? { ...p, ...newData } : p
+            ),
+          }
+        }
+      )
+
+      // Optimistically update detail
+      if (previousDetail) {
+        queryClient.setQueryData(propertyKeys.detail(newData.id), {
+          ...previousDetail,
+          ...newData,
+        })
+      }
+
+      return { previousLists, previousDetail }
+    },
+    onError: (_, newData, context) => {
+      // Rollback on error
+      if (context?.previousLists) {
+        context.previousLists.forEach(([queryKey, data]) => {
+          queryClient.setQueryData(queryKey, data)
+        })
+      }
+      if (context?.previousDetail) {
+        queryClient.setQueryData(propertyKeys.detail(newData.id), context.previousDetail)
+      }
+    },
+    onSettled: (_, __, variables) => {
+      // Always refetch to ensure consistency
       queryClient.invalidateQueries({ queryKey: propertyKeys.detail(variables.id) })
       queryClient.invalidateQueries({ queryKey: propertyKeys.lists() })
     },

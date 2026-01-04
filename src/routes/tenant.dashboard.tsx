@@ -1,6 +1,6 @@
 'use client'
 
-import { createFileRoute, Link } from '@tanstack/react-router'
+import { createFileRoute } from '@tanstack/react-router'
 import { LuCircleAlert, LuCalendar, LuCreditCard, LuFileText, LuHouse, LuWrench } from 'react-icons/lu'
 import { format } from 'date-fns'
 
@@ -9,7 +9,27 @@ import { Button } from '~/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '~/components/ui/card'
 import { Separator } from '~/components/ui/separator'
 import { Typography } from '~/components/ui/typography'
+import { Link } from '~/components/ui/link'
 import { useTenantDashboardQuery } from '~/services/tenant-portal.query'
+
+// Type for payment from API
+interface Payment {
+  id: string
+  amount: number | { toString(): string }
+  paymentDate: Date | string
+  paymentMethod: string | null
+  status: string
+  referenceNumber: string | null
+}
+
+// Type for maintenance request from API
+interface MaintenanceRequest {
+  id: string
+  title: string
+  status: string
+  priority: string
+  createdAt: Date | string
+}
 
 export const Route = createFileRoute('/tenant/dashboard')({
   component: TenantDashboardPage,
@@ -18,7 +38,30 @@ export const Route = createFileRoute('/tenant/dashboard')({
 function TenantDashboardPage() {
   const { data } = useTenantDashboardQuery()
 
-  const { tenant, lease, balance, recentPayments, recentMaintenanceRequests, alerts } = data
+  const { tenant, lease, balance, recentPayments, recentMaintenanceRequests, alerts } = data as {
+    tenant: { firstName: string; lastName: string; email: string }
+    lease: {
+      leaseDocumentUrl?: string
+      status: string
+      startDate: Date | string
+      endDate?: Date | string | null
+      securityDeposit: number
+      unit: {
+        unitNumber: string
+        property: {
+          name: string
+          address: string
+          city: string
+          state: string
+          zipCode: string
+        }
+      }
+    } | null
+    balance: { current: number; nextPaymentDueDate: Date | string | null; monthlyRent: number }
+    recentPayments: Payment[]
+    recentMaintenanceRequests: MaintenanceRequest[]
+    alerts: { hasOutstandingBalance: boolean; leaseExpiringSoon: boolean }
+  }
 
   return (
     <div className='w-full max-w-7xl space-y-6'>
@@ -98,7 +141,7 @@ function TenantDashboardPage() {
               </Link>
             </Button>
             <Button asChild variant='outline' size='lg'>
-              <Link to='/tenant/maintenance'>
+              <Link to={'/tenant/maintenance' as '/app/maintenance'}>
                 <LuWrench className='mr-2 size-4' />
                 Submit Maintenance Request
               </Link>
@@ -150,7 +193,7 @@ function TenantDashboardPage() {
             <div className='flex items-center justify-between'>
               <CardTitle>Recent Payments</CardTitle>
               <Button asChild variant='ghost' size='sm'>
-                <Link to='/tenant/payments/history'>View All</Link>
+                <Link to={'/tenant/payments/history' as '/tenant/payments'}>View All</Link>
               </Button>
             </div>
           </CardHeader>
@@ -240,7 +283,7 @@ function TenantDashboardPage() {
             <div className='flex items-center justify-between'>
               <CardTitle>Recent Maintenance Requests</CardTitle>
               <Button asChild variant='ghost' size='sm'>
-                <Link to='/tenant/maintenance'>View All</Link>
+                <Link to={'/tenant/maintenance' as '/app/maintenance'}>View All</Link>
               </Button>
             </div>
           </CardHeader>

@@ -7,7 +7,7 @@ import { Avatar, AvatarFallback, AvatarImage } from '~/components/ui/avatar'
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '~/components/ui/dropdown-menu'
 import { Link } from '~/components/ui/link'
 import { ScrollArea } from '~/components/ui/scroll-area'
-import { Sidebar, SidebarContent, SidebarFooter, SidebarGroup, SidebarHeader, SidebarMenu, SidebarMenuButton, SidebarMenuItem, useSidebar } from '~/components/ui/sidebar'
+import { Sidebar, SidebarContent, SidebarFooter, SidebarGroup, SidebarGroupLabel, SidebarHeader, SidebarMenu, SidebarMenuButton, SidebarMenuItem, useSidebar } from '~/components/ui/sidebar'
 import { SidebarNavBuilder } from '~/components/ui/sidebar-nav-builder'
 import { TwemojiFlag } from '~/components/ui/twemoji'
 import { languageOptions, tenantNavigation, themeOptions } from '~/config/tenant-sidebar'
@@ -62,9 +62,9 @@ function SidebarAppearance() {
   const preferenceQuery = usePreferenceQuery()
   const updatePreferenceMutation = useUpdatePreferenceMutation()
 
-  const { theme, setTheme } = useTheme()
+  const { value: theme, set: setTheme } = useTheme()
 
-  const locale = preferenceQuery.data?.data?.locale ?? 'en'
+  const locale = preferenceQuery.data?.locale ?? 'en'
   const currentLanguage = languageOptions.find((option) => option.locale === locale) ?? languageOptions[0]
 
   return (
@@ -78,7 +78,7 @@ function SidebarAppearance() {
                 size='lg'
                 className='data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground'
               >
-                <TwemojiFlag emoji={currentLanguage.countryCode} className='size-4' />
+                <TwemojiFlag countryCode={currentLanguage.countryCode} className='size-4' />
                 <span>{currentLanguage.label}</span>
               </SidebarMenuButton>
             </DropdownMenuTrigger>
@@ -99,7 +99,7 @@ function SidebarAppearance() {
                     })
                   }}
                 >
-                  <TwemojiFlag emoji={option.countryCode} className='size-4' />
+                  <TwemojiFlag countryCode={option.countryCode} className='size-4' />
                   <span>{option.label}</span>
                 </DropdownMenuItem>
               ))}
@@ -117,7 +117,7 @@ function SidebarAppearance() {
                   const ThemeIcon = themeOptions.find((option) => option.value === theme)?.Icon
                   return ThemeIcon ? <ThemeIcon /> : null
                 })()}
-                <span>{t(`sidebar.${theme}`)}</span>
+                <span>{t(`sidebar.${theme}` as 'sidebar.system' | 'sidebar.light' | 'sidebar.dark')}</span>
               </SidebarMenuButton>
             </DropdownMenuTrigger>
             <DropdownMenuContent
@@ -134,7 +134,7 @@ function SidebarAppearance() {
                   }}
                 >
                   <option.Icon />
-                  <span>{t(`sidebar.${option.value}`)}</span>
+                  <span>{t(`sidebar.${option.value}` as 'sidebar.system' | 'sidebar.light' | 'sidebar.dark')}</span>
                 </DropdownMenuItem>
               ))}
             </DropdownMenuContent>

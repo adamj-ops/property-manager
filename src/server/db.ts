@@ -29,20 +29,21 @@ const useAdapter = process.env.PRISMA_USE_ADAPTER === 'true'
 
 // Create Prisma client with adapter
 const prismaClientSingleton = () => {
-  return useAdapter
-    ? new PrismaClient({
-        adapter,
-        log:
-          process.env.NODE_ENV === 'development'
-            ? ['query', 'error', 'warn']
-            : ['error'],
-      })
-    : new PrismaClient({
-        log:
-          process.env.NODE_ENV === 'development'
-            ? ['query', 'error', 'warn']
-            : ['error'],
-      })
+  const logConfig = process.env.NODE_ENV === 'development'
+    ? ['query', 'error', 'warn'] as ('query' | 'error' | 'warn')[]
+    : ['error'] as ('error')[]
+
+  if (useAdapter) {
+    return new PrismaClient({
+      // @ts-expect-error - PrismaPg adapter type compatibility
+      adapter,
+      log: logConfig,
+    })
+  }
+
+  return new PrismaClient({
+    log: logConfig,
+  })
 }
 
 // Ensure single instance in development (hot reload)

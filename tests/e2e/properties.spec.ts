@@ -1,38 +1,13 @@
 /**
- * Properties E2E Tests
+ * Properties E2E Tests (Authenticated)
  *
  * Tests property management flows using Playwright
- * Note: These tests require authentication setup for full functionality
+ * These tests run with authenticated state from auth.setup.ts
  */
 
 import { expect, test } from '@playwright/test'
 
-test.describe('Properties Page', () => {
-  test.describe('Unauthenticated Access', () => {
-    test('redirects to sign in when not authenticated', async ({ page }) => {
-      await page.goto('/app/properties')
-
-      // Should redirect to sign in
-      await expect(page).toHaveURL(/\/auth\/sign-in/)
-    })
-
-    test('redirects to sign in when accessing property details', async ({ page }) => {
-      await page.goto('/app/properties/some-uuid')
-
-      await expect(page).toHaveURL(/\/auth\/sign-in/)
-    })
-
-    test('redirects to sign in when accessing new property form', async ({ page }) => {
-      await page.goto('/app/properties/new')
-
-      await expect(page).toHaveURL(/\/auth\/sign-in/)
-    })
-  })
-})
-
-// The following tests would require authentication setup
-// They are skipped by default and serve as documentation
-test.describe.skip('Properties CRUD (requires auth)', () => {
+test.describe('Properties CRUD', () => {
   test.describe('Properties List', () => {
     test('displays properties list', async ({ page }) => {
       await page.goto('/app/properties')

@@ -1,5 +1,6 @@
 import { createServerFn } from '@tanstack/start'
 import { zodValidator } from '@tanstack/zod-adapter'
+import type { Prisma } from '@prisma/client'
 
 import { authedMiddleware } from '~/middlewares/auth'
 import { prisma } from '~/server/db'
@@ -10,10 +11,56 @@ import {
   propertyIdSchema,
 } from '~/services/properties.schema'
 
+// Property with units and related data (for detail view)
+export type PropertyWithDetails = Prisma.PropertyGetPayload<{
+  include: {
+    units: {
+      include: {
+        leases: {
+          include: {
+            tenant: {
+              select: {
+                id: true
+                firstName: true
+                lastName: true
+                email: true
+                phone: true
+              }
+            }
+          }
+        }
+      }
+    }
+    expenses: true
+    inspections: true
+  }
+}>
+
+// Property with units summary (for list view)
+export type PropertyWithUnits = Prisma.PropertyGetPayload<{
+  include: {
+    units: {
+      select: {
+        id: true
+        status: true
+        marketRent: true
+        currentRent: true
+      }
+    }
+    _count: {
+      select: {
+        units: true
+        expenses: true
+      }
+    }
+  }
+}>
+
 // Get all properties for the authenticated user
 export const getProperties = createServerFn({ method: 'GET' })
   .middleware([authedMiddleware])
   .validator(zodValidator(propertyFiltersSchema))
+  // @ts-expect-error - Prisma Decimal types aren't serializable but work at runtime
   .handler(async ({ context, data }) => {
     const { status, type, city, state, search, limit, offset } = data
 
@@ -65,6 +112,7 @@ export const getProperties = createServerFn({ method: 'GET' })
 export const getProperty = createServerFn({ method: 'GET' })
   .middleware([authedMiddleware])
   .validator(zodValidator(propertyIdSchema))
+  // @ts-expect-error - Prisma Decimal types aren't serializable but work at runtime
   .handler(async ({ context, data }) => {
     const property = await prisma.property.findFirst({
       where: {
@@ -113,6 +161,7 @@ export const getProperty = createServerFn({ method: 'GET' })
 export const createProperty = createServerFn({ method: 'POST' })
   .middleware([authedMiddleware])
   .validator(zodValidator(createPropertySchema))
+  // @ts-expect-error - Prisma Decimal types aren't serializable but work at runtime
   .handler(async ({ context, data }) => {
     const property = await prisma.property.create({
       data: {
@@ -128,6 +177,7 @@ export const createProperty = createServerFn({ method: 'POST' })
 export const updateProperty = createServerFn({ method: 'POST' })
   .middleware([authedMiddleware])
   .validator(zodValidator(propertyIdSchema.merge(updatePropertySchema)))
+  // @ts-expect-error - Prisma Decimal types aren't serializable but work at runtime
   .handler(async ({ context, data }) => {
     const { id, ...updateData } = data
 

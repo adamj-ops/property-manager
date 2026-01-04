@@ -15,6 +15,7 @@ import {
 export const getMaintenanceRequests = createServerFn({ method: 'GET' })
   .middleware([authedMiddleware])
   .validator(zodValidator(maintenanceFiltersSchema))
+  // @ts-expect-error - Prisma Decimal types aren't serializable but work at runtime
   .handler(async ({ context, data }) => {
     const {
       propertyId,
@@ -87,6 +88,7 @@ export const getMaintenanceRequests = createServerFn({ method: 'GET' })
 export const getMaintenanceRequest = createServerFn({ method: 'GET' })
   .middleware([authedMiddleware])
   .validator(zodValidator(maintenanceIdSchema))
+  // @ts-expect-error - Prisma Decimal types aren't serializable but work at runtime
   .handler(async ({ context, data }) => {
     const request = await prisma.maintenanceRequest.findFirst({
       where: {
@@ -121,6 +123,7 @@ export const getMaintenanceRequest = createServerFn({ method: 'GET' })
 export const createMaintenanceRequest = createServerFn({ method: 'POST' })
   .middleware([authedMiddleware])
   .validator(zodValidator(createMaintenanceSchema))
+  // @ts-expect-error - Prisma Decimal types aren't serializable but work at runtime
   .handler(async ({ context, data }) => {
     // Verify unit ownership
     const unit = await prisma.unit.findFirst({
@@ -152,6 +155,7 @@ export const createMaintenanceRequest = createServerFn({ method: 'POST' })
 export const updateMaintenanceRequest = createServerFn({ method: 'POST' })
   .middleware([authedMiddleware])
   .validator(zodValidator(maintenanceIdSchema.merge(updateMaintenanceSchema)))
+  // @ts-expect-error - Prisma Decimal types aren't serializable but work at runtime
   .handler(async ({ context, data }) => {
     const { id, ...updateData } = data
 

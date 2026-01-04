@@ -155,6 +155,7 @@ export function DocumentUpload({
           type: defaultType,
           propertyId,
           tenantId,
+          tags: [],
         })
 
         setFiles((prev) => {

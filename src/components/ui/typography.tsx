@@ -68,6 +68,24 @@ function Blockquote({ className, ...props }: ComponentProps<'blockquote'>) {
   )
 }
 
+function Small({ className, ...props }: ComponentProps<'small'>) {
+  return (
+    <small
+      className={cx('text-sm font-medium leading-none', className)}
+      {...props}
+    />
+  )
+}
+
+function Muted({ className, ...props }: ComponentProps<'p'>) {
+  return (
+    <p
+      className={cx('text-sm text-muted-foreground', className)}
+      {...props}
+    />
+  )
+}
+
 const Typography = {
   H1: Heading1,
   H2: Heading2,
@@ -75,6 +93,8 @@ const Typography = {
   H4: Heading4,
   P: Paragraph,
   Blockquote,
+  Small,
+  Muted,
 }
 
 export { Typography }

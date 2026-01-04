@@ -26,12 +26,17 @@ export const leaseKeys = {
   expiring: () => [...leaseKeys.all, 'expiring'] as const,
 }
 
+// Default filters
+const defaultLeaseFilters: Pick<LeaseFilters, 'offset' | 'limit'> = { offset: 0, limit: 50 }
+
 // Query options
-export const leasesQueryOptions = (filters: LeaseFilters = {}) =>
-  queryOptions({
-    queryKey: leaseKeys.list(filters),
-    queryFn: () => getLeases({ data: filters }),
+export const leasesQueryOptions = (filters: Partial<LeaseFilters> = {}) => {
+  const mergedFilters: LeaseFilters = { ...defaultLeaseFilters, ...filters }
+  return queryOptions({
+    queryKey: leaseKeys.list(mergedFilters),
+    queryFn: () => getLeases({ data: mergedFilters }),
   })
+}
 
 export const leaseQueryOptions = (id: string) =>
   queryOptions({
@@ -46,7 +51,7 @@ export const expiringLeasesQueryOptions = () =>
   })
 
 // Hooks
-export const useLeasesQuery = (filters: LeaseFilters = {}) => {
+export const useLeasesQuery = (filters: Partial<LeaseFilters> = {}) => {
   return useSuspenseQuery(leasesQueryOptions(filters))
 }
 

@@ -100,8 +100,8 @@ export async function auditLog(
     }
 
     // Filter sensitive fields from logged values
-    const sanitizedOld = oldValues ? sanitizeForAudit(oldValues) : null
-    const sanitizedNew = newValues ? sanitizeForAudit(newValues) : null
+    const sanitizedOld = oldValues ? sanitizeForAudit(oldValues) : undefined
+    const sanitizedNew = newValues ? sanitizeForAudit(newValues) : undefined
 
     await prisma.auditLog.create({
       data: {
@@ -109,8 +109,8 @@ export async function auditLog(
         action,
         entityType,
         entityId,
-        oldValues: sanitizedOld,
-        newValues: sanitizedNew,
+        oldValues: sanitizedOld as Parameters<typeof prisma.auditLog.create>[0]['data']['oldValues'],
+        newValues: sanitizedNew as Parameters<typeof prisma.auditLog.create>[0]['data']['newValues'],
         ipAddress,
         userAgent,
       },

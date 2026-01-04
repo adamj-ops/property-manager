@@ -29,12 +29,17 @@ export const paymentKeys = {
   rentRoll: () => [...paymentKeys.all, 'rentRoll'] as const,
 }
 
+// Default filters
+const defaultPaymentFilters: Pick<PaymentFilters, 'offset' | 'limit'> = { offset: 0, limit: 50 }
+
 // Query options
-export const paymentsQueryOptions = (filters: PaymentFilters = {}) =>
-  queryOptions({
-    queryKey: paymentKeys.list(filters),
-    queryFn: () => getPayments({ data: filters }),
+export const paymentsQueryOptions = (filters: Partial<PaymentFilters> = {}) => {
+  const mergedFilters: PaymentFilters = { ...defaultPaymentFilters, ...filters }
+  return queryOptions({
+    queryKey: paymentKeys.list(mergedFilters),
+    queryFn: () => getPayments({ data: mergedFilters }),
   })
+}
 
 export const paymentQueryOptions = (id: string) =>
   queryOptions({
@@ -55,7 +60,7 @@ export const rentRollQueryOptions = () =>
   })
 
 // Hooks
-export const usePaymentsQuery = (filters: PaymentFilters = {}) => {
+export const usePaymentsQuery = (filters: Partial<PaymentFilters> = {}) => {
   return useSuspenseQuery(paymentsQueryOptions(filters))
 }
 

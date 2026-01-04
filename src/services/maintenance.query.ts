@@ -29,12 +29,17 @@ export const maintenanceKeys = {
   stats: () => [...maintenanceKeys.all, 'stats'] as const,
 }
 
+// Default filters
+const defaultMaintenanceFilters: Pick<MaintenanceFilters, 'offset' | 'limit'> = { offset: 0, limit: 50 }
+
 // Query options
-export const maintenanceRequestsQueryOptions = (filters: MaintenanceFilters = {}) =>
-  queryOptions({
-    queryKey: maintenanceKeys.list(filters),
-    queryFn: () => getMaintenanceRequests({ data: filters }),
+export const maintenanceRequestsQueryOptions = (filters: Partial<MaintenanceFilters> = {}) => {
+  const mergedFilters: MaintenanceFilters = { ...defaultMaintenanceFilters, ...filters }
+  return queryOptions({
+    queryKey: maintenanceKeys.list(mergedFilters),
+    queryFn: () => getMaintenanceRequests({ data: mergedFilters }),
   })
+}
 
 export const maintenanceRequestQueryOptions = (id: string) =>
   queryOptions({
@@ -49,7 +54,7 @@ export const maintenanceStatsQueryOptions = () =>
   })
 
 // Hooks
-export const useMaintenanceRequestsQuery = (filters: MaintenanceFilters = {}) => {
+export const useMaintenanceRequestsQuery = (filters: Partial<MaintenanceFilters> = {}) => {
   return useSuspenseQuery(maintenanceRequestsQueryOptions(filters))
 }
 

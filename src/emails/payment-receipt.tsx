@@ -1,4 +1,4 @@
-import { Section, Table, TableBody, TableCell, TableRow, Text } from '@react-email/components'
+import { Section, Text } from '@react-email/components'
 
 import { EmailButton, EmailHeading, EmailLayout } from '~/emails/base'
 
@@ -31,30 +31,23 @@ export function PaymentReceiptEmail({
         <Text>
           Thank you for your payment. Here are your receipt details:
         </Text>
-        <Table className='w-full text-[14px]'>
-          <TableBody>
-            <TableRow>
-              <TableCell className='py-1 text-zinc-600'>Receipt #</TableCell>
-              <TableCell className='py-1 font-semibold text-black'>{receiptNumber}</TableCell>
-            </TableRow>
-            <TableRow>
-              <TableCell className='py-1 text-zinc-600'>Amount</TableCell>
-              <TableCell className='py-1 font-semibold text-black'>{amount}</TableCell>
-            </TableRow>
-            <TableRow>
-              <TableCell className='py-1 text-zinc-600'>Date</TableCell>
-              <TableCell className='py-1 font-semibold text-black'>{paymentDate}</TableCell>
-            </TableRow>
-            <TableRow>
-              <TableCell className='py-1 text-zinc-600'>Method</TableCell>
-              <TableCell className='py-1 font-semibold text-black'>{paymentMethod}</TableCell>
-            </TableRow>
-            <TableRow>
-              <TableCell className='py-1 text-zinc-600'>Property</TableCell>
-              <TableCell className='py-1 font-semibold text-black'>{propertyAddress}</TableCell>
-            </TableRow>
-          </TableBody>
-        </Table>
+        <Section className='rounded-lg border border-solid border-gray-200 p-4'>
+          <Text className='m-0 text-zinc-600'>
+            Receipt #: <span className='font-semibold text-black'>{receiptNumber}</span>
+          </Text>
+          <Text className='m-0 text-zinc-600'>
+            Amount: <span className='font-semibold text-black'>{amount}</span>
+          </Text>
+          <Text className='m-0 text-zinc-600'>
+            Date: <span className='font-semibold text-black'>{paymentDate}</span>
+          </Text>
+          <Text className='m-0 text-zinc-600'>
+            Method: <span className='font-semibold text-black'>{paymentMethod}</span>
+          </Text>
+          <Text className='m-0 text-zinc-600'>
+            Property: <span className='font-semibold text-black'>{propertyAddress}</span>
+          </Text>
+        </Section>
         {paymentLink && (
           <EmailButton href={paymentLink}>
             View receipt

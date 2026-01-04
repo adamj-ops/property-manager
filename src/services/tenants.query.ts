@@ -27,12 +27,17 @@ export const tenantKeys = {
   detail: (id: string) => [...tenantKeys.details(), id] as const,
 }
 
+// Default filters
+const defaultTenantFilters: Pick<TenantFilters, 'offset' | 'limit'> = { offset: 0, limit: 50 }
+
 // Query options
-export const tenantsQueryOptions = (filters: TenantFilters = {}) =>
-  queryOptions({
-    queryKey: tenantKeys.list(filters),
-    queryFn: () => getTenants({ data: filters }),
+export const tenantsQueryOptions = (filters: Partial<TenantFilters> = {}) => {
+  const mergedFilters: TenantFilters = { ...defaultTenantFilters, ...filters }
+  return queryOptions({
+    queryKey: tenantKeys.list(mergedFilters),
+    queryFn: () => getTenants({ data: mergedFilters }),
   })
+}
 
 export const tenantQueryOptions = (id: string) =>
   queryOptions({
@@ -41,7 +46,7 @@ export const tenantQueryOptions = (id: string) =>
   })
 
 // Hooks
-export const useTenantsQuery = (filters: TenantFilters = {}) => {
+export const useTenantsQuery = (filters: Partial<TenantFilters> = {}) => {
   return useSuspenseQuery(tenantsQueryOptions(filters))
 }
 

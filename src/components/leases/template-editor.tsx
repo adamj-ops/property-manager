@@ -295,5 +295,3 @@ function EditorContent({ templateId, onClose, onSuccess }: EditorContentProps) {
   )
 }
 
-export { TemplateEditorDialog }
-

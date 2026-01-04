@@ -48,6 +48,13 @@ const zhTW: Messages = {
     'others': '其他',
     'examples': '範例',
     'example-form': '表單',
+    // Tenant Portal
+    'tenant-portal': '租戶入口',
+    'pay-rent': '支付租金',
+    'payment-history': '付款記錄',
+    'my-lease': '我的租約',
+    'lease-details': '租約詳情',
+    'maintenance-requests': '維修申請',
   },
   auth: {
     'name': '名稱',
@@ -105,6 +112,8 @@ const zhTW: Messages = {
     'password-must-match': '密碼必須匹配',
     'password-must-different': '新密碼必須不同於目前密碼',
     'email-must-different': '新信箱必須不同於目前信箱',
+    'signing-in': '登入中...',
+    'signing-up': '創建帳戶中...',
   },
   onboarding: {
     // Business Profile (Page 2)
@@ -129,6 +138,7 @@ const zhTW: Messages = {
     'select-platform': '選擇平台',
     'profile-saved': '個人資料已保存',
     'profile-save-error': '保存個人資料失敗',
+    'saving-profile': '保存中...',
 
     // Email Verification (Page 3)
     'check-your-email': '檢查您的信箱',

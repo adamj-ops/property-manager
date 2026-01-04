@@ -27,7 +27,7 @@ function AccountSettingsRoute() {
 
   const form = useForm(updateUserSchema(t), {
     defaultValues: {
-      username: authedQuery.data.user.username,
+      username: (authedQuery.data.user as { username?: string }).username ?? '',
       name: authedQuery.data.user.name,
     },
     onSubmit: async ({ value, formApi }) => {

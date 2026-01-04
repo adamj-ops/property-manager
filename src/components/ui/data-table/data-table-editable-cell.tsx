@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import type { CellContext } from '@tanstack/react-table'
+import { LuLoaderCircle } from 'react-icons/lu'
 
 import { cx } from '~/libs/utils'
 import { Input } from '~/components/ui/input'
@@ -20,6 +21,8 @@ interface EditableCellProps<TData, TValue> extends CellContext<TData, TValue> {
   options?: { label: string; value: string }[]
   editable?: boolean
   className?: string
+  /** Async callback for saving to API. If provided, will show loading state during save. */
+  onSave?: (rowData: TData, columnId: string, value: TValue) => Promise<void>
 }
 
 export function EditableCell<TData, TValue>({
@@ -31,20 +34,35 @@ export function EditableCell<TData, TValue>({
   options = [],
   editable = true,
   className,
+  onSave,
 }: EditableCellProps<TData, TValue>) {
   const initialValue = getValue() as string | number
   const [value, setValue] = useState(initialValue)
   const [isEditing, setIsEditing] = useState(false)
+  const [isSaving, setIsSaving] = useState(false)
 
   // Sync with external changes
   useEffect(() => {
     setValue(initialValue)
   }, [initialValue])
 
-  const onBlur = () => {
+  const onBlur = async () => {
     setIsEditing(false)
     if (value !== initialValue) {
-      table.options.meta?.updateData(row.index, column.id, value)
+      if (onSave) {
+        setIsSaving(true)
+        try {
+          await onSave(row.original, column.id, value as TValue)
+          table.options.meta?.updateData(row.index, column.id, value)
+        } catch (error) {
+          // Revert on error
+          setValue(initialValue)
+        } finally {
+          setIsSaving(false)
+        }
+      } else {
+        table.options.meta?.updateData(row.index, column.id, value)
+      }
     }
   }
 
@@ -65,6 +83,16 @@ export function EditableCell<TData, TValue>({
 
   if (!editable) {
     return <span className={className}>{formatValue(value, type)}</span>
+  }
+
+  // Saving state
+  if (isSaving) {
+    return (
+      <div className='flex items-center gap-2 px-2 py-1 text-muted-foreground'>
+        <LuLoaderCircle className='size-4 animate-spin' />
+        <span className='text-sm'>Saving...</span>
+      </div>
+    )
   }
 
   // Editing state
@@ -159,6 +187,8 @@ function formatValue(value: string | number | null | undefined, type: string): s
 interface EditableBadgeCellProps<TData, TValue> extends CellContext<TData, TValue> {
   options: { label: string; value: string; variant?: 'default' | 'secondary' | 'destructive' | 'outline'; className?: string }[]
   editable?: boolean
+  /** Async callback for saving to API. If provided, will show loading state during save. */
+  onSave?: (rowData: TData, columnId: string, value: string) => Promise<void>
 }
 
 export function EditableBadgeCell<TData, TValue>({
@@ -168,9 +198,11 @@ export function EditableBadgeCell<TData, TValue>({
   table,
   options,
   editable = true,
+  onSave,
 }: EditableBadgeCellProps<TData, TValue>) {
   const value = getValue() as string
   const [isOpen, setIsOpen] = useState(false)
+  const [isSaving, setIsSaving] = useState(false)
 
   const currentOption = options.find((o) => o.value === value)
 
@@ -182,13 +214,36 @@ export function EditableBadgeCell<TData, TValue>({
     )
   }
 
+  if (isSaving) {
+    return (
+      <Badge variant='outline' className='gap-1'>
+        <LuLoaderCircle className='size-3 animate-spin' />
+        Saving...
+      </Badge>
+    )
+  }
+
+  const handleValueChange = async (newValue: string) => {
+    setIsOpen(false)
+    if (newValue !== value) {
+      if (onSave) {
+        setIsSaving(true)
+        try {
+          await onSave(row.original, column.id, newValue)
+          table.options.meta?.updateData(row.index, column.id, newValue)
+        } finally {
+          setIsSaving(false)
+        }
+      } else {
+        table.options.meta?.updateData(row.index, column.id, newValue)
+      }
+    }
+  }
+
   return (
     <Select
       value={value}
-      onValueChange={(newValue) => {
-        table.options.meta?.updateData(row.index, column.id, newValue)
-        setIsOpen(false)
-      }}
+      onValueChange={handleValueChange}
       open={isOpen}
       onOpenChange={setIsOpen}
     >

@@ -3,6 +3,7 @@
  * Common utilities for creating test data
  */
 
+import { Prisma } from '@prisma/client'
 import type {
   Lease,
   Property,
@@ -189,7 +190,7 @@ export async function createPropertyWithUnits(
   for (let i = 0; i < unitCount; i++) {
     const unit = await createTestUnit(property.id, {
       unitNumber: `${i + 1}`,
-      marketRent: 1000 + (i * 100),
+      marketRent: new Prisma.Decimal(1000 + (i * 100)),
     })
     units.push(unit)
   }

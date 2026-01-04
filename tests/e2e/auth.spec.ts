@@ -163,24 +163,6 @@ test.describe('Authentication', () => {
   })
 })
 
-test.describe('Authenticated User Flow', () => {
-  // Note: For full E2E tests with authentication, you would typically:
-  // 1. Use Playwright's storageState to persist auth
-  // 2. Create a test user in beforeAll
-  // 3. Sign in once and reuse the session
-
-  test.describe.skip('Dashboard Access (requires auth setup)', () => {
-    test('can access dashboard after sign in', async ({ page }) => {
-      // This test would require a valid test account
-      await page.goto('/auth/sign-in')
-
-      await page.getByLabel(/email/i).fill('test@example.com')
-      await page.getByLabel(/password/i).fill('testpassword123')
-      await page.getByRole('button', { name: /sign in/i }).click()
-
-      // Should redirect to dashboard
-      await expect(page).toHaveURL(/\/app\/dashboard/)
-    })
-  })
-})
+// Note: Authenticated user flow tests are now in separate spec files
+// (properties.spec.ts, etc.) that run with auth state from auth.setup.ts
 

@@ -1,5 +1,6 @@
 import { createServerFn } from '@tanstack/start'
 import { zodValidator } from '@tanstack/zod-adapter'
+import type { Prisma } from '@prisma/client'
 
 import { authedMiddleware } from '~/middlewares/auth'
 import { prisma } from '~/server/db'
@@ -9,12 +10,54 @@ import {
   unitFiltersSchema,
   unitIdSchema,
   bulkCreateUnitsSchema,
+  bulkDeleteUnitsSchema,
 } from '~/services/units.schema'
+
+// Unit with property and lease info (for list view)
+export type UnitWithDetails = Prisma.UnitGetPayload<{
+  include: {
+    property: {
+      select: {
+        id: true
+        name: true
+        addressLine1: true
+        city: true
+        state: true
+      }
+    }
+    leases: {
+      include: {
+        tenant: {
+          select: {
+            id: true
+            firstName: true
+            lastName: true
+            email: true
+          }
+        }
+      }
+    }
+  }
+}>
+
+// Unit with full details (for detail view)
+export type UnitFull = Prisma.UnitGetPayload<{
+  include: {
+    property: true
+    leases: {
+      include: {
+        tenant: true
+      }
+    }
+    maintenanceRequests: true
+  }
+}>
 
 // Get all units (with optional property filter)
 export const getUnits = createServerFn({ method: 'GET' })
   .middleware([authedMiddleware])
   .validator(zodValidator(unitFiltersSchema))
+  // @ts-expect-error - Prisma Decimal types aren't serializable but work at runtime
   .handler(async ({ context, data }) => {
     const { propertyId, status, minBedrooms, maxRent, petFriendly, search, limit, offset } = data
 
@@ -74,6 +117,7 @@ export const getUnits = createServerFn({ method: 'GET' })
 export const getUnit = createServerFn({ method: 'GET' })
   .middleware([authedMiddleware])
   .validator(zodValidator(unitIdSchema))
+  // @ts-expect-error - Prisma Decimal types aren't serializable but work at runtime
   .handler(async ({ context, data }) => {
     const unit = await prisma.unit.findFirst({
       where: {
@@ -106,6 +150,7 @@ export const getUnit = createServerFn({ method: 'GET' })
 export const createUnit = createServerFn({ method: 'POST' })
   .middleware([authedMiddleware])
   .validator(zodValidator(createUnitSchema))
+  // @ts-expect-error - Prisma Decimal types aren't serializable but work at runtime
   .handler(async ({ context, data }) => {
     // Verify property ownership
     const property = await prisma.property.findFirst({
@@ -165,6 +210,7 @@ export const bulkCreateUnits = createServerFn({ method: 'POST' })
 export const updateUnit = createServerFn({ method: 'POST' })
   .middleware([authedMiddleware])
   .validator(zodValidator(unitIdSchema.merge(updateUnitSchema)))
+  // @ts-expect-error - Prisma Decimal types aren't serializable but work at runtime
   .handler(async ({ context, data }) => {
     const { id, ...updateData } = data
 
@@ -210,4 +256,65 @@ export const deleteUnit = createServerFn({ method: 'POST' })
     })
 
     return { success: true }
+  })
+
+// Bulk delete units
+export const bulkDeleteUnits = createServerFn({ method: 'POST' })
+  .middleware([authedMiddleware])
+  .validator(zodValidator(bulkDeleteUnitsSchema))
+  .handler(async ({ context, data }) => {
+    const { ids } = data
+
+    // Verify all units belong to user's properties
+    const units = await prisma.unit.findMany({
+      where: {
+        id: { in: ids },
+        property: { managerId: context.auth.user.id },
+      },
+      select: { id: true, propertyId: true },
+    })
+
+    if (units.length !== ids.length) {
+      throw new Error('One or more units not found or not authorized')
+    }
+
+    // Check for active leases
+    const unitsWithActiveLeases = await prisma.unit.findMany({
+      where: {
+        id: { in: ids },
+        leases: { some: { status: 'ACTIVE' } },
+      },
+      select: { id: true, unitNumber: true },
+    })
+
+    if (unitsWithActiveLeases.length > 0) {
+      const unitNumbers = unitsWithActiveLeases.map((u) => u.unitNumber).join(', ')
+      throw new Error(`Cannot delete units with active leases: ${unitNumbers}`)
+    }
+
+    // Group units by property for count updates
+    const propertyUnitCounts = units.reduce(
+      (acc, unit) => {
+        acc[unit.propertyId] = (acc[unit.propertyId] || 0) + 1
+        return acc
+      },
+      {} as Record<string, number>
+    )
+
+    // Delete units
+    await prisma.unit.deleteMany({
+      where: { id: { in: ids } },
+    })
+
+    // Update property unit counts
+    await Promise.all(
+      Object.entries(propertyUnitCounts).map(([propertyId, count]) =>
+        prisma.property.update({
+          where: { id: propertyId },
+          data: { totalUnits: { decrement: count } },
+        })
+      )
+    )
+
+    return { deletedCount: ids.length }
   })
