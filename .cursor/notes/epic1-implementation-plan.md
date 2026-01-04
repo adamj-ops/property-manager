@@ -46,17 +46,17 @@ Epic 1 (Core Property & Unit Management) is **100% complete** (updated January 4
 | `updateUnit` | Implemented | `src/services/units.api.ts:165` |
 | `deleteUnit` | Implemented | `src/services/units.api.ts:189` |
 
-### Frontend (UI) - MOSTLY COMPLETE
+### Frontend (UI) - COMPLETE
 
 | Route | Status | Notes |
 |-------|--------|-------|
-| `/app/properties` (list) | DONE | Connected to `getProperties` API with delete |
+| `/app/properties` (list) | DONE | Connected to `getProperties` API with delete + inline editing |
 | `/app/properties/new` | DONE | Form wired to `createProperty` API |
 | `/app/properties/$propertyId` | DONE | Connected to `getProperty` API |
-| `/app/properties/$propertyId/units` | DONE | Connected to `getUnits` API with filters |
+| `/app/properties/$propertyId/units` | DONE | Connected to `getUnits` API with filters + inline editing |
 | `/app/properties/$propertyId/units/new` | DONE | Unit creation form implemented |
-| `/app/properties/$propertyId/edit` | PENDING | Create edit page with `updateProperty` |
-| `/app/properties/$propertyId/units/$unitId/edit` | PENDING | Create unit edit page |
+| `/app/properties/$propertyId/edit` | DONE | Property edit page with `updateProperty` |
+| `/app/properties/$propertyId/units/$unitId/edit` | DONE | Unit edit page with `updateUnit` |
 
 ### Query Hooks - PARTIAL
 
@@ -119,7 +119,7 @@ Files to create:
 
 ### Phase 4: EPM-16 - Edit Property/Unit Details (5 pts)
 **Priority: Fourth - Depends on EPM-17, EPM-15**
-**Status: IN PROGRESS (January 4, 2026)**
+**Status: COMPLETE (January 4, 2026)**
 
 #### UX Research Summary
 
