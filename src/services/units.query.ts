@@ -108,11 +108,11 @@ export const useUpdateUnit = () => {
       // Optimistically update lists
       queryClient.setQueriesData(
         { queryKey: unitKeys.lists() },
-        (old: { units: unknown[]; total: number } | undefined) => {
+        (old: { units: Array<{ id: string }>; total: number } | undefined) => {
           if (!old) return old
           return {
             ...old,
-            units: old.units.map((u: { id: string }) =>
+            units: old.units.map((u) =>
               u.id === newData.id ? { ...u, ...newData } : u
             ),
           }

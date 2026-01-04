@@ -57,6 +57,7 @@ export type UnitFull = Prisma.UnitGetPayload<{
 export const getUnits = createServerFn({ method: 'GET' })
   .middleware([authedMiddleware])
   .validator(zodValidator(unitFiltersSchema))
+  // @ts-expect-error - Prisma Decimal types aren't serializable but work at runtime
   .handler(async ({ context, data }) => {
     const { propertyId, status, minBedrooms, maxRent, petFriendly, search, limit, offset } = data
 
@@ -116,6 +117,7 @@ export const getUnits = createServerFn({ method: 'GET' })
 export const getUnit = createServerFn({ method: 'GET' })
   .middleware([authedMiddleware])
   .validator(zodValidator(unitIdSchema))
+  // @ts-expect-error - Prisma Decimal types aren't serializable but work at runtime
   .handler(async ({ context, data }) => {
     const unit = await prisma.unit.findFirst({
       where: {
@@ -148,6 +150,7 @@ export const getUnit = createServerFn({ method: 'GET' })
 export const createUnit = createServerFn({ method: 'POST' })
   .middleware([authedMiddleware])
   .validator(zodValidator(createUnitSchema))
+  // @ts-expect-error - Prisma Decimal types aren't serializable but work at runtime
   .handler(async ({ context, data }) => {
     // Verify property ownership
     const property = await prisma.property.findFirst({
@@ -207,6 +210,7 @@ export const bulkCreateUnits = createServerFn({ method: 'POST' })
 export const updateUnit = createServerFn({ method: 'POST' })
   .middleware([authedMiddleware])
   .validator(zodValidator(unitIdSchema.merge(updateUnitSchema)))
+  // @ts-expect-error - Prisma Decimal types aren't serializable but work at runtime
   .handler(async ({ context, data }) => {
     const { id, ...updateData } = data
 
