@@ -8,7 +8,7 @@ import {
   LuDollarSign,
   LuDownload,
   LuFilter,
-  LuLoader2,
+  LuLoaderCircle,
   LuPercent,
   LuSearch,
 } from 'react-icons/lu'
@@ -343,7 +343,7 @@ function DepositsLoading() {
       </div>
       <Card>
         <CardContent className='py-10 text-center'>
-          <LuLoader2 className='mx-auto size-8 animate-spin' />
+          <LuLoaderCircle className='mx-auto size-8 animate-spin' />
         </CardContent>
       </Card>
     </div>
@@ -396,7 +396,7 @@ function DepositsContent() {
           <Suspense fallback={
             <Card>
               <CardContent className='py-10 text-center'>
-                <LuLoader2 className='mx-auto size-8 animate-spin' />
+                <LuLoaderCircle className='mx-auto size-8 animate-spin' />
               </CardContent>
             </Card>
           }>

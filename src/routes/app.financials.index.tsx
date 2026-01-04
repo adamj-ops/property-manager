@@ -1,6 +1,6 @@
 import { Suspense } from 'react'
 import { createFileRoute } from '@tanstack/react-router'
-import { LuCircleAlert, LuArrowDownLeft, LuArrowUpRight, LuDownload, LuTrendingUp, LuTrendingDown, LuLoader2 } from 'react-icons/lu'
+import { LuCircleAlert, LuArrowDownLeft, LuArrowUpRight, LuDownload, LuTrendingUp, LuTrendingDown, LuLoaderCircle } from 'react-icons/lu'
 
 import { Badge } from '~/components/ui/badge'
 import { Button } from '~/components/ui/button'
@@ -413,18 +413,18 @@ function FinancialsDashboardContent() {
       {/* Main Content Grid */}
       <div className='grid gap-6 lg:grid-cols-2'>
         {/* Expense Summary */}
-        <Suspense fallback={<Card><CardContent className='py-10 text-center'><LuLoader2 className='mx-auto size-6 animate-spin' /></CardContent></Card>}>
+        <Suspense fallback={<Card><CardContent className='py-10 text-center'><LuLoaderCircle className='mx-auto size-6 animate-spin' /></CardContent></Card>}>
           <ExpenseSummarySection />
         </Suspense>
 
         {/* Recent Transactions */}
-        <Suspense fallback={<Card><CardContent className='py-10 text-center'><LuLoader2 className='mx-auto size-6 animate-spin' /></CardContent></Card>}>
+        <Suspense fallback={<Card><CardContent className='py-10 text-center'><LuLoaderCircle className='mx-auto size-6 animate-spin' /></CardContent></Card>}>
           <RecentTransactionsSection />
         </Suspense>
       </div>
 
       {/* Security Deposits */}
-      <Suspense fallback={<Card><CardContent className='py-10 text-center'><LuLoader2 className='mx-auto size-6 animate-spin' /></CardContent></Card>}>
+      <Suspense fallback={<Card><CardContent className='py-10 text-center'><LuLoaderCircle className='mx-auto size-6 animate-spin' /></CardContent></Card>}>
         <SecurityDepositsSection />
       </Suspense>
     </div>

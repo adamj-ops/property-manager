@@ -6,7 +6,7 @@ import {
   LuCheck,
   LuDownload,
   LuFilter,
-  LuLoader2,
+  LuLoaderCircle,
   LuSearch,
 } from 'react-icons/lu'
 
@@ -289,7 +289,7 @@ function RecordPaymentForm({ onSuccess }: { onSuccess?: () => void }) {
             disabled={createPayment.isPending || !form.getFieldValue('leaseId')}
           >
             {createPayment.isPending ? (
-              <LuLoader2 className='mr-2 size-4 animate-spin' />
+              <LuLoaderCircle className='mr-2 size-4 animate-spin' />
             ) : (
               <LuCheck className='mr-2 size-4' />
             )}
@@ -439,7 +439,7 @@ function PaymentsLoading() {
         </Card>
         <Card className='lg:col-span-2'>
           <CardContent className='py-10 text-center'>
-            <LuLoader2 className='mx-auto size-8 animate-spin' />
+            <LuLoaderCircle className='mx-auto size-8 animate-spin' />
           </CardContent>
         </Card>
       </div>
@@ -495,7 +495,7 @@ function PaymentsContent() {
           fallback={
             <Card>
               <CardContent className='py-10 text-center'>
-                <LuLoader2 className='mx-auto size-8 animate-spin' />
+                <LuLoaderCircle className='mx-auto size-8 animate-spin' />
               </CardContent>
             </Card>
           }
@@ -508,7 +508,7 @@ function PaymentsContent() {
           fallback={
             <Card className='lg:col-span-2'>
               <CardContent className='py-10 text-center'>
-                <LuLoader2 className='mx-auto size-8 animate-spin' />
+                <LuLoaderCircle className='mx-auto size-8 animate-spin' />
               </CardContent>
             </Card>
           }
