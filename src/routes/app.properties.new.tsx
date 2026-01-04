@@ -13,7 +13,7 @@ import { Textarea } from '~/components/ui/textarea'
 import { Typography } from '~/components/ui/typography'
 import { fetchPlaceDetails, fetchPlacePredictions } from '~/services/places.api'
 import { useCreateProperty } from '~/services/properties.query'
-import { createPropertySchema } from '~/services/properties.schema'
+import { createPropertySchema, type PropertyType, type PropertyStatus } from '~/services/properties.schema'
 
 export const Route = createFileRoute('/app/properties/new')({
   component: NewPropertyPage,
@@ -52,8 +52,8 @@ function NewPropertyPage() {
   const form = useForm(createPropertySchema, {
     defaultValues: {
       name: '',
-      type: 'MULTI_FAMILY',
-      status: 'ACTIVE',
+      type: 'MULTI_FAMILY' as PropertyType,
+      status: 'ACTIVE' as PropertyStatus,
       addressLine1: '',
       addressLine2: undefined,
       city: '',
@@ -369,7 +369,7 @@ function NewPropertyPage() {
                     placeholder='Enter any additional notes about the property...'
                     className='min-h-24'
                     value={field.state.value ?? ''}
-                    onChange={(e) => field.handleChange(e.target.value)}
+                    onChange={(e) => field.handleChange(e.target.value || undefined)}
                     onBlur={field.handleBlur}
                   />
                 </field.Container>

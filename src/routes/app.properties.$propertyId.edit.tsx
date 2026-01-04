@@ -191,7 +191,7 @@ function EditPropertyForm({ propertyId }: { propertyId: string }) {
                   <field.Container label='Property Type' disableController>
                     <Select
                       value={field.state.value}
-                      onValueChange={field.handleChange}
+                      onValueChange={(v) => field.handleChange(v as typeof field.state.value)}
                     >
                       <SelectTrigger
                         id={field.name}
@@ -217,7 +217,7 @@ function EditPropertyForm({ propertyId }: { propertyId: string }) {
                   <field.Container label='Status' disableController>
                     <Select
                       value={field.state.value}
-                      onValueChange={field.handleChange}
+                      onValueChange={(v) => field.handleChange(v as typeof field.state.value)}
                     >
                       <SelectTrigger
                         id={field.name}

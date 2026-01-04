@@ -262,7 +262,7 @@ function EditUnitForm({ propertyId, unitId }: { propertyId: string; unitId: stri
                 <field.Container label='Status' disableController>
                   <Select
                     value={field.state.value}
-                    onValueChange={field.handleChange}
+                    onValueChange={(v) => field.handleChange(v as typeof field.state.value)}
                   >
                     <SelectTrigger
                       id={field.name}

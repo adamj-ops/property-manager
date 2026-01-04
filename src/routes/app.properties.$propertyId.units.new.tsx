@@ -15,7 +15,7 @@ import { Textarea } from '~/components/ui/textarea'
 import { Typography } from '~/components/ui/typography'
 import { usePropertyQuery } from '~/services/properties.query'
 import { useCreateUnit } from '~/services/units.query'
-import { createUnitSchema } from '~/services/units.schema'
+import { createUnitSchema, type UnitStatus } from '~/services/units.schema'
 
 export const Route = createFileRoute('/app/properties/$propertyId/units/new')({
   component: NewUnitPage,
@@ -40,7 +40,7 @@ function NewUnitForm({ propertyId }: { propertyId: string }) {
     defaultValues: {
       propertyId,
       unitNumber: '',
-      status: 'VACANT',
+      status: 'VACANT' as UnitStatus,
       bedrooms: 1,
       bathrooms: 1,
       sqFt: undefined,
@@ -300,7 +300,7 @@ function NewUnitForm({ propertyId }: { propertyId: string }) {
                     placeholder='Enter any additional notes about the unit...'
                     className='min-h-24'
                     value={field.state.value ?? ''}
-                    onChange={(e) => field.handleChange(e.target.value)}
+                    onChange={(e) => field.handleChange(e.target.value || undefined)}
                     onBlur={field.handleBlur}
                   />
                 </field.Container>
