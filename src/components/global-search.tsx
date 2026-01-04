@@ -131,7 +131,7 @@ const quickActions: SearchResult[] = [
     id: 'new-maintenance',
     title: 'Create Work Order',
     icon: <LuPlus className='h-4 w-4' />,
-    href: '/app/maintenance/new',
+    href: '/app/maintenance',
     keywords: ['create maintenance', 'new repair'],
   },
 ]
