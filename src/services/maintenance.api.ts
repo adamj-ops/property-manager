@@ -20,6 +20,7 @@ import {
   sendMaintenanceStatusNotification,
   shouldNotifyOnStatusChange,
 } from '~/server/maintenance-notifications'
+import { sendInitialEmergencyAlert } from '~/server/emergency-escalation'
 
 // Get all maintenance requests
 export const getMaintenanceRequests = createServerFn({ method: 'GET' })
@@ -177,6 +178,14 @@ export const createMaintenanceRequest = createServerFn({ method: 'POST' })
 
       return newRequest
     })
+
+    // Send initial emergency alert if this is an emergency work order
+    if (data.priority === 'EMERGENCY') {
+      // Fire and forget - don't block the response
+      sendInitialEmergencyAlert(request.id).catch((error) => {
+        console.error('Failed to send initial emergency alert:', error)
+      })
+    }
 
     return request
   })
@@ -489,4 +498,117 @@ export const getMaintenancePhotoUrls = createServerFn({ method: 'GET' })
       photoUrls: photoUrls.filter(Boolean) as string[],
       completionPhotoUrls: completionPhotoUrls.filter(Boolean) as string[],
     }
+  })
+
+// =============================================================================
+// EMERGENCY ESCALATION
+// =============================================================================
+
+import { z } from 'zod'
+import {
+  acknowledgeEscalation,
+  processEmergencyEscalations,
+  getEmergencyStats,
+} from '~/server/emergency-escalation'
+
+// Acknowledge an escalation
+export const acknowledgeEmergencyEscalation = createServerFn({ method: 'POST' })
+  .middleware([authedMiddleware])
+  .validator(zodValidator(maintenanceIdSchema))
+  .handler(async ({ context, data }) => {
+    // Verify ownership
+    const request = await prisma.maintenanceRequest.findFirst({
+      where: {
+        id: data.id,
+        unit: { property: { managerId: context.auth.user.id } },
+      },
+    })
+
+    if (!request) {
+      throw new Error('Maintenance request not found')
+    }
+
+    await acknowledgeEscalation(data.id, context.auth.user.id)
+
+    // Also update status to ACKNOWLEDGED if still SUBMITTED
+    if (request.status === 'SUBMITTED') {
+      await prisma.maintenanceRequest.update({
+        where: { id: data.id },
+        data: { status: 'ACKNOWLEDGED' },
+      })
+
+      // Add status history entry
+      await prisma.workOrderStatusHistory.create({
+        data: {
+          requestId: data.id,
+          fromStatus: 'SUBMITTED',
+          toStatus: 'ACKNOWLEDGED',
+          reason: 'Emergency escalation acknowledged',
+          changedByName: `${context.auth.user.firstName} ${context.auth.user.lastName}`,
+          changedByType: 'staff',
+        },
+      })
+    }
+
+    return { success: true }
+  })
+
+// Get emergency statistics for dashboard
+export const getEmergencyDashboardStats = createServerFn({ method: 'GET' })
+  .middleware([authedMiddleware])
+  .handler(async ({ context }) => {
+    return getEmergencyStats(context.auth.user.id)
+  })
+
+// Process emergency escalations (for cron job)
+// Note: In production, this would be protected with a different auth mechanism
+export const runEmergencyEscalationCheck = createServerFn({ method: 'POST' })
+  .middleware([authedMiddleware])
+  .handler(async () => {
+    return processEmergencyEscalations()
+  })
+
+// Get unacknowledged emergencies for the current user
+export const getUnacknowledgedEmergencies = createServerFn({ method: 'GET' })
+  .middleware([authedMiddleware])
+  .handler(async ({ context }) => {
+    const emergencies = await prisma.maintenanceRequest.findMany({
+      where: {
+        priority: 'EMERGENCY',
+        escalationLevel: { gt: 0 },
+        escalationAcknowledgedAt: null,
+        status: {
+          notIn: ['COMPLETED', 'CANCELLED'],
+        },
+        unit: {
+          property: {
+            managerId: context.auth.user.id,
+          },
+        },
+      },
+      select: {
+        id: true,
+        requestNumber: true,
+        title: true,
+        category: true,
+        escalationLevel: true,
+        createdAt: true,
+        unit: {
+          select: {
+            unitNumber: true,
+            property: {
+              select: {
+                name: true,
+              },
+            },
+          },
+        },
+      },
+      orderBy: [
+        { escalationLevel: 'desc' },
+        { createdAt: 'asc' },
+      ],
+    })
+
+    return emergencies
   })

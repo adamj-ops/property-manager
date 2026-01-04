@@ -12,6 +12,7 @@ import {
   LuMessageSquare,
   LuPhone,
   LuSend,
+  LuTriangleAlert,
   LuUser,
   LuWrench,
 } from 'react-icons/lu'
@@ -36,6 +37,7 @@ import {
   useUpdateMaintenanceRequest,
   useAddMaintenanceComment,
   maintenanceRequestQueryOptions,
+  useAcknowledgeEscalation,
 } from '~/services/maintenance.query'
 import { useVendorsQuery, vendorsQueryOptions } from '~/services/vendors.query'
 import type { MaintenanceStatus } from '~/services/maintenance.schema'
@@ -118,6 +120,7 @@ function WorkOrderDetail() {
   const { data: vendorsData } = useVendorsQuery({ status: 'ACTIVE' })
   const updateMutation = useUpdateMaintenanceRequest()
   const commentMutation = useAddMaintenanceComment()
+  const acknowledgeMutation = useAcknowledgeEscalation()
 
   const [newStatus, setNewStatus] = useState<MaintenanceStatus | ''>(workOrder.status as MaintenanceStatus)
   const [statusNote, setStatusNote] = useState('')
@@ -128,6 +131,26 @@ function WorkOrderDetail() {
 
   const priority = priorityConfig[workOrder.priority] || priorityConfig.MEDIUM
   const status = statusConfig[workOrder.status] || statusConfig.SUBMITTED
+
+  // Check if this is an unacknowledged emergency
+  const isUnacknowledgedEmergency =
+    workOrder.priority === 'EMERGENCY' &&
+    (workOrder as { escalationLevel?: number }).escalationLevel &&
+    (workOrder as { escalationLevel?: number }).escalationLevel! > 0 &&
+    !(workOrder as { escalationAcknowledgedAt?: Date | null }).escalationAcknowledgedAt
+
+  const handleAcknowledgeEscalation = async () => {
+    try {
+      await acknowledgeMutation.mutateAsync(workOrderId)
+      toast.success('Emergency Acknowledged', {
+        description: 'The escalation has been acknowledged. Please take action.',
+      })
+    } catch {
+      toast.error('Error', {
+        description: 'Failed to acknowledge escalation',
+      })
+    }
+  }
 
   const handleStatusUpdate = async () => {
     if (!newStatus || newStatus === workOrder.status) {
@@ -279,6 +302,42 @@ function WorkOrderDetail() {
 
   return (
     <div className='w-full max-w-7xl space-y-6 py-6'>
+      {/* Emergency Acknowledgement Banner */}
+      {isUnacknowledgedEmergency && (
+        <div className='relative overflow-hidden rounded-lg bg-red-500 px-4 py-3 text-white shadow-lg'>
+          <div className='absolute inset-0 animate-pulse bg-red-400 opacity-30' />
+          <div className='relative flex items-center justify-between gap-4'>
+            <div className='flex items-center gap-3'>
+              <div className='flex size-10 items-center justify-center rounded-full bg-white/20'>
+                <LuTriangleAlert className='size-5' />
+              </div>
+              <div>
+                <p className='text-sm font-bold uppercase tracking-wide'>
+                  Emergency - Requires Immediate Attention
+                </p>
+                <p className='text-sm opacity-90'>
+                  This work order has been escalated and needs your acknowledgement.
+                </p>
+              </div>
+            </div>
+            <Button
+              variant='secondary'
+              size='sm'
+              className='shrink-0 bg-white/20 text-white hover:bg-white/30'
+              onClick={handleAcknowledgeEscalation}
+              disabled={acknowledgeMutation.isPending}
+            >
+              {acknowledgeMutation.isPending ? (
+                <LuLoaderCircle className='mr-1.5 size-4 animate-spin' />
+              ) : (
+                <LuCheck className='mr-1.5 size-4' />
+              )}
+              Acknowledge Emergency
+            </Button>
+          </div>
+        </div>
+      )}
+
       {/* Back Button & Header */}
       <div className='flex items-center gap-4'>
         <Button variant='ghost' size='icon' asChild>

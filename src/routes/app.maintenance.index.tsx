@@ -56,9 +56,11 @@ import {
   useCreateMaintenanceRequest,
   maintenanceRequestsQueryOptions,
   maintenanceStatsQueryOptions,
+  unacknowledgedEmergenciesQueryOptions,
 } from '~/services/maintenance.query'
 import { usePropertiesQuery } from '~/services/properties.query'
 import { useUnitsQuery } from '~/services/units.query'
+import { EmergencyAlertBanner } from '~/components/maintenance/emergency-alert-banner'
 import type { MaintenanceFilters, MaintenanceCategory, MaintenancePriority } from '~/services/maintenance.schema'
 
 export const Route = createFileRoute('/app/maintenance/')({
@@ -67,6 +69,7 @@ export const Route = createFileRoute('/app/maintenance/')({
     await Promise.all([
       context.queryClient.ensureQueryData(maintenanceRequestsQueryOptions({})),
       context.queryClient.ensureQueryData(maintenanceStatsQueryOptions()),
+      context.queryClient.ensureQueryData(unacknowledgedEmergenciesQueryOptions()),
     ])
   },
   component: MaintenanceListPage,
@@ -699,6 +702,9 @@ function MaintenanceListPage() {
 
   return (
     <div className='w-full max-w-7xl space-y-6 py-6'>
+      {/* Emergency Alerts */}
+      <EmergencyAlertBanner />
+
       {/* Page Header */}
       <div className='flex items-center justify-between'>
         <div>

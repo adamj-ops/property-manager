@@ -15,6 +15,9 @@ import {
   createMaintenancePhotoUploadUrl,
   confirmMaintenancePhotoUpload,
   getMaintenancePhotoUrls,
+  acknowledgeEmergencyEscalation,
+  getUnacknowledgedEmergencies,
+  getEmergencyDashboardStats,
 } from '~/services/maintenance.api'
 import type {
   CreateMaintenanceInput,
@@ -31,6 +34,8 @@ export const maintenanceKeys = {
   details: () => [...maintenanceKeys.all, 'detail'] as const,
   detail: (id: string) => [...maintenanceKeys.details(), id] as const,
   stats: () => [...maintenanceKeys.all, 'stats'] as const,
+  emergencies: () => [...maintenanceKeys.all, 'emergencies'] as const,
+  emergencyStats: () => [...maintenanceKeys.all, 'emergency-stats'] as const,
 }
 
 // Default filters
@@ -180,4 +185,45 @@ export const useMaintenancePhotoUpload = () => {
     isLoading: createUploadUrl.isPending || confirmUpload.isPending,
     error: createUploadUrl.error || confirmUpload.error,
   }
+}
+
+// =============================================================================
+// EMERGENCY ESCALATION
+// =============================================================================
+
+// Query options for unacknowledged emergencies
+export const unacknowledgedEmergenciesQueryOptions = () =>
+  queryOptions({
+    queryKey: maintenanceKeys.emergencies(),
+    queryFn: () => getUnacknowledgedEmergencies(),
+    refetchInterval: 30000, // Refetch every 30 seconds
+  })
+
+// Query options for emergency stats
+export const emergencyStatsQueryOptions = () =>
+  queryOptions({
+    queryKey: maintenanceKeys.emergencyStats(),
+    queryFn: () => getEmergencyDashboardStats(),
+  })
+
+// Hook to get unacknowledged emergencies
+export const useUnacknowledgedEmergenciesQuery = () =>
+  useSuspenseQuery(unacknowledgedEmergenciesQueryOptions())
+
+// Hook to get emergency stats
+export const useEmergencyStatsQuery = () =>
+  useSuspenseQuery(emergencyStatsQueryOptions())
+
+// Hook to acknowledge an escalation
+export const useAcknowledgeEscalation = () => {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (id: string) => acknowledgeEmergencyEscalation({ data: { id } }),
+    onSuccess: (_, id) => {
+      queryClient.invalidateQueries({ queryKey: maintenanceKeys.emergencies() })
+      queryClient.invalidateQueries({ queryKey: maintenanceKeys.emergencyStats() })
+      queryClient.invalidateQueries({ queryKey: maintenanceKeys.detail(id) })
+      queryClient.invalidateQueries({ queryKey: maintenanceKeys.lists() })
+    },
+  })
 }

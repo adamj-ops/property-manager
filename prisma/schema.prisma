@@ -665,6 +665,12 @@ model MaintenanceRequest {
   completionNotes  String?
   completionPhotos String[] @default([])
 
+  // Emergency Escalation
+  escalationLevel          Int       @default(0) // 0=none, 1=initial alert, 2=escalated, 3=critical
+  lastEscalatedAt          DateTime? // When the last escalation notification was sent
+  escalationAcknowledgedAt DateTime? // When someone acknowledged the escalation
+  escalationAcknowledgedById String? @db.Uuid // Who acknowledged the escalation
+
   // Metadata
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
