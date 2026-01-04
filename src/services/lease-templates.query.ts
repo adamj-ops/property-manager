@@ -54,20 +54,17 @@ export const leaseTemplateKeys = {
 // Query Options
 // =============================================================================
 
+// Default filters
+const defaultTemplateFilters: Pick<TemplateFilters, 'offset' | 'limit'> = { offset: 0, limit: 50 }
+
 /**
  * Query options for fetching templates with filters
  */
-export function templatesQueryOptions(filters: TemplateFilters = {}) {
+export function templatesQueryOptions(filters: Partial<TemplateFilters> = {}) {
+  const mergedFilters: TemplateFilters = { ...defaultTemplateFilters, ...filters }
   return queryOptions({
-    queryKey: leaseTemplateKeys.list(filters),
-    queryFn: () =>
-      getTemplates({
-        data: {
-          ...filters,
-          limit: filters.limit ?? 50,
-          offset: filters.offset ?? 0,
-        },
-      }),
+    queryKey: leaseTemplateKeys.list(mergedFilters),
+    queryFn: () => getTemplates({ data: mergedFilters }),
   })
 }
 

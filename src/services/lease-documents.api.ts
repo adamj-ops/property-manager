@@ -21,8 +21,18 @@ import {
   generateLeasePdfSchema,
   regenerateLeasePdfSchema,
   getLeasePdfDownloadUrlSchema,
-  type LeaseDocumentResponse,
 } from '~/services/lease-documents.schema'
+
+// Response type for lease document generation
+export interface LeaseDocumentResponse {
+  documentId: string
+  leaseId: string
+  documentUrl: string
+  storagePath: string
+  fileName: string
+  fileSize: number
+  generatedAt: string
+}
 
 const BUCKET_NAME = 'documents'
 
@@ -48,9 +58,7 @@ async function generateLeasePdfCore(
           include: { property: true },
         },
         tenant: true,
-        coTenants: {
-          include: { tenant: true },
-        },
+        coTenants: true,
       },
     })
 
@@ -110,7 +118,16 @@ async function generateLeasePdfCore(
     }
 
     // 5. Build variable data
-    const variableData = buildLeaseDocumentData(lease, lease.tenant, lease.unit, lease.unit.property)
+    const leaseWithRelations = lease as typeof lease & {
+      tenant: NonNullable<typeof lease.tenant>
+      unit: NonNullable<typeof lease.unit> & { property: NonNullable<(typeof lease.unit)['property']> }
+    }
+    // Map property to include 'zip' alias for compatibility with lease-document-builder
+    const propertyWithZip = {
+      ...leaseWithRelations.unit.property,
+      zip: leaseWithRelations.unit.property.zipCode,
+    }
+    const variableData = buildLeaseDocumentData(leaseWithRelations, leaseWithRelations.tenant, leaseWithRelations.unit, propertyWithZip)
     const formattedData = formatLeaseDocumentData(variableData)
 
     // 6. Render main template
@@ -156,9 +173,9 @@ async function generateLeasePdfCore(
         file_url: documentUrl,
         storage_path: storagePath,
         title: `Lease Agreement - ${lease.leaseNumber}`,
-        description: `Generated lease document for ${lease.tenant.firstName} ${lease.tenant.lastName}`,
+        description: `Generated lease document for ${leaseWithRelations.tenant.firstName} ${leaseWithRelations.tenant.lastName}`,
         uploaded_by_id: supabaseUserId,
-        property_id: lease.unit.propertyId,
+        property_id: leaseWithRelations.unit.propertyId,
         tenant_id: lease.tenantId,
       })
       .select()

@@ -262,7 +262,7 @@ function NewUnitForm({ propertyId }: { propertyId: string }) {
                 <field.Container label='Status' disableController>
                   <Select
                     value={field.state.value}
-                    onValueChange={field.handleChange}
+                    onValueChange={(v) => field.handleChange(v as typeof field.state.value)}
                   >
                     <SelectTrigger
                       id={field.name}
@@ -295,12 +295,14 @@ function NewUnitForm({ propertyId }: { propertyId: string }) {
             <form.Field
               name='notes'
               render={(field) => (
-                <field.Container label='Notes (optional)'>
+                <field.Container label='Notes (optional)' disableController>
                   <Textarea
+                    id={field.name}
+                    name={field.name}
                     placeholder='Enter any additional notes about the unit...'
                     className='min-h-24'
                     value={field.state.value ?? ''}
-                    onChange={(e) => field.handleChange(e.target.value || undefined)}
+                    onChange={(e) => field.handleChange((e.target.value || undefined) as typeof field.state.value)}
                     onBlur={field.handleBlur}
                   />
                 </field.Container>

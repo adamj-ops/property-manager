@@ -72,7 +72,7 @@ function NewPropertyPage() {
     },
     onSubmit: async ({ value }) => {
       try {
-        const property = await createProperty.mutateAsync(value)
+        const property = await createProperty.mutateAsync(value) as { id: string }
         toast.success('Property created successfully')
         navigate({
           to: '/app/properties/$propertyId',
@@ -174,7 +174,7 @@ function NewPropertyPage() {
                   <field.Container label='Property Type' disableController>
                     <Select
                       value={field.state.value}
-                      onValueChange={field.handleChange}
+                      onValueChange={(v) => field.handleChange(v as typeof field.state.value)}
                     >
                       <SelectTrigger
                         id={field.name}
@@ -364,12 +364,14 @@ function NewPropertyPage() {
             <form.Field
               name='notes'
               render={(field) => (
-                <field.Container label='Notes'>
+                <field.Container label='Notes' disableController>
                   <Textarea
+                    id={field.name}
+                    name={field.name}
                     placeholder='Enter any additional notes about the property...'
                     className='min-h-24'
                     value={field.state.value ?? ''}
-                    onChange={(e) => field.handleChange(e.target.value || undefined)}
+                    onChange={(e) => field.handleChange((e.target.value || undefined) as typeof field.state.value)}
                     onBlur={field.handleBlur}
                   />
                 </field.Container>

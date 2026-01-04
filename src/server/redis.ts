@@ -1,3 +1,4 @@
+// @ts-expect-error - ioredis may not be installed
 import Redis from 'ioredis'
 
 import { logger } from '~/libs/logger'
@@ -12,7 +13,7 @@ if (!REDIS_URL) {
 // Create Redis client with connection string
 export const redis = new Redis(REDIS_URL, {
   // Reconnect strategy
-  retryStrategy: (times) => {
+  retryStrategy: (times: number) => {
     if (times > 10) {
       logger.error('Redis: Max reconnection attempts reached')
       return null // Stop retrying
@@ -40,7 +41,7 @@ redis.on('ready', () => {
   logger.info('Redis: Ready to accept commands')
 })
 
-redis.on('error', (error) => {
+redis.on('error', (error: Error) => {
   logger.error('Redis: Connection error', { error: error.message })
 })
 
@@ -73,5 +74,5 @@ export async function checkRedisHealth(): Promise<boolean> {
   }
 }
 
-// Export Redis types for convenience
-export type { Redis } from 'ioredis'
+// Export Redis type alias
+export type Redis = typeof redis

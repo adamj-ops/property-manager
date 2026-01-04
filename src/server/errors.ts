@@ -128,6 +128,10 @@ export class ApiError extends Error {
     )
   }
 
+  static serviceUnavailable(message = 'Service temporarily unavailable'): ApiError {
+    return new ApiError(message, ErrorCode.EXTERNAL_SERVICE_ERROR, status.SERVICE_UNAVAILABLE)
+  }
+
   // ---------------------------------------------------------------------------
   // Factory Methods - Domain Errors
   // ---------------------------------------------------------------------------
@@ -203,7 +207,7 @@ export class ApiError extends Error {
     return new ApiError(
       `File exceeds maximum size of ${formatBytes(maxSize)}`,
       ErrorCode.FILE_TOO_LARGE,
-      status.PAYLOAD_TOO_LARGE,
+      413, // HTTP 413 Payload Too Large
       { maxSize, actualSize }
     )
   }
@@ -330,7 +334,7 @@ export function toApiError(err: unknown): ApiError {
             `A record with this ${prismaError.meta?.target?.join(', ') || 'value'} already exists`,
             ErrorCode.CONFLICT,
             status.CONFLICT,
-            { constraint: prismaError.meta?.target }
+            { constraint: prismaError.meta?.target?.join(', ') }
           )
         case 'P2025':
           return ApiError.notFound('Record')

@@ -31,12 +31,17 @@ export const propertyKeys = {
   stats: () => [...propertyKeys.all, 'stats'] as const,
 }
 
+// Default filters
+const defaultPropertyFilters: Pick<PropertyFilters, 'offset' | 'limit'> = { offset: 0, limit: 50 }
+
 // Query options
-export const propertiesQueryOptions = (filters: PropertyFilters = {}) =>
-  queryOptions({
-    queryKey: propertyKeys.list(filters),
-    queryFn: () => getProperties({ data: filters }) as Promise<{ properties: PropertyWithUnits[]; total: number; limit: number; offset: number }>,
+export const propertiesQueryOptions = (filters: Partial<PropertyFilters> = {}) => {
+  const mergedFilters: PropertyFilters = { ...defaultPropertyFilters, ...filters }
+  return queryOptions({
+    queryKey: propertyKeys.list(mergedFilters),
+    queryFn: () => getProperties({ data: mergedFilters }) as Promise<{ properties: PropertyWithUnits[]; total: number; limit: number; offset: number }>,
   })
+}
 
 export const propertyQueryOptions = (id: string) =>
   queryOptions({
@@ -51,7 +56,7 @@ export const propertyStatsQueryOptions = () =>
   })
 
 // Hooks
-export const usePropertiesQuery = (filters: PropertyFilters = {}) => {
+export const usePropertiesQuery = (filters: Partial<PropertyFilters> = {}) => {
   return useSuspenseQuery(propertiesQueryOptions(filters))
 }
 
@@ -94,11 +99,11 @@ export const useUpdateProperty = () => {
       // Optimistically update lists
       queryClient.setQueriesData(
         { queryKey: propertyKeys.lists() },
-        (old: { properties: unknown[]; total: number } | undefined) => {
+        (old: { properties: PropertyWithUnits[]; total: number } | undefined) => {
           if (!old) return old
           return {
             ...old,
-            properties: old.properties.map((p: { id: string }) =>
+            properties: old.properties.map((p) =>
               p.id === newData.id ? { ...p, ...newData } : p
             ),
           }

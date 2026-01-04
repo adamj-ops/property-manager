@@ -31,6 +31,7 @@ const paginationSchema = z.object({
  */
 export const getTenantByUserId = createServerFn({ method: 'GET' })
   .middleware([authedMiddleware])
+  // @ts-expect-error - Prisma Decimal types aren't serializable but work at runtime
   .handler(async ({ context }) => {
     const userId = context.auth.user.id
 

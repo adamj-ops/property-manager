@@ -49,35 +49,15 @@ import {
   useDeleteProperty,
   useUpdateProperty,
 } from '~/services/properties.query'
+import { type PropertyWithUnits } from '~/services/properties.api'
 import type { PropertyType, PropertyStatus } from '~/services/properties.schema'
 
 export const Route = createFileRoute('/app/properties/')({
   component: PropertiesListPage,
 })
 
-// Property type from API
-interface Property {
-  id: string
-  name: string
-  addressLine1: string
-  city: string
-  state: string
-  zipCode: string
-  type: PropertyType
-  status: PropertyStatus
-  totalUnits: number
-  yearBuilt: number | null
-  units: {
-    id: string
-    status: string
-    marketRent: number | null
-    currentRent: number | null
-  }[]
-  _count: {
-    units: number
-    expenses: number
-  }
-}
+// Use Prisma type from API
+type Property = PropertyWithUnits
 
 function PropertiesListPage() {
   return (

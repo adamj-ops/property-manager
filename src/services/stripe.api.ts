@@ -616,7 +616,7 @@ export const updateSubscription = createServerFn({ method: 'POST' })
           price: newPrice.id,
         },
       ]
-      updates.proration_behavior = 'always_prorate'
+      updates.proration_behavior = 'create_prorations'
     }
 
     // Cancel at period end if requested

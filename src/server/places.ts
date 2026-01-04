@@ -111,8 +111,8 @@ async function placeDetails(placeId: string): Promise<PlaceDetails | null> {
   return {
     placeId: result.place_id,
     formattedAddress: result.formatted_address,
-    latitude: result.geometry.location.lat,
-    longitude: result.geometry.location.lng,
+    latitude: result.geometry?.location.lat ?? 0,
+    longitude: result.geometry?.location.lng ?? 0,
     addressComponents:
       result.address_components?.map((component) => ({
         longText: component.long_name,

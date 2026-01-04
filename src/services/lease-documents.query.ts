@@ -9,7 +9,6 @@ import {
   generateLeasePdf,
   regenerateLeasePdf,
   getLeasePdfDownloadUrl,
-  type LeaseDocumentResponse,
 } from './lease-documents.api'
 
 /**
@@ -36,7 +35,7 @@ export function useRegenerateLeasePdf() {
 export function useGetLeasePdfDownloadUrl(leaseId: string | undefined, enabled = true) {
   return useQuery({
     queryKey: ['lease-document-download-url', leaseId],
-    queryFn: () => getLeasePdfDownloadUrl({ leaseId: leaseId! }),
+    queryFn: () => getLeasePdfDownloadUrl({ data: { leaseId: leaseId! } }),
     enabled: enabled && !!leaseId,
   })
 }

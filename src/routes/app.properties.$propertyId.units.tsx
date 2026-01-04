@@ -43,6 +43,7 @@ import {
 import { Typography } from '~/components/ui/typography'
 import { usePropertyQuery } from '~/services/properties.query'
 import { useUnitsQuery, useDeleteUnit, useUpdateUnit, useBulkDeleteUnits } from '~/services/units.query'
+import { type UnitWithDetails } from '~/services/units.api'
 import type { UnitStatus } from '~/services/units.schema'
 
 export const Route = createFileRoute('/app/properties/$propertyId/units')({
@@ -59,28 +60,8 @@ function PropertyUnitsPage() {
   )
 }
 
-interface Unit {
-  id: string
-  unitNumber: string
-  status: UnitStatus
-  bedrooms: number
-  bathrooms: number
-  sqFt: number | null
-  marketRent: number
-  currentRent: number | null
-  petFriendly: boolean
-  leases: {
-    id: string
-    status: string
-    endDate: Date
-    tenant: {
-      id: string
-      firstName: string
-      lastName: string
-      email: string
-    }
-  }[]
-}
+// Use Prisma type from API
+type Unit = UnitWithDetails
 
 // Status options for inline editing
 const unitStatusOptions = [
@@ -576,7 +557,7 @@ function UnitTableRow({ unit, propertyId, isSelected, onToggleSelect, onStatusCh
         </Select>
       </TableCell>
       <TableCell>{unit.bedrooms}</TableCell>
-      <TableCell>{unit.bathrooms}</TableCell>
+      <TableCell>{Number(unit.bathrooms)}</TableCell>
       <TableCell>{unit.sqFt ? unit.sqFt.toLocaleString() : '—'}</TableCell>
       <TableCell>
         {editingField === 'marketRent' ? (
@@ -599,7 +580,7 @@ function UnitTableRow({ unit, propertyId, isSelected, onToggleSelect, onStatusCh
             onClick={() => handleStartEdit('marketRent', String(unit.marketRent))}
             className='cursor-pointer rounded px-2 py-1 -mx-2 -my-1 hover:bg-muted/50'
           >
-            ${unit.marketRent.toLocaleString()}
+            ${Number(unit.marketRent).toLocaleString()}
           </div>
         )}
       </TableCell>
@@ -704,7 +685,7 @@ function UnitCard({ unit, propertyId, onStatusChange, onDelete }: UnitCardProps)
             <div>
               <CardTitle className='text-base'>Unit {unit.unitNumber}</CardTitle>
               <p className='text-sm text-muted-foreground'>
-                {unit.bedrooms}BR / {unit.bathrooms}BA
+                {unit.bedrooms}BR / {Number(unit.bathrooms)}BA
               </p>
             </div>
           </div>
@@ -781,7 +762,7 @@ function UnitCard({ unit, propertyId, onStatusChange, onDelete }: UnitCardProps)
           <div>
             <p className='text-muted-foreground'>Rent</p>
             <p className='font-medium'>
-              ${(unit.currentRent || unit.marketRent).toLocaleString()}/mo
+              ${Number(unit.currentRent || unit.marketRent).toLocaleString()}/mo
             </p>
           </div>
         </div>

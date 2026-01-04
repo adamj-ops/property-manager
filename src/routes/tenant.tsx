@@ -27,7 +27,7 @@ export const Route = createFileRoute('/tenant')({
       throw redirect({
         to: '/auth/sign-in',
         search: {
-          error: 'No tenant profile found',
+          callbackURL: location.pathname,
         },
       })
     }
