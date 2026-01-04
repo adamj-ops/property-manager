@@ -2,7 +2,7 @@
 
 **Date:** 2026-01-04
 **Branch:** `claude/epic-3-review-planning-Pqak1`
-**Status:** ~90% Complete (MVP Core Features Done)
+**Status:** ~95% Complete (MVP Core Features Done)
 **Total Story Points:** 42 (MVP), 49 (Full)
 
 ---
@@ -22,6 +22,14 @@
 | Status history tracking (EPM-32) | ✅ Done | Auto-records on status changes |
 | **Photo upload for work orders** | ✅ Done | Issue photos + completion photos with Supabase Storage |
 | **Vendor assignment dropdown** | ✅ Done | Can assign/unassign vendors from work order detail |
+| **Email notifications for status changes** | ✅ Done | Sends email to tenant on status updates via Resend |
+
+### Files Created (Session 3)
+- `src/emails/maintenance-status-email.tsx` - React Email template for status notifications
+- `src/server/maintenance-notifications.ts` - Notification service with email sending logic
+
+### Files Modified (Session 3)
+- `src/services/maintenance.api.ts` - Integrated email notifications on status changes
 
 ### Files Created (Session 2)
 - `src/components/maintenance/photo-upload.tsx` - Reusable photo upload component

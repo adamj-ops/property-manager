@@ -16,6 +16,10 @@ import {
   createDownloadUrl,
   validateFile,
 } from '~/server/storage'
+import {
+  sendMaintenanceStatusNotification,
+  shouldNotifyOnStatusChange,
+} from '~/server/maintenance-notifications'
 
 // Get all maintenance requests
 export const getMaintenanceRequests = createServerFn({ method: 'GET' })
@@ -234,6 +238,34 @@ export const updateMaintenanceRequest = createServerFn({ method: 'POST' })
         },
       })
     })
+
+    // Send email notification if status changed (async, non-blocking)
+    if (statusChanged && shouldNotifyOnStatusChange(existing.status, updateData.status!)) {
+      // Fire and forget - don't await to avoid blocking the response
+      sendMaintenanceStatusNotification({
+        request: {
+          id: request.id,
+          requestNumber: request.requestNumber,
+          title: request.title,
+          unit: {
+            unitNumber: request.unit.unitNumber,
+            property: {
+              name: request.unit.property.name,
+            },
+          },
+          tenant: request.tenant ? {
+            id: request.tenant.id,
+            firstName: request.tenant.firstName,
+            lastName: request.tenant.lastName,
+            email: request.tenant.email,
+          } : null,
+        },
+        previousStatus: existing.status,
+        newStatus: updateData.status!,
+      }).catch(() => {
+        // Error already logged in the notification service
+      })
+    }
 
     return request
   })
