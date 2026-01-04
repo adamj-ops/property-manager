@@ -1,14 +1,16 @@
 'use client'
 
+import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { createFileRoute } from '@tanstack/react-router'
-import { useCallback, useState } from 'react'
+import { useCallback, useMemo, useState } from 'react'
+import { toast } from 'sonner'
 import {
   LuBuilding2,
   LuCalendar,
   LuCircleCheck,
   LuCircleX,
   LuDog,
-  LuDownload,
+  LuLoaderCircle,
   LuMail,
   LuPencil,
   LuPhone,
@@ -22,19 +24,8 @@ import { Badge } from '~/components/ui/badge'
 import { Button } from '~/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '~/components/ui/card'
 import { Checkbox } from '~/components/ui/checkbox'
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from '~/components/ui/dialog'
-import { Input } from '~/components/ui/input'
-import { Label } from '~/components/ui/label'
 import { Link } from '~/components/ui/link'
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '~/components/ui/select'
+import { Skeleton } from '~/components/ui/skeleton'
 import { Typography } from '~/components/ui/typography'
 import {
   DataTableVirtual,
@@ -54,363 +45,136 @@ import {
   DropdownMenuLabel,
   DropdownMenuSeparator,
 } from '~/components/ui/dropdown-menu'
+import { tenantsQueryOptions, useUpdateTenant, useDeleteTenant, tenantKeys } from '~/services/tenants.query'
+import { propertiesQueryOptions } from '~/services/properties.query'
+import type { TenantStatus } from '~/services/tenants.schema'
 
 export const Route = createFileRoute('/app/tenants/')({
   component: TenantsListPage,
 })
 
-// Tenant type definition
-interface Tenant {
+// Tenant type for display (flattened from API response)
+interface TenantDisplay {
   id: string
   firstName: string
   lastName: string
   email: string
-  phone: string
-  unit: string
-  property: string
-  rent: number
-  petRent: number
-  leaseStart: string
-  leaseEnd: string
-  status: 'current' | 'past' | 'pending'
-  paymentStatus: 'current' | 'past_due'
-  pets: { name: string; type: string; breed: string }[]
+  phone: string | null
+  status: TenantStatus
+  preferredContactMethod: string
+  emergencyContactName: string | null
+  emergencyContactPhone: string | null
+  emergencyContactRelation: string | null
+  employer: string | null
+  monthlyIncome: number | null
+  createdAt: string
+  updatedAt: string
 }
 
-// Mock data for tenants
-const initialTenants: Tenant[] = [
-  {
-    id: '1',
-    firstName: 'Sarah',
-    lastName: 'Johnson',
-    email: 'sarah.j@email.com',
-    phone: '(612) 555-0123',
-    unit: '101',
-    property: 'Humboldt Court',
-    rent: 1250,
-    petRent: 50,
-    leaseStart: '2024-01-01',
-    leaseEnd: '2024-12-31',
-    status: 'current',
-    paymentStatus: 'current',
-    pets: [{ name: 'Max', type: 'Dog', breed: 'Golden Retriever' }],
-  },
-  {
-    id: '2',
-    firstName: 'Mike',
-    lastName: 'Chen',
-    email: 'mike.chen@email.com',
-    phone: '(612) 555-0124',
-    unit: '102',
-    property: 'Humboldt Court',
-    rent: 1050,
-    petRent: 0,
-    leaseStart: '2024-06-01',
-    leaseEnd: '2025-05-31',
-    status: 'current',
-    paymentStatus: 'current',
-    pets: [],
-  },
-  {
-    id: '3',
-    firstName: 'Emily',
-    lastName: 'Rodriguez',
-    email: 'emily.r@email.com',
-    phone: '(612) 555-0156',
-    unit: '204',
-    property: 'Humboldt Court',
-    rent: 1375,
-    petRent: 0,
-    leaseStart: '2024-03-01',
-    leaseEnd: '2025-02-28',
-    status: 'current',
-    paymentStatus: 'past_due',
-    pets: [],
-  },
-  {
-    id: '4',
-    firstName: 'James',
-    lastName: 'Parker',
-    email: 'james.p@email.com',
-    phone: '(612) 555-0198',
-    unit: '305',
-    property: 'Humboldt Court',
-    rent: 1425,
-    petRent: 50,
-    leaseStart: '2023-06-01',
-    leaseEnd: '2025-05-31',
-    status: 'current',
-    paymentStatus: 'current',
-    pets: [{ name: 'Luna', type: 'Cat', breed: 'Tabby' }],
-  },
-  {
-    id: '5',
-    firstName: 'David',
-    lastName: 'Kim',
-    email: 'david.k@email.com',
-    phone: '(612) 555-0167',
-    unit: '402',
-    property: 'Humboldt Court',
-    rent: 1500,
-    petRent: 0,
-    leaseStart: '2024-08-15',
-    leaseEnd: '2025-08-14',
-    status: 'current',
-    paymentStatus: 'current',
-    pets: [],
-  },
-]
-
-// Filter options
+// Status options for filter
 const statusOptions = [
-  { label: 'Current', value: 'current', icon: LuCircleCheck },
-  { label: 'Past', value: 'past', icon: LuCircleX },
-  { label: 'Pending', value: 'pending', icon: LuCalendar },
+  { label: 'Active', value: 'ACTIVE', icon: LuCircleCheck },
+  { label: 'Applicant', value: 'APPLICANT', icon: LuCalendar },
+  { label: 'Approved', value: 'APPROVED', icon: LuCircleCheck },
+  { label: 'Past', value: 'PAST', icon: LuCircleX },
+  { label: 'Denied', value: 'DENIED', icon: LuCircleX },
 ]
 
-const paymentStatusOptions = [
-  {
-    label: 'Current',
-    value: 'current',
-    variant: 'outline' as const,
-    className: 'border-green-500 text-green-700',
-  },
-  {
-    label: 'Past Due',
-    value: 'past_due',
-    variant: 'destructive' as const,
-  },
-]
-
-const propertyOptions = [
-  { label: 'Humboldt Court', value: 'Humboldt Court', icon: LuBuilding2 },
-  { label: 'Maple Grove', value: 'Maple Grove', icon: LuBuilding2 },
-  { label: 'Downtown Lofts', value: 'Downtown Lofts', icon: LuBuilding2 },
-]
-
-// Column definitions with editable cells
-const columns: ColumnDef<Tenant>[] = [
-  {
-    id: 'select',
-    header: ({ table }) => (
-      <Checkbox
-        checked={
-          table.getIsAllPageRowsSelected() ||
-          (table.getIsSomePageRowsSelected() && 'indeterminate')
-        }
-        onCheckedChange={(value) => table.toggleAllPageRowsSelected(!!value)}
-        aria-label='Select all'
-      />
-    ),
-    cell: ({ row }) => (
-      <Checkbox
-        checked={row.getIsSelected()}
-        onCheckedChange={(value) => row.toggleSelected(!!value)}
-        aria-label='Select row'
-      />
-    ),
-    size: 40,
-    enableSorting: false,
-    enableHiding: false,
-    enableResizing: false,
-  },
-  {
-    accessorKey: 'name',
-    accessorFn: (row) => `${row.firstName} ${row.lastName}`,
-    header: ({ column }) => <DataTableColumnHeader column={column} title='Name' />,
-    size: 250,
-    cell: ({ row }) => {
-      const isPastDue = row.original.paymentStatus === 'past_due'
-      const isExpiringSoon =
-        new Date(row.original.leaseEnd) <= new Date(Date.now() + 30 * 24 * 60 * 60 * 1000)
-
-      return (
-        <div className='flex items-center gap-3'>
-          <div className='flex size-8 items-center justify-center rounded-full bg-primary/10'>
-            <LuUser className='size-4 text-primary' />
-          </div>
-          <div>
-            <div className='flex items-center gap-2'>
-              <Link
-                to='/app/tenants/$tenantId'
-                params={{ tenantId: row.original.id }}
-                className='font-medium hover:underline'
-              >
-                {row.original.firstName} {row.original.lastName}
-              </Link>
-              {isPastDue && <Badge variant='destructive'>Past Due</Badge>}
-              {isExpiringSoon && !isPastDue && (
-                <Badge variant='secondary' className='bg-orange-100 text-orange-700'>
-                  Expiring
-                </Badge>
-              )}
-            </div>
-            <div className='flex items-center gap-2 text-xs text-muted-foreground'>
-              <LuMail className='size-3' />
-              {row.original.email}
-            </div>
-          </div>
-        </div>
-      )
-    },
-  },
-  {
-    accessorKey: 'unit',
-    header: ({ column }) => <DataTableColumnHeader column={column} title='Unit' />,
-    size: 120,
-    cell: (props) => (
-      <EditableCell
-        {...props}
-        type='text'
-        className='font-medium'
-      />
-    ),
-    filterFn: (row, id, value) => {
-      return value.includes(row.getValue(id))
-    },
-  },
-  {
-    accessorKey: 'property',
-    header: ({ column }) => <DataTableColumnHeader column={column} title='Property' />,
-    size: 150,
-    cell: (props) => (
-      <EditableCell
-        {...props}
-        type='select'
-        options={[
-          { label: 'Humboldt Court', value: 'Humboldt Court' },
-          { label: 'Maple Grove', value: 'Maple Grove' },
-          { label: 'Downtown Lofts', value: 'Downtown Lofts' },
-        ]}
-      />
-    ),
-    filterFn: (row, id, value) => {
-      return value.includes(row.getValue(id))
-    },
-  },
-  {
-    accessorKey: 'phone',
-    header: ({ column }) => <DataTableColumnHeader column={column} title='Phone' />,
-    size: 140,
-    cell: (props) => (
-      <div className='flex items-center gap-1'>
-        <LuPhone className='size-3 text-muted-foreground' />
-        <EditableCell {...props} type='phone' />
-      </div>
-    ),
-  },
-  {
-    accessorKey: 'rent',
-    header: ({ column }) => <DataTableColumnHeader column={column} title='Rent' />,
-    size: 120,
-    cell: (props) => <EditableCell {...props} type='currency' />,
-  },
-  {
-    accessorKey: 'paymentStatus',
-    header: ({ column }) => <DataTableColumnHeader column={column} title='Payment' />,
-    size: 120,
-    cell: (props) => (
-      <EditableBadgeCell
-        {...props}
-        options={paymentStatusOptions}
-      />
-    ),
-    filterFn: (row, id, value) => {
-      return value.includes(row.getValue(id))
-    },
-  },
-  {
-    accessorKey: 'leaseEnd',
-    header: ({ column }) => <DataTableColumnHeader column={column} title='Lease End' />,
-    size: 130,
-    cell: (props) => (
-      <div className='flex items-center gap-1'>
-        <LuCalendar className='size-3 text-muted-foreground' />
-        <EditableCell {...props} type='date' />
-      </div>
-    ),
-  },
-  {
-    accessorKey: 'pets',
-    header: 'Pets',
-    size: 80,
-    cell: ({ row }) => {
-      const pets = row.original.pets
-      if (pets.length === 0) return <span className='text-muted-foreground'>—</span>
-      return (
-        <div className='flex items-center gap-1 text-sm'>
-          <LuDog className='size-3 text-muted-foreground' />
-          {pets.length}
-        </div>
-      )
-    },
-    enableSorting: false,
-    enableResizing: false,
-  },
-  {
-    id: 'actions',
-    size: 50,
-    cell: ({ row }) => (
-      <DataTableRowActions row={row}>
-        <DropdownMenuLabel>Actions</DropdownMenuLabel>
-        <DropdownMenuSeparator />
-        <DropdownMenuItem asChild>
-          <Link to='/app/tenants/$tenantId' params={{ tenantId: row.original.id }}>
-            <LuUser className='mr-2 size-4' />
-            View details
-          </Link>
-        </DropdownMenuItem>
-        <DropdownMenuItem>
-          <LuPencil className='mr-2 size-4' />
-          Edit tenant
-        </DropdownMenuItem>
-        <DropdownMenuItem asChild>
-          <Link to='/app/communications'>
-            <LuMail className='mr-2 size-4' />
-            Send message
-          </Link>
-        </DropdownMenuItem>
-        <DropdownMenuSeparator />
-        <DropdownMenuItem className='text-destructive'>
-          <LuTrash2 className='mr-2 size-4' />
-          Delete tenant
-        </DropdownMenuItem>
-      </DataTableRowActions>
-    ),
-    enableResizing: false,
-  },
+const statusBadgeOptions = [
+  { label: 'Active', value: 'ACTIVE', variant: 'default' as const },
+  { label: 'Applicant', value: 'APPLICANT', variant: 'secondary' as const },
+  { label: 'Approved', value: 'APPROVED', variant: 'outline' as const, className: 'border-green-500 text-green-700' },
+  { label: 'Past', value: 'PAST', variant: 'secondary' as const },
+  { label: 'Evicted', value: 'EVICTED', variant: 'destructive' as const },
+  { label: 'Denied', value: 'DENIED', variant: 'destructive' as const },
 ]
 
 function TenantsListPage() {
-  const [dialogOpen, setDialogOpen] = useState(false)
-  const [tenants, setTenants] = useState(initialTenants)
+  const queryClient = useQueryClient()
+  const updateTenant = useUpdateTenant()
+  const deleteTenant = useDeleteTenant()
+
+  // Fetch tenants from API
+  const { data: tenantsData, isLoading, isError, error } = useQuery(
+    tenantsQueryOptions({ limit: 100 })
+  )
+
+  // Fetch properties for filter dropdown
+  const { data: propertiesData } = useQuery(propertiesQueryOptions({ limit: 100 }))
+  const propertyOptions = useMemo(() =>
+    (propertiesData?.properties ?? []).map((p) => ({
+      label: p.name,
+      value: p.id,
+      icon: LuBuilding2,
+    })),
+    [propertiesData]
+  )
+
+  // Transform API data to display format
+  const tenants: TenantDisplay[] = useMemo(() => {
+    if (!tenantsData?.tenants) return []
+    return tenantsData.tenants.map((t: any) => ({
+      id: t.id,
+      firstName: t.firstName,
+      lastName: t.lastName,
+      email: t.email,
+      phone: t.phone,
+      status: t.status as TenantStatus,
+      preferredContactMethod: t.preferredContactMethod ?? 'email',
+      emergencyContactName: t.emergencyContactName,
+      emergencyContactPhone: t.emergencyContactPhone,
+      emergencyContactRelation: t.emergencyContactRelation,
+      employer: t.employer,
+      monthlyIncome: t.monthlyIncome ? Number(t.monthlyIncome) : null,
+      createdAt: t.createdAt,
+      updatedAt: t.updatedAt,
+    }))
+  }, [tenantsData])
 
   // Row expansion state
-  const [expandedRow, setExpandedRow] = useState<Row<Tenant> | null>(null)
+  const [expandedRow, setExpandedRow] = useState<Row<TenantDisplay> | null>(null)
   const [expansionOpen, setExpansionOpen] = useState(false)
 
   // Table ref for bulk actions
   const [tableInstance, setTableInstance] = useState<any>(null)
 
-  const activeTenants = tenants.filter((t) => t.status === 'current').length
-  const tenantsWithPets = tenants.filter((t) => t.pets.length > 0).length
-  const pastDueTenants = tenants.filter((t) => t.paymentStatus === 'past_due').length
+  // Calculate stats
+  const activeTenants = tenants.filter((t) => t.status === 'ACTIVE').length
+  const applicants = tenants.filter((t) => t.status === 'APPLICANT').length
+  const approvedTenants = tenants.filter((t) => t.status === 'APPROVED').length
 
-  const today = new Date()
-  const thirtyDaysFromNow = new Date(today.getTime() + 30 * 24 * 60 * 60 * 1000)
-  const expiringLeases = tenants.filter((t) => {
-    const leaseEnd = new Date(t.leaseEnd)
-    return leaseEnd <= thirtyDaysFromNow && leaseEnd >= today
-  }).length
+  // Handle inline data changes
+  const handleDataChange = useCallback((newData: TenantDisplay[]) => {
+    // Find what changed and update via API
+    const changedTenant = newData.find((newT) => {
+      const oldT = tenants.find((t) => t.id === newT.id)
+      if (!oldT) return false
+      return JSON.stringify(oldT) !== JSON.stringify(newT)
+    })
 
-  const handleDataChange = (newData: Tenant[]) => {
-    setTenants(newData)
-    // Here you would typically also save to the server
-    console.log('Data updated:', newData)
-  }
+    if (changedTenant) {
+      updateTenant.mutate({
+        id: changedTenant.id,
+        firstName: changedTenant.firstName,
+        lastName: changedTenant.lastName,
+        email: changedTenant.email,
+        phone: changedTenant.phone ?? undefined,
+        status: changedTenant.status,
+      }, {
+        onSuccess: () => {
+          toast.success('Tenant updated')
+        },
+        onError: (err) => {
+          toast.error(err instanceof Error ? err.message : 'Failed to update tenant')
+          // Revert by refetching
+          queryClient.invalidateQueries({ queryKey: tenantKeys.all })
+        },
+      })
+    }
+  }, [tenants, updateTenant, queryClient])
 
   // Row click handler for expansion
-  const handleRowClick = useCallback((row: Row<Tenant>) => {
+  const handleRowClick = useCallback((row: Row<TenantDisplay>) => {
     setExpandedRow(row)
     setExpansionOpen(true)
   }, [])
@@ -419,7 +183,7 @@ function TenantsListPage() {
   const handlePreviousRow = useCallback(() => {
     if (!expandedRow || !tableInstance) return
     const rows = tableInstance.getRowModel().rows
-    const currentIndex = rows.findIndex((r: Row<Tenant>) => r.id === expandedRow.id)
+    const currentIndex = rows.findIndex((r: Row<TenantDisplay>) => r.id === expandedRow.id)
     if (currentIndex > 0) {
       setExpandedRow(rows[currentIndex - 1])
     }
@@ -428,26 +192,31 @@ function TenantsListPage() {
   const handleNextRow = useCallback(() => {
     if (!expandedRow || !tableInstance) return
     const rows = tableInstance.getRowModel().rows
-    const currentIndex = rows.findIndex((r: Row<Tenant>) => r.id === expandedRow.id)
+    const currentIndex = rows.findIndex((r: Row<TenantDisplay>) => r.id === expandedRow.id)
     if (currentIndex < rows.length - 1) {
       setExpandedRow(rows[currentIndex + 1])
     }
   }, [expandedRow, tableInstance])
 
   // Bulk action handlers
-  const handleBulkDelete = useCallback((rows: Tenant[]) => {
-    const idsToDelete = new Set(rows.map((r) => r.id))
-    setTenants((prev) => prev.filter((t) => !idsToDelete.has(t.id)))
-    tableInstance?.resetRowSelection()
-  }, [tableInstance])
+  const handleBulkDelete = useCallback(async (rows: TenantDisplay[]) => {
+    const promises = rows.map((r) => deleteTenant.mutateAsync(r.id))
+    try {
+      await Promise.all(promises)
+      toast.success(`Deleted ${rows.length} tenant(s)`)
+      tableInstance?.resetRowSelection()
+    } catch (err) {
+      toast.error('Failed to delete some tenants')
+    }
+  }, [deleteTenant, tableInstance])
 
-  const handleBulkExport = useCallback((rows: Tenant[]) => {
+  const handleBulkExport = useCallback((rows: TenantDisplay[]) => {
     // Export as CSV
-    const headers = ['First Name', 'Last Name', 'Email', 'Phone', 'Unit', 'Property', 'Rent', 'Lease End']
+    const headers = ['First Name', 'Last Name', 'Email', 'Phone', 'Status']
     const csvContent = [
       headers.join(','),
       ...rows.map((t) =>
-        [t.firstName, t.lastName, t.email, t.phone, t.unit, t.property, t.rent, t.leaseEnd].join(',')
+        [t.firstName, t.lastName, t.email, t.phone ?? '', t.status].join(',')
       ),
     ].join('\n')
 
@@ -460,6 +229,264 @@ function TenantsListPage() {
     URL.revokeObjectURL(url)
   }, [])
 
+  // Column definitions
+  const columns: ColumnDef<TenantDisplay>[] = useMemo(() => [
+    {
+      id: 'select',
+      header: ({ table }) => (
+        <Checkbox
+          checked={
+            table.getIsAllPageRowsSelected() ||
+            (table.getIsSomePageRowsSelected() && 'indeterminate')
+          }
+          onCheckedChange={(value) => table.toggleAllPageRowsSelected(!!value)}
+          aria-label='Select all'
+        />
+      ),
+      cell: ({ row }) => (
+        <Checkbox
+          checked={row.getIsSelected()}
+          onCheckedChange={(value) => row.toggleSelected(!!value)}
+          aria-label='Select row'
+        />
+      ),
+      size: 40,
+      enableSorting: false,
+      enableHiding: false,
+      enableResizing: false,
+    },
+    {
+      accessorKey: 'name',
+      accessorFn: (row) => `${row.firstName} ${row.lastName}`,
+      header: ({ column }) => <DataTableColumnHeader column={column} title='Name' />,
+      size: 250,
+      cell: ({ row }) => {
+        return (
+          <div className='flex items-center gap-3'>
+            <div className='flex size-8 items-center justify-center rounded-full bg-primary/10'>
+              <LuUser className='size-4 text-primary' />
+            </div>
+            <div>
+              <div className='flex items-center gap-2'>
+                <Link
+                  to='/app/tenants/$tenantId'
+                  params={{ tenantId: row.original.id }}
+                  className='font-medium hover:underline'
+                >
+                  {row.original.firstName} {row.original.lastName}
+                </Link>
+                {row.original.status === 'APPLICANT' && (
+                  <Badge variant='secondary'>Applicant</Badge>
+                )}
+              </div>
+              <div className='flex items-center gap-2 text-xs text-muted-foreground'>
+                <LuMail className='size-3' />
+                {row.original.email}
+              </div>
+            </div>
+          </div>
+        )
+      },
+    },
+    {
+      accessorKey: 'phone',
+      header: ({ column }) => <DataTableColumnHeader column={column} title='Phone' />,
+      size: 140,
+      cell: (props) => (
+        <div className='flex items-center gap-1'>
+          <LuPhone className='size-3 text-muted-foreground' />
+          <EditableCell {...props} type='phone' />
+        </div>
+      ),
+    },
+    {
+      accessorKey: 'status',
+      header: ({ column }) => <DataTableColumnHeader column={column} title='Status' />,
+      size: 120,
+      cell: (props) => (
+        <EditableBadgeCell
+          {...props}
+          options={statusBadgeOptions}
+        />
+      ),
+      filterFn: (row, id, value) => {
+        return value.includes(row.getValue(id))
+      },
+    },
+    {
+      accessorKey: 'employer',
+      header: ({ column }) => <DataTableColumnHeader column={column} title='Employer' />,
+      size: 150,
+      cell: (props) => (
+        <EditableCell {...props} type='text' />
+      ),
+    },
+    {
+      accessorKey: 'monthlyIncome',
+      header: ({ column }) => <DataTableColumnHeader column={column} title='Income' />,
+      size: 120,
+      cell: (props) => <EditableCell {...props} type='currency' />,
+    },
+    {
+      accessorKey: 'createdAt',
+      header: ({ column }) => <DataTableColumnHeader column={column} title='Added' />,
+      size: 120,
+      cell: ({ row }) => (
+        <div className='flex items-center gap-1 text-sm text-muted-foreground'>
+          <LuCalendar className='size-3' />
+          {new Date(row.original.createdAt).toLocaleDateString()}
+        </div>
+      ),
+    },
+    {
+      id: 'actions',
+      size: 50,
+      cell: ({ row }) => (
+        <DataTableRowActions row={row}>
+          <DropdownMenuLabel>Actions</DropdownMenuLabel>
+          <DropdownMenuSeparator />
+          <DropdownMenuItem asChild>
+            <Link to='/app/tenants/$tenantId' params={{ tenantId: row.original.id }}>
+              <LuUser className='mr-2 size-4' />
+              View details
+            </Link>
+          </DropdownMenuItem>
+          <DropdownMenuItem asChild>
+            <Link to='/app/tenants/$tenantId' params={{ tenantId: row.original.id }}>
+              <LuPencil className='mr-2 size-4' />
+              Edit tenant
+            </Link>
+          </DropdownMenuItem>
+          <DropdownMenuItem asChild>
+            <Link to='/app/communications'>
+              <LuMail className='mr-2 size-4' />
+              Send message
+            </Link>
+          </DropdownMenuItem>
+          <DropdownMenuSeparator />
+          <DropdownMenuItem
+            className='text-destructive'
+            onClick={() => {
+              if (confirm(`Delete ${row.original.firstName} ${row.original.lastName}?`)) {
+                deleteTenant.mutate(row.original.id, {
+                  onSuccess: () => toast.success('Tenant deleted'),
+                  onError: () => toast.error('Failed to delete tenant'),
+                })
+              }
+            }}
+          >
+            <LuTrash2 className='mr-2 size-4' />
+            Delete tenant
+          </DropdownMenuItem>
+        </DataTableRowActions>
+      ),
+      enableResizing: false,
+    },
+  ], [deleteTenant])
+
+  // Loading state
+  if (isLoading) {
+    return (
+      <div className='w-full max-w-7xl space-y-6 py-6'>
+        <div className='flex items-center justify-between'>
+          <div>
+            <Typography.H2>Tenants</Typography.H2>
+            <Typography.Muted>Manage your tenant relationships</Typography.Muted>
+          </div>
+          <Button disabled>
+            <LuPlus className='mr-2 size-4' />
+            Add Tenant
+          </Button>
+        </div>
+        <div className='grid gap-4 md:grid-cols-4'>
+          {[1, 2, 3, 4].map((i) => (
+            <Card key={i}>
+              <CardHeader className='pb-2'>
+                <Skeleton className='h-4 w-24' />
+              </CardHeader>
+              <CardContent>
+                <Skeleton className='h-8 w-12' />
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+        <Card>
+          <CardContent className='pt-6'>
+            <div className='space-y-4'>
+              <Skeleton className='h-10 w-full' />
+              <Skeleton className='h-64 w-full' />
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    )
+  }
+
+  // Error state
+  if (isError) {
+    return (
+      <div className='w-full max-w-7xl space-y-6 py-6'>
+        <div className='flex items-center justify-between'>
+          <div>
+            <Typography.H2>Tenants</Typography.H2>
+            <Typography.Muted>Manage your tenant relationships</Typography.Muted>
+          </div>
+        </div>
+        <Card>
+          <CardContent className='py-12 text-center'>
+            <Typography.Muted>
+              Failed to load tenants: {error instanceof Error ? error.message : 'Unknown error'}
+            </Typography.Muted>
+            <Button
+              variant='outline'
+              className='mt-4'
+              onClick={() => queryClient.invalidateQueries({ queryKey: tenantKeys.all })}
+            >
+              Retry
+            </Button>
+          </CardContent>
+        </Card>
+      </div>
+    )
+  }
+
+  // Empty state
+  if (tenants.length === 0) {
+    return (
+      <div className='w-full max-w-7xl space-y-6 py-6'>
+        <div className='flex items-center justify-between'>
+          <div>
+            <Typography.H2>Tenants</Typography.H2>
+            <Typography.Muted>Manage your tenant relationships</Typography.Muted>
+          </div>
+          <Button asChild>
+            <Link to='/app/tenants/new'>
+              <LuPlus className='mr-2 size-4' />
+              Add Tenant
+            </Link>
+          </Button>
+        </div>
+        <Card>
+          <CardContent className='py-12 text-center'>
+            <div className='mx-auto flex size-16 items-center justify-center rounded-full bg-muted'>
+              <LuUser className='size-8 text-muted-foreground' />
+            </div>
+            <Typography.H3 className='mt-4'>No tenants yet</Typography.H3>
+            <Typography.Muted className='mt-2'>
+              Get started by adding your first tenant
+            </Typography.Muted>
+            <Button asChild className='mt-6'>
+              <Link to='/app/tenants/new'>
+                <LuPlus className='mr-2 size-4' />
+                Add Your First Tenant
+              </Link>
+            </Button>
+          </CardContent>
+        </Card>
+      </div>
+    )
+  }
+
   return (
     <div className='w-full max-w-7xl space-y-6 py-6'>
       {/* Page Header */}
@@ -468,109 +495,46 @@ function TenantsListPage() {
           <Typography.H2>Tenants</Typography.H2>
           <Typography.Muted>Manage your tenant relationships</Typography.Muted>
         </div>
-        <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-          <DialogTrigger asChild>
-            <Button>
-              <LuPlus className='mr-2 size-4' />
-              Add Tenant
-            </Button>
-          </DialogTrigger>
-          <DialogContent className='sm:max-w-[500px]'>
-            <DialogHeader>
-              <DialogTitle>Add New Tenant</DialogTitle>
-              <DialogDescription>
-                Add a new tenant to your property. Fill in the basic information to get started.
-              </DialogDescription>
-            </DialogHeader>
-            <div className='grid gap-4 py-4'>
-              <div className='grid grid-cols-2 gap-4'>
-                <div className='space-y-2'>
-                  <Label htmlFor='firstName'>First Name</Label>
-                  <Input id='firstName' placeholder='John' />
-                </div>
-                <div className='space-y-2'>
-                  <Label htmlFor='lastName'>Last Name</Label>
-                  <Input id='lastName' placeholder='Doe' />
-                </div>
-              </div>
-              <div className='space-y-2'>
-                <Label htmlFor='email'>Email</Label>
-                <Input id='email' type='email' placeholder='john.doe@email.com' />
-              </div>
-              <div className='space-y-2'>
-                <Label htmlFor='phone'>Phone</Label>
-                <Input id='phone' type='tel' placeholder='(612) 555-0123' />
-              </div>
-              <div className='grid grid-cols-2 gap-4'>
-                <div className='space-y-2'>
-                  <Label htmlFor='property'>Property</Label>
-                  <Select>
-                    <SelectTrigger id='property'>
-                      <SelectValue placeholder='Select property' />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value='humboldt'>Humboldt Court</SelectItem>
-                      <SelectItem value='maple'>Maple Grove Apartments</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div className='space-y-2'>
-                  <Label htmlFor='unit'>Unit</Label>
-                  <Select>
-                    <SelectTrigger id='unit'>
-                      <SelectValue placeholder='Select unit' />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value='101'>Unit 101</SelectItem>
-                      <SelectItem value='102'>Unit 102</SelectItem>
-                      <SelectItem value='103'>Unit 103</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-              </div>
-            </div>
-            <DialogFooter>
-              <Button variant='outline' onClick={() => setDialogOpen(false)}>
-                Cancel
-              </Button>
-              <Button onClick={() => setDialogOpen(false)}>Add Tenant</Button>
-            </DialogFooter>
-          </DialogContent>
-        </Dialog>
+        <Button asChild>
+          <Link to='/app/tenants/new'>
+            <LuPlus className='mr-2 size-4' />
+            Add Tenant
+          </Link>
+        </Button>
       </div>
 
       {/* Stats */}
       <div className='grid gap-4 md:grid-cols-4'>
         <Card>
           <CardHeader className='pb-2'>
-            <CardTitle className='text-sm font-medium'>Active Tenants</CardTitle>
+            <CardTitle className='text-sm font-medium'>Total Tenants</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className='text-2xl font-bold'>{activeTenants}</div>
+            <div className='text-2xl font-bold'>{tenants.length}</div>
           </CardContent>
         </Card>
         <Card>
           <CardHeader className='pb-2'>
-            <CardTitle className='text-sm font-medium'>Expiring (30 days)</CardTitle>
+            <CardTitle className='text-sm font-medium'>Active</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className='text-2xl font-bold text-orange-600'>{expiringLeases}</div>
+            <div className='text-2xl font-bold text-green-600'>{activeTenants}</div>
           </CardContent>
         </Card>
         <Card>
           <CardHeader className='pb-2'>
-            <CardTitle className='text-sm font-medium'>Past Due</CardTitle>
+            <CardTitle className='text-sm font-medium'>Applicants</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className='text-2xl font-bold text-destructive'>{pastDueTenants}</div>
+            <div className='text-2xl font-bold text-orange-600'>{applicants}</div>
           </CardContent>
         </Card>
         <Card>
           <CardHeader className='pb-2'>
-            <CardTitle className='text-sm font-medium'>With Pets</CardTitle>
+            <CardTitle className='text-sm font-medium'>Approved</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className='text-2xl font-bold'>{tenantsWithPets}</div>
+            <div className='text-2xl font-bold'>{approvedTenants}</div>
           </CardContent>
         </Card>
       </div>
@@ -601,21 +565,11 @@ function TenantsListPage() {
                   searchPlaceholder='Search tenants...'
                   filterComponent={
                     <div className='flex gap-2'>
-                      {table.getColumn('property') && (
+                      {table.getColumn('status') && (
                         <DataTableFacetedFilter
-                          column={table.getColumn('property')}
-                          title='Property'
-                          options={propertyOptions}
-                        />
-                      )}
-                      {table.getColumn('paymentStatus') && (
-                        <DataTableFacetedFilter
-                          column={table.getColumn('paymentStatus')}
-                          title='Payment'
-                          options={[
-                            { label: 'Current', value: 'current' },
-                            { label: 'Past Due', value: 'past_due' },
-                          ]}
+                          column={table.getColumn('status')}
+                          title='Status'
+                          options={statusOptions}
                         />
                       )}
                     </div>
@@ -627,62 +581,17 @@ function TenantsListPage() {
         </CardContent>
       </Card>
 
-      {/* Tips */}
-      <div className='rounded-lg border border-dashed p-4 text-sm text-muted-foreground'>
-        <p className='font-medium text-foreground'>Airtable-like features:</p>
-        <ul className='mt-2 list-inside list-disc space-y-1'>
-          <li>Click any cell to edit inline (Unit, Property, Phone, Rent, Payment Status, Lease End)</li>
-          <li>Drag column borders to resize columns</li>
-          <li>Use faceted filters to filter by Property or Payment status</li>
-          <li>Click column headers to sort</li>
-          <li>Use the View button to toggle column visibility</li>
-          <li>
-            <strong>Row expansion:</strong> Click a row to open the detail panel on the right
-          </li>
-          <li>
-            <strong>Bulk actions:</strong> Select multiple rows with checkboxes to see the bulk action bar
-          </li>
-          <li>
-            <strong>Keyboard navigation:</strong> Arrow keys to move between cells, Tab/Shift+Tab for horizontal movement
-          </li>
-          <li>
-            <strong>Quick editing:</strong> Press Enter or double-click to edit a cell, Escape to cancel, Enter to confirm and move down
-          </li>
-          <li>
-            <strong>Type to edit:</strong> Start typing on a focused cell to enter edit mode immediately
-          </li>
-          <li>
-            <strong>Jump navigation:</strong> Home/End for row edges, Ctrl+Home/End for table corners, PageUp/PageDown to jump 10 rows
-          </li>
-          <li>
-            <strong>Multi-cell selection:</strong> Click a cell, then Shift+click or Shift+Arrow to select a range, Ctrl/Cmd+click to toggle
-          </li>
-          <li>
-            <strong>Copy/Paste:</strong> Select cells then Ctrl/Cmd+C to copy, Ctrl/Cmd+V to paste
-          </li>
-          <li>
-            <strong>Undo/Redo:</strong> Ctrl/Cmd+Z to undo, Ctrl/Cmd+Shift+Z to redo
-          </li>
-          <li>
-            <strong>Column pinning:</strong> Name column pinned left, Actions pinned right (scroll to see effect)
-          </li>
-          <li>
-            <strong>Virtual scrolling:</strong> Optimized for large datasets (1000+ rows)
-          </li>
-        </ul>
-      </div>
-
       {/* Row Expansion Panel */}
       <DataTableRowExpansion
         open={expansionOpen}
         onOpenChange={setExpansionOpen}
         row={expandedRow}
         title={(row) => `${row.original.firstName} ${row.original.lastName}`}
-        description={(row) => `Unit ${row.original.unit} • ${row.original.property}`}
+        description={(row) => row.original.email}
         onPrevious={handlePreviousRow}
         onNext={handleNextRow}
-        hasPrevious={expandedRow ? tableInstance?.getRowModel().rows.findIndex((r: Row<Tenant>) => r.id === expandedRow.id) > 0 : false}
-        hasNext={expandedRow ? tableInstance?.getRowModel().rows.findIndex((r: Row<Tenant>) => r.id === expandedRow.id) < (tableInstance?.getRowModel().rows.length - 1) : false}
+        hasPrevious={expandedRow ? tableInstance?.getRowModel().rows.findIndex((r: Row<TenantDisplay>) => r.id === expandedRow.id) > 0 : false}
+        hasNext={expandedRow ? tableInstance?.getRowModel().rows.findIndex((r: Row<TenantDisplay>) => r.id === expandedRow.id) < (tableInstance?.getRowModel().rows.length - 1) : false}
         footer={(row) => (
           <>
             <Button variant='outline' asChild>
@@ -704,57 +613,43 @@ function TenantsListPage() {
             {/* Contact Information */}
             <FieldGroup title='Contact Information'>
               <FieldDisplay label='Email' value={row.original.email} />
-              <FieldDisplay label='Phone' value={row.original.phone} />
+              <FieldDisplay label='Phone' value={row.original.phone ?? 'Not provided'} />
+              <FieldDisplay label='Preferred Contact' value={row.original.preferredContactMethod} />
             </FieldGroup>
 
-            {/* Lease Details */}
-            <FieldGroup title='Lease Details'>
-              <FieldDisplay label='Property' value={row.original.property} />
-              <FieldDisplay label='Unit' value={row.original.unit} />
-              <FieldDisplay label='Lease Start' value={new Date(row.original.leaseStart).toLocaleDateString()} />
-              <FieldDisplay label='Lease End' value={new Date(row.original.leaseEnd).toLocaleDateString()} />
-            </FieldGroup>
+            {/* Emergency Contact */}
+            {row.original.emergencyContactName && (
+              <FieldGroup title='Emergency Contact'>
+                <FieldDisplay label='Name' value={row.original.emergencyContactName} />
+                <FieldDisplay label='Phone' value={row.original.emergencyContactPhone ?? 'Not provided'} />
+                <FieldDisplay label='Relationship' value={row.original.emergencyContactRelation ?? 'Not specified'} />
+              </FieldGroup>
+            )}
 
-            {/* Financial */}
-            <FieldGroup title='Financial'>
+            {/* Employment */}
+            {row.original.employer && (
+              <FieldGroup title='Employment'>
+                <FieldDisplay label='Employer' value={row.original.employer} />
+                <FieldDisplay
+                  label='Monthly Income'
+                  value={row.original.monthlyIncome ? `$${row.original.monthlyIncome.toLocaleString()}` : 'Not provided'}
+                />
+              </FieldGroup>
+            )}
+
+            {/* Status */}
+            <FieldGroup title='Status'>
               <FieldDisplay
-                label='Monthly Rent'
-                value={`$${row.original.rent.toLocaleString()}`}
-              />
-              <FieldDisplay
-                label='Pet Rent'
-                value={row.original.petRent > 0 ? `$${row.original.petRent}` : 'N/A'}
-              />
-              <FieldDisplay
-                label='Total Monthly'
-                value={`$${(row.original.rent + row.original.petRent).toLocaleString()}`}
-              />
-              <FieldDisplay
-                label='Payment Status'
+                label='Current Status'
                 value={
-                  <Badge variant={row.original.paymentStatus === 'current' ? 'outline' : 'destructive'}>
-                    {row.original.paymentStatus === 'current' ? 'Current' : 'Past Due'}
+                  <Badge variant={row.original.status === 'ACTIVE' ? 'default' : 'secondary'}>
+                    {row.original.status}
                   </Badge>
                 }
               />
+              <FieldDisplay label='Added' value={new Date(row.original.createdAt).toLocaleDateString()} />
+              <FieldDisplay label='Last Updated' value={new Date(row.original.updatedAt).toLocaleDateString()} />
             </FieldGroup>
-
-            {/* Pets */}
-            {row.original.pets.length > 0 && (
-              <FieldGroup title='Pets' columns={1}>
-                {row.original.pets.map((pet, index) => (
-                  <div key={index} className='flex items-center gap-2 rounded-md border p-3'>
-                    <LuDog className='h-5 w-5 text-muted-foreground' />
-                    <div>
-                      <p className='font-medium'>{pet.name}</p>
-                      <p className='text-sm text-muted-foreground'>
-                        {pet.type} • {pet.breed}
-                      </p>
-                    </div>
-                  </div>
-                ))}
-              </FieldGroup>
-            )}
           </>
         )}
       </DataTableRowExpansion>
@@ -770,7 +665,6 @@ function TenantsListPage() {
               label: 'Send Message',
               icon: <LuMail className='h-4 w-4' />,
               onClick: () => {
-                // Navigate to communications with selected tenants
                 console.log('Send message to selected tenants')
               },
             },

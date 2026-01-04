@@ -1,4 +1,5 @@
 import { createFileRoute } from '@tanstack/react-router'
+import { Suspense } from 'react'
 import { LuCircleAlert, LuArrowUpRight, LuBuilding2, LuDollarSign, LuTrendingUp, LuUsers, LuWrench } from 'react-icons/lu'
 
 import {
@@ -8,6 +9,10 @@ import {
   OccupancyChart,
   RevenueChart,
 } from '~/components/dashboard/charts'
+import {
+  ExpiringLeasesWidget,
+  ExpiringLeasesWidgetSkeleton,
+} from '~/components/dashboard/expiring-leases-widget'
 import { Badge } from '~/components/ui/badge'
 import { Button } from '~/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '~/components/ui/card'
@@ -71,44 +76,10 @@ function DashboardPage() {
         />
       </div>
 
-      {/* Urgent Items */}
-      <Card>
-        <CardHeader>
-          <div className='flex items-center justify-between'>
-            <div className='flex items-center gap-2'>
-              <LuCircleAlert className='size-5 text-destructive' />
-              <CardTitle>Urgent Items</CardTitle>
-              <Badge variant='destructive'>3</Badge>
-            </div>
-            <Button variant='ghost' size='sm' asChild>
-              <Link to='/app/maintenance'>View All</Link>
-            </Button>
-          </div>
-        </CardHeader>
-        <CardContent className='space-y-4'>
-          <UrgentItem
-            title='Unit 204 - Water leak inspection overdue'
-            description='Inspection was due 2 days ago'
-            action='Schedule Now'
-            actionLink='/app/maintenance'
-            priority='high'
-          />
-          <UrgentItem
-            title='3 leases expiring in next 30 days'
-            description='Units 101, 305, 402 need renewal'
-            action='Start Renewal Process'
-            actionLink='/app/leases'
-            priority='medium'
-          />
-          <UrgentItem
-            title='Unit 101 - Pet application pending approval'
-            description='Submitted 3 days ago by Sarah Johnson'
-            action='Review Application'
-            actionLink='/app/tenants'
-            priority='low'
-          />
-        </CardContent>
-      </Card>
+      {/* Expiring Leases Widget - Live Data */}
+      <Suspense fallback={<ExpiringLeasesWidgetSkeleton />}>
+        <ExpiringLeasesWidget />
+      </Suspense>
 
       {/* Properties and Quick Stats Grid */}
       <div className='grid gap-6 lg:grid-cols-2'>

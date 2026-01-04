@@ -1,15 +1,15 @@
 import { createFileRoute } from '@tanstack/react-router'
+import { useSuspenseQuery } from '@tanstack/react-query'
 import {
   LuArrowLeft,
   LuCalendar,
   LuDog,
   LuDollarSign,
-  LuPencil,
   LuFileText,
+  LuLoaderCircle,
   LuMail,
   LuMessageSquare,
   LuPhone,
-  LuUser,
   LuWrench,
 } from 'react-icons/lu'
 
@@ -19,70 +19,77 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '~/com
 import { Link } from '~/components/ui/link'
 import { Separator } from '~/components/ui/separator'
 import { Typography } from '~/components/ui/typography'
+import { tenantQueryOptions } from '~/services/tenants.query'
 
 export const Route = createFileRoute('/app/tenants/$tenantId')({
+  loader: ({ context, params }) =>
+    context.queryClient.ensureQueryData(tenantQueryOptions(params.tenantId)),
+  pendingComponent: TenantDetailLoading,
+  errorComponent: TenantDetailError,
   component: TenantDetailPage,
 })
 
-// Mock data for a tenant
-const tenant = {
-  id: '1',
-  firstName: 'Sarah',
-  lastName: 'Johnson',
-  email: 'sarah.j@email.com',
-  phone: '(612) 555-0123',
-  emergencyContact: {
-    name: 'John Johnson',
-    phone: '(612) 555-0999',
-    relationship: 'Father',
-  },
-  unit: '101',
-  property: 'Humboldt Court Community',
-  propertyId: '1',
-  rent: 1250,
-  petRent: 50,
-  securityDeposit: 1250,
-  leaseStart: '2024-01-01',
-  leaseEnd: '2024-12-31',
-  moveInDate: '2024-01-01',
-  status: 'current',
-  paymentStatus: 'current',
-  paymentsOnTime: 12,
-  totalPayments: 12,
-  pets: [
-    {
-      name: 'Max',
-      type: 'Dog',
-      breed: 'Golden Retriever',
-      weight: 72,
-      approvedDate: '2024-01-01',
-      licenseNumber: 'MN-BC-2024-0123',
-    },
-  ],
+function TenantDetailLoading() {
+  return (
+    <div className='flex h-96 w-full items-center justify-center'>
+      <LuLoaderCircle className='size-8 animate-spin text-muted-foreground' />
+    </div>
+  )
 }
 
-const paymentHistory = [
-  { date: '2024-12-01', amount: 1300, type: 'Rent + Pet', status: 'paid' },
-  { date: '2024-11-01', amount: 1300, type: 'Rent + Pet', status: 'paid' },
-  { date: '2024-10-01', amount: 1300, type: 'Rent + Pet', status: 'paid' },
-  { date: '2024-09-01', amount: 1300, type: 'Rent + Pet', status: 'paid' },
-]
-
-const maintenanceRequests = [
-  { id: '2847', description: 'Kitchen faucet dripping', date: '2024-12-28', status: 'scheduled' },
-  { id: '2756', description: 'Thermostat not working', date: '2024-11-15', status: 'completed' },
-]
-
-const documents = [
-  { name: 'Lease Agreement', date: '2024-01-01', type: 'lease' },
-  { name: 'Pet Addendum - Max', date: '2024-01-01', type: 'addendum' },
-  { name: 'Move-in Inspection Report', date: '2024-01-01', type: 'inspection' },
-]
+function TenantDetailError() {
+  return (
+    <div className='w-full max-w-7xl py-6'>
+      <Card>
+        <CardContent className='flex flex-col items-center justify-center py-12'>
+          <Typography.H3>Tenant Not Found</Typography.H3>
+          <Typography.Muted className='mt-2'>
+            The tenant you're looking for doesn't exist or you don't have access.
+          </Typography.Muted>
+          <Button variant='outline' className='mt-4' asChild>
+            <Link to='/app/tenants'>
+              <LuArrowLeft className='mr-2 size-4' />
+              Back to Tenants
+            </Link>
+          </Button>
+        </CardContent>
+      </Card>
+    </div>
+  )
+}
 
 function TenantDetailPage() {
   const { tenantId } = Route.useParams()
-  const totalMonthly = tenant.rent + tenant.petRent
-  const isExpiringSoon = new Date(tenant.leaseEnd) <= new Date(Date.now() + 30 * 24 * 60 * 60 * 1000)
+  const { data: tenant } = useSuspenseQuery(tenantQueryOptions(tenantId))
+
+  // Get active lease (first one, since they're ordered by startDate desc)
+  const activeLease = tenant.leases?.find((l: any) => l.status === 'ACTIVE') || tenant.leases?.[0]
+  const unit = activeLease?.unit
+  const property = unit?.property
+
+  // Calculate lease expiration status
+  const leaseEndDate = activeLease?.endDate ? new Date(activeLease.endDate) : null
+  const now = new Date()
+  const daysUntilExpiration = leaseEndDate
+    ? Math.ceil((leaseEndDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24))
+    : null
+  const isExpiringSoon = daysUntilExpiration !== null && daysUntilExpiration <= 30 && daysUntilExpiration > 0
+
+  // Calculate payment status from recent payments
+  const recentPayments = tenant.payments || []
+  const hasOverduePayment = recentPayments.some((p: any) => p.status === 'OVERDUE' || p.status === 'LATE')
+  const paymentStatus = hasOverduePayment ? 'overdue' : 'current'
+
+  // Financial calculations
+  const monthlyRent = activeLease?.monthlyRent ? Number(activeLease.monthlyRent) : 0
+  const petRent = activeLease?.petRent ? Number(activeLease.petRent) : 0
+  const securityDeposit = activeLease?.securityDeposit ? Number(activeLease.securityDeposit) : 0
+  const totalMonthly = monthlyRent + petRent
+
+  // Count on-time payments
+  const paidPayments = recentPayments.filter((p: any) => p.status === 'PAID' || p.status === 'COMPLETED')
+  const latePayments = recentPayments.filter((p: any) => p.status === 'LATE')
+  const onTimePayments = paidPayments.length - latePayments.length
 
   return (
     <div className='w-full max-w-7xl space-y-6 py-6'>
@@ -105,7 +112,7 @@ function TenantDetailPage() {
             )}
           </div>
           <Typography.Muted>
-            Unit {tenant.unit} • {tenant.property}
+            {unit ? `Unit ${unit.unitNumber}` : 'No unit'} • {property?.name || 'No property'}
           </Typography.Muted>
         </div>
         <div className='flex gap-2'>
@@ -115,12 +122,14 @@ function TenantDetailPage() {
               Message
             </Link>
           </Button>
-          <Button asChild>
-            <Link to='/app/leases/$leaseId' params={{ leaseId: '1' }}>
-              <LuFileText className='mr-2 size-4' />
-              View Lease
-            </Link>
-          </Button>
+          {activeLease && (
+            <Button asChild>
+              <Link to='/app/leases/$leaseId' params={{ leaseId: activeLease.id }}>
+                <LuFileText className='mr-2 size-4' />
+                View Lease
+              </Link>
+            </Button>
+          )}
         </div>
       </div>
 
@@ -132,10 +141,19 @@ function TenantDetailPage() {
           </CardHeader>
           <CardContent>
             <div className='flex items-center gap-2'>
-              <Badge variant='outline' className='border-green-500 bg-green-50 text-green-700'>
-                Current
-              </Badge>
-              <span className='text-sm text-muted-foreground'>All payments on time</span>
+              {paymentStatus === 'current' ? (
+                <>
+                  <Badge variant='outline' className='border-green-500 bg-green-50 text-green-700'>
+                    Current
+                  </Badge>
+                  <span className='text-sm text-muted-foreground'>All payments on time</span>
+                </>
+              ) : (
+                <>
+                  <Badge variant='destructive'>Overdue</Badge>
+                  <span className='text-sm text-muted-foreground'>Has overdue payments</span>
+                </>
+              )}
             </div>
           </CardContent>
         </Card>
@@ -158,12 +176,18 @@ function TenantDetailPage() {
           </CardHeader>
           <CardContent>
             <div className='flex items-center gap-2'>
-              {isExpiringSoon ? (
+              {!activeLease ? (
+                <Badge variant='secondary'>No Active Lease</Badge>
+              ) : isExpiringSoon ? (
                 <Badge variant='secondary' className='bg-orange-100 text-orange-700'>
-                  Expiring in 31 days
+                  Expiring in {daysUntilExpiration} days
                 </Badge>
+              ) : daysUntilExpiration !== null && daysUntilExpiration <= 0 ? (
+                <Badge variant='destructive'>Expired</Badge>
               ) : (
-                <Badge variant='outline'>Active</Badge>
+                <Badge variant='outline' className='border-green-500 bg-green-50 text-green-700'>
+                  Active
+                </Badge>
               )}
             </div>
           </CardContent>
@@ -185,21 +209,25 @@ function TenantDetailPage() {
                 <div className='space-y-2'>
                   <p className='flex items-center gap-2 text-sm'>
                     <LuMail className='size-4 text-muted-foreground' />
-                    {tenant.email}
+                    {tenant.email || 'No email'}
                   </p>
                   <p className='flex items-center gap-2 text-sm'>
                     <LuPhone className='size-4 text-muted-foreground' />
-                    {tenant.phone}
+                    {tenant.phone || 'No phone'}
                   </p>
                 </div>
               </div>
               <div className='space-y-3'>
                 <h4 className='text-sm font-medium'>Emergency Contact</h4>
-                <div className='space-y-1 text-sm'>
-                  <p className='font-medium'>{tenant.emergencyContact.name}</p>
-                  <p className='text-muted-foreground'>{tenant.emergencyContact.relationship}</p>
-                  <p>{tenant.emergencyContact.phone}</p>
-                </div>
+                {tenant.emergencyContactName ? (
+                  <div className='space-y-1 text-sm'>
+                    <p className='font-medium'>{tenant.emergencyContactName}</p>
+                    <p className='text-muted-foreground'>{tenant.emergencyContactRelation || 'Contact'}</p>
+                    <p>{tenant.emergencyContactPhone || 'No phone'}</p>
+                  </div>
+                ) : (
+                  <p className='text-sm text-muted-foreground'>No emergency contact on file</p>
+                )}
               </div>
             </div>
 
@@ -209,42 +237,54 @@ function TenantDetailPage() {
             <div className='grid gap-4 md:grid-cols-2'>
               <div className='space-y-3'>
                 <h4 className='text-sm font-medium'>Lease Details</h4>
-                <div className='space-y-2 text-sm'>
-                  <div className='flex justify-between'>
-                    <span className='text-muted-foreground'>Lease Start</span>
-                    <span>{new Date(tenant.leaseStart).toLocaleDateString()}</span>
+                {activeLease ? (
+                  <div className='space-y-2 text-sm'>
+                    <div className='flex justify-between'>
+                      <span className='text-muted-foreground'>Lease Start</span>
+                      <span>{new Date(activeLease.startDate).toLocaleDateString()}</span>
+                    </div>
+                    <div className='flex justify-between'>
+                      <span className='text-muted-foreground'>Lease End</span>
+                      <span>{new Date(activeLease.endDate).toLocaleDateString()}</span>
+                    </div>
+                    {activeLease.moveInDate && (
+                      <div className='flex justify-between'>
+                        <span className='text-muted-foreground'>Move-in Date</span>
+                        <span>{new Date(activeLease.moveInDate).toLocaleDateString()}</span>
+                      </div>
+                    )}
                   </div>
-                  <div className='flex justify-between'>
-                    <span className='text-muted-foreground'>Lease End</span>
-                    <span>{new Date(tenant.leaseEnd).toLocaleDateString()}</span>
-                  </div>
-                  <div className='flex justify-between'>
-                    <span className='text-muted-foreground'>Move-in Date</span>
-                    <span>{new Date(tenant.moveInDate).toLocaleDateString()}</span>
-                  </div>
-                </div>
+                ) : (
+                  <p className='text-sm text-muted-foreground'>No active lease</p>
+                )}
               </div>
               <div className='space-y-3'>
                 <h4 className='text-sm font-medium'>Financial Summary</h4>
-                <div className='space-y-2 text-sm'>
-                  <div className='flex justify-between'>
-                    <span className='text-muted-foreground'>Monthly Rent</span>
-                    <span>${tenant.rent}</span>
+                {activeLease ? (
+                  <div className='space-y-2 text-sm'>
+                    <div className='flex justify-between'>
+                      <span className='text-muted-foreground'>Monthly Rent</span>
+                      <span>${monthlyRent.toLocaleString()}</span>
+                    </div>
+                    {petRent > 0 && (
+                      <div className='flex justify-between'>
+                        <span className='text-muted-foreground'>Pet Rent</span>
+                        <span>${petRent.toLocaleString()}</span>
+                      </div>
+                    )}
+                    <div className='flex justify-between font-medium'>
+                      <span>Total Monthly</span>
+                      <span>${totalMonthly.toLocaleString()}</span>
+                    </div>
+                    <Separator />
+                    <div className='flex justify-between'>
+                      <span className='text-muted-foreground'>Security Deposit</span>
+                      <span>${securityDeposit.toLocaleString()}</span>
+                    </div>
                   </div>
-                  <div className='flex justify-between'>
-                    <span className='text-muted-foreground'>Pet Rent</span>
-                    <span>${tenant.petRent}</span>
-                  </div>
-                  <div className='flex justify-between font-medium'>
-                    <span>Total Monthly</span>
-                    <span>${totalMonthly}</span>
-                  </div>
-                  <Separator />
-                  <div className='flex justify-between'>
-                    <span className='text-muted-foreground'>Security Deposit</span>
-                    <span>${tenant.securityDeposit}</span>
-                  </div>
-                </div>
+                ) : (
+                  <p className='text-sm text-muted-foreground'>No lease financial data</p>
+                )}
               </div>
             </div>
           </CardContent>
@@ -274,18 +314,20 @@ function TenantDetailPage() {
                 Create Work Order
               </Link>
             </Button>
-            <Button variant='outline' className='justify-start' asChild>
-              <Link to='/app/leases/new'>
-                <LuCalendar className='mr-2 size-4' />
-                Renew Lease
-              </Link>
-            </Button>
+            {activeLease && (
+              <Button variant='outline' className='justify-start' asChild>
+                <Link to='/app/leases/new'>
+                  <LuCalendar className='mr-2 size-4' />
+                  Renew Lease
+                </Link>
+              </Button>
+            )}
           </CardContent>
         </Card>
       </div>
 
       {/* Pet Information */}
-      {tenant.pets.length > 0 && (
+      {tenant.pets && tenant.pets.length > 0 && (
         <Card>
           <CardHeader>
             <CardTitle className='flex items-center gap-2'>
@@ -295,27 +337,40 @@ function TenantDetailPage() {
           </CardHeader>
           <CardContent>
             <div className='grid gap-4 md:grid-cols-2'>
-              {tenant.pets.map(pet => (
-                <div key={pet.name} className='rounded-lg border p-4'>
+              {tenant.pets.map((pet: any) => (
+                <div key={pet.id} className='rounded-lg border p-4'>
                   <div className='flex items-start justify-between'>
                     <div>
                       <h4 className='font-medium'>{pet.name}</h4>
                       <p className='text-sm text-muted-foreground'>
-                        {pet.breed} • {pet.weight} lbs
+                        {pet.breed || pet.species} {pet.weight ? `• ${pet.weight} lbs` : ''}
                       </p>
                     </div>
-                    <Badge variant='outline' className='border-green-500 text-green-700'>
-                      Approved
+                    <Badge
+                      variant='outline'
+                      className={
+                        pet.status === 'APPROVED'
+                          ? 'border-green-500 text-green-700'
+                          : pet.status === 'PENDING'
+                          ? 'border-yellow-500 text-yellow-700'
+                          : 'border-gray-500 text-gray-700'
+                      }
+                    >
+                      {pet.status}
                     </Badge>
                   </div>
                   <div className='mt-3 space-y-1 text-sm'>
-                    <p>
-                      <span className='text-muted-foreground'>License:</span> {pet.licenseNumber}
-                    </p>
-                    <p>
-                      <span className='text-muted-foreground'>Approved:</span>{' '}
-                      {new Date(pet.approvedDate).toLocaleDateString()}
-                    </p>
+                    {pet.licenseNumber && (
+                      <p>
+                        <span className='text-muted-foreground'>License:</span> {pet.licenseNumber}
+                      </p>
+                    )}
+                    {pet.approvalDate && (
+                      <p>
+                        <span className='text-muted-foreground'>Approved:</span>{' '}
+                        {new Date(pet.approvalDate).toLocaleDateString()}
+                      </p>
+                    )}
                   </div>
                 </div>
               ))}
@@ -333,7 +388,7 @@ function TenantDetailPage() {
               <div>
                 <CardTitle>Payment History</CardTitle>
                 <CardDescription>
-                  {tenant.paymentsOnTime}/{tenant.totalPayments} payments on time
+                  {onTimePayments}/{paidPayments.length} payments on time
                 </CardDescription>
               </div>
               <Button variant='ghost' size='sm' asChild>
@@ -342,21 +397,37 @@ function TenantDetailPage() {
             </div>
           </CardHeader>
           <CardContent>
-            <div className='space-y-3'>
-              {paymentHistory.map((payment, i) => (
-                <div key={i} className='flex items-center justify-between'>
-                  <div>
-                    <p className='text-sm font-medium'>${payment.amount}</p>
-                    <p className='text-xs text-muted-foreground'>
-                      {payment.type} • {new Date(payment.date).toLocaleDateString()}
-                    </p>
+            {recentPayments.length > 0 ? (
+              <div className='space-y-3'>
+                {recentPayments.slice(0, 5).map((payment: any) => (
+                  <div key={payment.id} className='flex items-center justify-between'>
+                    <div>
+                      <p className='text-sm font-medium'>
+                        ${Number(payment.amount).toLocaleString()}
+                      </p>
+                      <p className='text-xs text-muted-foreground'>
+                        {payment.paymentType || 'Payment'} •{' '}
+                        {new Date(payment.paymentDate).toLocaleDateString()}
+                      </p>
+                    </div>
+                    <Badge
+                      variant='outline'
+                      className={
+                        payment.status === 'PAID' || payment.status === 'COMPLETED'
+                          ? 'border-green-500 text-green-700'
+                          : payment.status === 'PENDING'
+                          ? 'border-yellow-500 text-yellow-700'
+                          : 'border-red-500 text-red-700'
+                      }
+                    >
+                      {payment.status}
+                    </Badge>
                   </div>
-                  <Badge variant='outline' className='border-green-500 text-green-700'>
-                    Paid
-                  </Badge>
-                </div>
-              ))}
-            </div>
+                ))}
+              </div>
+            ) : (
+              <p className='text-sm text-muted-foreground'>No payment history</p>
+            )}
           </CardContent>
         </Card>
 
@@ -371,19 +442,31 @@ function TenantDetailPage() {
             </div>
           </CardHeader>
           <CardContent>
-            <div className='space-y-3'>
-              {maintenanceRequests.map(request => (
-                <div key={request.id} className='flex items-center justify-between'>
-                  <div>
-                    <p className='text-sm font-medium'>#{request.id}</p>
-                    <p className='text-xs text-muted-foreground'>{request.description}</p>
+            {tenant.maintenanceRequests && tenant.maintenanceRequests.length > 0 ? (
+              <div className='space-y-3'>
+                {tenant.maintenanceRequests.map((request: any) => (
+                  <div key={request.id} className='flex items-center justify-between'>
+                    <div>
+                      <p className='text-sm font-medium'>#{request.id.slice(0, 8)}</p>
+                      <p className='text-xs text-muted-foreground'>
+                        {request.title || request.description?.slice(0, 50)}
+                      </p>
+                    </div>
+                    <Badge
+                      variant={
+                        request.status === 'COMPLETED' || request.status === 'CLOSED'
+                          ? 'outline'
+                          : 'secondary'
+                      }
+                    >
+                      {request.status}
+                    </Badge>
                   </div>
-                  <Badge variant={request.status === 'completed' ? 'outline' : 'secondary'}>
-                    {request.status === 'completed' ? 'Completed' : 'Scheduled'}
-                  </Badge>
-                </div>
-              ))}
-            </div>
+                ))}
+              </div>
+            ) : (
+              <p className='text-sm text-muted-foreground'>No maintenance requests</p>
+            )}
           </CardContent>
         </Card>
       </div>
@@ -399,17 +482,23 @@ function TenantDetailPage() {
           </div>
         </CardHeader>
         <CardContent>
-          <div className='grid gap-3 md:grid-cols-3'>
-            {documents.map((doc, i) => (
-              <div key={i} className='flex items-center gap-3 rounded-lg border p-3'>
-                <LuFileText className='size-8 text-muted-foreground' />
-                <div>
-                  <p className='text-sm font-medium'>{doc.name}</p>
-                  <p className='text-xs text-muted-foreground'>{new Date(doc.date).toLocaleDateString()}</p>
+          {tenant.documents && tenant.documents.length > 0 ? (
+            <div className='grid gap-3 md:grid-cols-3'>
+              {tenant.documents.map((doc: any) => (
+                <div key={doc.id} className='flex items-center gap-3 rounded-lg border p-3'>
+                  <LuFileText className='size-8 text-muted-foreground' />
+                  <div>
+                    <p className='text-sm font-medium'>{doc.name || doc.fileName}</p>
+                    <p className='text-xs text-muted-foreground'>
+                      {new Date(doc.createdAt).toLocaleDateString()}
+                    </p>
+                  </div>
                 </div>
-              </div>
-            ))}
-          </div>
+              ))}
+            </div>
+          ) : (
+            <p className='text-sm text-muted-foreground'>No documents on file</p>
+          )}
         </CardContent>
       </Card>
     </div>
