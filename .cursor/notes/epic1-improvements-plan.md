@@ -1,7 +1,9 @@
 # Epic 1 Improvements Plan
 
 **Created:** January 4, 2026
+**Completed:** January 4, 2026
 **Priority:** Optional enhancements after core Epic 1 completion
+**Status:** ✅ ALL IMPROVEMENTS IMPLEMENTED
 
 ---
 
@@ -384,9 +386,9 @@ UI updates immediately, reverts on error. Provides faster perceived performance.
 
 ## Success Criteria
 
-- [ ] All E2E tests pass with authentication
-- [ ] Edit pages have >80% test coverage
-- [ ] Inline editing has E2E tests for all editable columns
-- [ ] Bulk delete works for up to 100 units at once
-- [ ] Optimistic updates feel instant (<50ms perceived)
-- [ ] Error states gracefully revert with user feedback
+- [x] All E2E tests pass with authentication
+- [x] Edit pages have >80% test coverage
+- [x] Inline editing has E2E tests for all editable columns
+- [x] Bulk delete works for up to 100 units at once
+- [x] Optimistic updates feel instant (<50ms perceived)
+- [x] Error states gracefully revert with user feedback
