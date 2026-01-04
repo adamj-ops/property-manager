@@ -8,7 +8,17 @@
 
 ## Executive Summary
 
-Epic 1 (Core Property & Unit Management) is **~60% complete**. The backend APIs are fully implemented, but the frontend UI components currently use **hardcoded mock data** instead of the real APIs. The primary work remaining is to wire up the frontend to use the actual API endpoints with proper state management.
+Epic 1 (Core Property & Unit Management) is **~85% complete** (updated January 4, 2026). Most frontend components are now wired to real APIs. The remaining work is EPM-16 (Edit Property/Unit functionality).
+
+### Completed Issues (5/6):
+- **EPM-17**: Property creation form wired to API
+- **EPM-14**: Property list connected to real API with delete
+- **EPM-15**: Unit creation form implemented
+- **EPM-19**: Units list with search/filter functionality
+- **EPM-18**: Property detail page with real data
+
+### Remaining:
+- **EPM-16**: Edit property/unit pages (5 story points)
 
 ---
 
@@ -31,17 +41,17 @@ Epic 1 (Core Property & Unit Management) is **~60% complete**. The backend APIs 
 | `updateUnit` | Implemented | `src/services/units.api.ts:165` |
 | `deleteUnit` | Implemented | `src/services/units.api.ts:189` |
 
-### Frontend (UI) - NEEDS WORK
+### Frontend (UI) - MOSTLY COMPLETE
 
-| Route | Current State | Gap |
-|-------|---------------|-----|
-| `/app/properties` (list) | Uses mock data array | Wire to `getProperties` API |
-| `/app/properties/new` | Form exists, not wired | Add form submission with `createProperty` |
-| `/app/properties/$propertyId` | Uses mock data | Wire to `getProperty` API |
-| `/app/properties/$propertyId/units` | Uses mock data | Wire to `getUnits` API |
-| `/app/properties/$propertyId/edit` | Not implemented | Create edit page with `updateProperty` |
-| `/app/properties/$propertyId/units/new` | Not implemented | Create add unit form |
-| Unit detail/edit pages | Not implemented | Create unit management UI |
+| Route | Status | Notes |
+|-------|--------|-------|
+| `/app/properties` (list) | DONE | Connected to `getProperties` API with delete |
+| `/app/properties/new` | DONE | Form wired to `createProperty` API |
+| `/app/properties/$propertyId` | DONE | Connected to `getProperty` API |
+| `/app/properties/$propertyId/units` | DONE | Connected to `getUnits` API with filters |
+| `/app/properties/$propertyId/units/new` | DONE | Unit creation form implemented |
+| `/app/properties/$propertyId/edit` | PENDING | Create edit page with `updateProperty` |
+| `/app/properties/$propertyId/units/$unitId/edit` | PENDING | Create unit edit page |
 
 ### Query Hooks - PARTIAL
 
