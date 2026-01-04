@@ -52,6 +52,7 @@ import { Route as AppTenantsNewImport } from './routes/app.tenants.new'
 import { Route as AppTenantsTenantIdImport } from './routes/app.tenants.$tenantId'
 import { Route as AppPropertiesNewImport } from './routes/app.properties.new'
 import { Route as AppPropertiesPropertyIdImport } from './routes/app.properties.$propertyId'
+import { Route as AppMoveOutLeaseIdImport } from './routes/app.move-out.$leaseId'
 import { Route as AppMaintenanceNewImport } from './routes/app.maintenance.new'
 import { Route as AppMaintenanceWorkOrderIdImport } from './routes/app.maintenance.$workOrderId'
 import { Route as AppLeasesTemplatesImport } from './routes/app.leases.templates'
@@ -313,6 +314,12 @@ const AppPropertiesPropertyIdRoute = AppPropertiesPropertyIdImport.update({
   id: '/$propertyId',
   path: '/$propertyId',
   getParentRoute: () => AppPropertiesRoute,
+} as any)
+
+const AppMoveOutLeaseIdRoute = AppMoveOutLeaseIdImport.update({
+  id: '/move-out/$leaseId',
+  path: '/move-out/$leaseId',
+  getParentRoute: () => AppRoute,
 } as any)
 
 const AppMaintenanceNewRoute = AppMaintenanceNewImport.update({
@@ -655,6 +662,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppMaintenanceNewImport
       parentRoute: typeof AppMaintenanceImport
     }
+    '/app/move-out/$leaseId': {
+      id: '/app/move-out/$leaseId'
+      path: '/move-out/$leaseId'
+      fullPath: '/app/move-out/$leaseId'
+      preLoaderRoute: typeof AppMoveOutLeaseIdImport
+      parentRoute: typeof AppImport
+    }
     '/app/properties/$propertyId': {
       id: '/app/properties/$propertyId'
       path: '/$propertyId'
@@ -942,6 +956,7 @@ interface AppRouteChildren {
   AppTenantsRoute: typeof AppTenantsRouteWithChildren
   AppInspectionsInspectionIdRoute: typeof AppInspectionsInspectionIdRoute
   AppInspectionsNewRoute: typeof AppInspectionsNewRoute
+  AppMoveOutLeaseIdRoute: typeof AppMoveOutLeaseIdRoute
   AppInspectionsIndexRoute: typeof AppInspectionsIndexRoute
 }
 
@@ -957,6 +972,7 @@ const AppRouteChildren: AppRouteChildren = {
   AppTenantsRoute: AppTenantsRouteWithChildren,
   AppInspectionsInspectionIdRoute: AppInspectionsInspectionIdRoute,
   AppInspectionsNewRoute: AppInspectionsNewRoute,
+  AppMoveOutLeaseIdRoute: AppMoveOutLeaseIdRoute,
   AppInspectionsIndexRoute: AppInspectionsIndexRoute,
 }
 
@@ -1069,6 +1085,7 @@ export interface FileRoutesByFullPath {
   '/app/leases/templates': typeof AppLeasesTemplatesRoute
   '/app/maintenance/$workOrderId': typeof AppMaintenanceWorkOrderIdRoute
   '/app/maintenance/new': typeof AppMaintenanceNewRoute
+  '/app/move-out/$leaseId': typeof AppMoveOutLeaseIdRoute
   '/app/properties/$propertyId': typeof AppPropertiesPropertyIdRouteWithChildren
   '/app/properties/new': typeof AppPropertiesNewRoute
   '/app/tenants/$tenantId': typeof AppTenantsTenantIdRoute
@@ -1122,6 +1139,7 @@ export interface FileRoutesByTo {
   '/app/leases/templates': typeof AppLeasesTemplatesRoute
   '/app/maintenance/$workOrderId': typeof AppMaintenanceWorkOrderIdRoute
   '/app/maintenance/new': typeof AppMaintenanceNewRoute
+  '/app/move-out/$leaseId': typeof AppMoveOutLeaseIdRoute
   '/app/properties/new': typeof AppPropertiesNewRoute
   '/app/tenants/$tenantId': typeof AppTenantsTenantIdRoute
   '/app/tenants/new': typeof AppTenantsNewRoute
@@ -1180,6 +1198,7 @@ export interface FileRoutesById {
   '/app/leases/templates': typeof AppLeasesTemplatesRoute
   '/app/maintenance/$workOrderId': typeof AppMaintenanceWorkOrderIdRoute
   '/app/maintenance/new': typeof AppMaintenanceNewRoute
+  '/app/move-out/$leaseId': typeof AppMoveOutLeaseIdRoute
   '/app/properties/$propertyId': typeof AppPropertiesPropertyIdRouteWithChildren
   '/app/properties/new': typeof AppPropertiesNewRoute
   '/app/tenants/$tenantId': typeof AppTenantsTenantIdRoute
@@ -1240,6 +1259,7 @@ export interface FileRouteTypes {
     | '/app/leases/templates'
     | '/app/maintenance/$workOrderId'
     | '/app/maintenance/new'
+    | '/app/move-out/$leaseId'
     | '/app/properties/$propertyId'
     | '/app/properties/new'
     | '/app/tenants/$tenantId'
@@ -1292,6 +1312,7 @@ export interface FileRouteTypes {
     | '/app/leases/templates'
     | '/app/maintenance/$workOrderId'
     | '/app/maintenance/new'
+    | '/app/move-out/$leaseId'
     | '/app/properties/new'
     | '/app/tenants/$tenantId'
     | '/app/tenants/new'
@@ -1348,6 +1369,7 @@ export interface FileRouteTypes {
     | '/app/leases/templates'
     | '/app/maintenance/$workOrderId'
     | '/app/maintenance/new'
+    | '/app/move-out/$leaseId'
     | '/app/properties/$propertyId'
     | '/app/properties/new'
     | '/app/tenants/$tenantId'
@@ -1434,6 +1456,7 @@ export const routeTree = rootRoute
         "/app/tenants",
         "/app/inspections/$inspectionId",
         "/app/inspections/new",
+        "/app/move-out/$leaseId",
         "/app/inspections/"
       ]
     },
@@ -1609,6 +1632,10 @@ export const routeTree = rootRoute
     "/app/maintenance/new": {
       "filePath": "app.maintenance.new.tsx",
       "parent": "/app/maintenance"
+    },
+    "/app/move-out/$leaseId": {
+      "filePath": "app.move-out.$leaseId.tsx",
+      "parent": "/app"
     },
     "/app/properties/$propertyId": {
       "filePath": "app.properties.$propertyId.tsx",
