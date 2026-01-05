@@ -65,6 +65,7 @@ import { EmergencyAlertBanner } from '~/components/maintenance/emergency-alert-b
 import { WorkOrderCalendar } from '~/components/maintenance/work-order-calendar'
 import { BulkActionsToolbar } from '~/components/maintenance/bulk-actions-toolbar'
 import { TemplateSelector } from '~/components/maintenance/template-selector'
+import { ExportDialog } from '~/components/maintenance/export-dialog'
 import type { MaintenanceFilters, MaintenanceCategory, MaintenancePriority } from '~/services/maintenance.schema'
 
 export const Route = createFileRoute('/app/maintenance/')({
@@ -892,10 +893,13 @@ function MaintenanceListPage() {
           <Typography.H2>Maintenance</Typography.H2>
           <Typography.Muted>Manage work orders and maintenance requests</Typography.Muted>
         </div>
-        <Button onClick={() => setDrawerOpen(true)}>
-          <LuPlus className='mr-2 size-4' />
-          New Work Order
-        </Button>
+        <div className='flex items-center gap-2'>
+          <ExportDialog />
+          <Button onClick={() => setDrawerOpen(true)}>
+            <LuPlus className='mr-2 size-4' />
+            New Work Order
+          </Button>
+        </div>
       </div>
 
       {/* Drawer for New Work Order */}

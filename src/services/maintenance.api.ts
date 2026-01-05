@@ -918,3 +918,364 @@ export const incrementTemplateUsage = createServerFn({ method: 'POST' })
 
     return { success: true }
   })
+
+// =============================================================================
+// STAFF/TEAM MEMBERS
+// =============================================================================
+
+// Get team members for staff assignment
+export const getTeamMembers = createServerFn({ method: 'GET' })
+  .middleware([authedMiddleware])
+  .handler(async ({ context }) => {
+    // Get the user's team(s) - they could be an owner or member
+    const teamMemberships = await prisma.teamMember.findMany({
+      where: {
+        userId: context.auth.user.id,
+      },
+      select: {
+        teamId: true,
+        role: true,
+      },
+    })
+
+    const ownedTeams = await prisma.team.findMany({
+      where: {
+        ownerId: context.auth.user.id,
+      },
+      select: {
+        id: true,
+      },
+    })
+
+    const teamIds = [
+      ...teamMemberships.map((m) => m.teamId),
+      ...ownedTeams.map((t) => t.id),
+    ]
+
+    if (teamIds.length === 0) {
+      // No team - return just the current user as a staff option
+      return {
+        staff: [
+          {
+            id: context.auth.user.id,
+            name: context.auth.user.name,
+            email: context.auth.user.email,
+            role: 'OWNER' as const,
+          },
+        ],
+      }
+    }
+
+    // Get all team members from these teams
+    const members = await prisma.teamMember.findMany({
+      where: {
+        teamId: { in: teamIds },
+        acceptedAt: { not: null }, // Only accepted members
+      },
+      select: {
+        userId: true,
+        role: true,
+        user: {
+          select: {
+            id: true,
+            name: true,
+            email: true,
+          },
+        },
+      },
+    })
+
+    // Also include team owners
+    const owners = await prisma.team.findMany({
+      where: {
+        id: { in: teamIds },
+      },
+      select: {
+        owner: {
+          select: {
+            id: true,
+            name: true,
+            email: true,
+          },
+        },
+      },
+    })
+
+    // Combine and deduplicate
+    const staffMap = new Map<string, { id: string; name: string; email: string; role: string }>()
+
+    // Add owners first (highest priority)
+    owners.forEach((t) => {
+      if (!staffMap.has(t.owner.id)) {
+        staffMap.set(t.owner.id, { ...t.owner, role: 'OWNER' })
+      }
+    })
+
+    // Add members
+    members.forEach((m) => {
+      if (!staffMap.has(m.user.id)) {
+        staffMap.set(m.user.id, { ...m.user, role: m.role })
+      }
+    })
+
+    return {
+      staff: Array.from(staffMap.values()).sort((a, b) => a.name.localeCompare(b.name)),
+    }
+  })
+
+// =============================================================================
+// EXPORT
+// =============================================================================
+
+import { exportFiltersSchema } from '~/services/maintenance.schema'
+
+// Export work orders as CSV
+export const exportWorkOrders = createServerFn({ method: 'GET' })
+  .middleware([authedMiddleware])
+  .validator(zodValidator(exportFiltersSchema))
+  .handler(async ({ context, data }) => {
+    const {
+      propertyId,
+      status,
+      priority,
+      category,
+      dateFrom,
+      dateTo,
+      format,
+    } = data
+
+    const where = {
+      unit: {
+        property: { managerId: context.auth.user.id },
+        ...(propertyId && { propertyId }),
+      },
+      ...(status && { status }),
+      ...(priority && { priority }),
+      ...(category && { category }),
+      ...(dateFrom || dateTo
+        ? {
+            createdAt: {
+              ...(dateFrom && { gte: new Date(dateFrom) }),
+              ...(dateTo && { lte: new Date(dateTo) }),
+            },
+          }
+        : {}),
+    }
+
+    const requests = await prisma.maintenanceRequest.findMany({
+      where,
+      include: {
+        unit: {
+          include: {
+            property: { select: { name: true, addressLine1: true } },
+          },
+        },
+        tenant: {
+          select: { firstName: true, lastName: true, email: true, phone: true },
+        },
+        vendor: {
+          select: { companyName: true, phone: true },
+        },
+        assignedTo: {
+          select: { name: true, email: true },
+        },
+      },
+      orderBy: { createdAt: 'desc' },
+    })
+
+    // Format data for export
+    const exportData = requests.map((req) => ({
+      'Request Number': req.requestNumber,
+      Title: req.title,
+      Description: req.description,
+      Status: req.status,
+      Priority: req.priority,
+      Category: req.category,
+      Property: req.unit.property.name,
+      'Property Address': req.unit.property.addressLine1,
+      'Unit Number': req.unit.unitNumber,
+      'Tenant Name': req.tenant
+        ? `${req.tenant.firstName} ${req.tenant.lastName}`
+        : '',
+      'Tenant Email': req.tenant?.email || '',
+      'Tenant Phone': req.tenant?.phone || '',
+      'Vendor': req.vendor?.companyName || '',
+      'Vendor Phone': req.vendor?.phone || '',
+      'Assigned To': req.assignedTo?.name || '',
+      'Estimated Cost': req.estimatedCost ? Number(req.estimatedCost) : '',
+      'Actual Cost': req.actualCost ? Number(req.actualCost) : '',
+      'Created Date': req.createdAt.toISOString(),
+      'Scheduled Date': req.scheduledDate?.toISOString() || '',
+      'Completed Date': req.completedAt?.toISOString() || '',
+    }))
+
+    if (format === 'json') {
+      return { data: exportData, format: 'json' as const }
+    }
+
+    // Convert to CSV
+    if (exportData.length === 0) {
+      return { data: '', format: 'csv' as const }
+    }
+
+    const headers = Object.keys(exportData[0])
+    const csvRows = [
+      headers.join(','),
+      ...exportData.map((row) =>
+        headers
+          .map((header) => {
+            const value = row[header as keyof typeof row]
+            // Escape values with commas or quotes
+            if (typeof value === 'string' && (value.includes(',') || value.includes('"'))) {
+              return `"${value.replace(/"/g, '""')}"`
+            }
+            return value
+          })
+          .join(',')
+      ),
+    ]
+
+    return { data: csvRows.join('\n'), format: 'csv' as const }
+  })
+
+// =============================================================================
+// COMMENT ATTACHMENTS
+// =============================================================================
+
+import { commentAttachmentUploadSchema, commentIdSchema } from '~/services/maintenance.schema'
+
+const ALLOWED_ATTACHMENT_TYPES = [
+  'image/jpeg',
+  'image/png',
+  'image/gif',
+  'image/webp',
+  'application/pdf',
+  'application/msword',
+  'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+  'text/plain',
+]
+const MAX_ATTACHMENT_SIZE = 25 * 1024 * 1024 // 25MB
+
+// Create comment attachment upload URL
+export const createCommentAttachmentUploadUrl = createServerFn({ method: 'POST' })
+  .middleware([authedMiddleware])
+  .validator(zodValidator(commentAttachmentUploadSchema))
+  .handler(async ({ context, data }) => {
+    // Verify the maintenance request exists and belongs to user
+    const request = await prisma.maintenanceRequest.findFirst({
+      where: {
+        id: data.requestId,
+        unit: { property: { managerId: context.auth.user.id } },
+      },
+    })
+
+    if (!request) {
+      throw new Error('Maintenance request not found')
+    }
+
+    // Validate file
+    const validation = validateFile(
+      {
+        size: data.fileSize,
+        type: data.mimeType,
+        name: data.fileName,
+      },
+      ALLOWED_ATTACHMENT_TYPES
+    )
+
+    if (!validation.valid) {
+      throw new Error(validation.error)
+    }
+
+    if (data.fileSize > MAX_ATTACHMENT_SIZE) {
+      throw new Error(`File size exceeds maximum of ${MAX_ATTACHMENT_SIZE / 1024 / 1024}MB`)
+    }
+
+    // Generate signed upload URL
+    const uploadResult = await createUploadUrl(
+      context.auth.user.id,
+      data.fileName,
+      data.mimeType,
+      {
+        propertyId: request.unitId,
+        documentType: 'maintenance/comment-attachments',
+      }
+    )
+
+    return {
+      signedUrl: uploadResult.signedUrl,
+      token: uploadResult.token,
+      path: uploadResult.path,
+    }
+  })
+
+// Update addMaintenanceComment to support attachments
+export const addMaintenanceCommentWithAttachments = createServerFn({ method: 'POST' })
+  .middleware([authedMiddleware])
+  .validator(zodValidator(addCommentSchema))
+  .handler(async ({ context, data }) => {
+    const request = await prisma.maintenanceRequest.findFirst({
+      where: {
+        id: data.requestId,
+        unit: { property: { managerId: context.auth.user.id } },
+      },
+    })
+
+    if (!request) {
+      throw new Error('Maintenance request not found')
+    }
+
+    const comment = await prisma.maintenanceComment.create({
+      data: {
+        requestId: data.requestId,
+        content: data.content,
+        isInternal: data.isInternal ?? false,
+        authorName: context.auth.user.name,
+        authorType: 'staff',
+        attachments: data.attachments || [],
+      },
+    })
+
+    return comment
+  })
+
+// Get signed URLs for comment attachments
+export const getCommentAttachmentUrls = createServerFn({ method: 'GET' })
+  .middleware([authedMiddleware])
+  .validator(zodValidator(commentIdSchema))
+  .handler(async ({ context, data }) => {
+    const comment = await prisma.maintenanceComment.findFirst({
+      where: {
+        id: data.commentId,
+        request: {
+          unit: { property: { managerId: context.auth.user.id } },
+        },
+      },
+      select: {
+        attachments: true,
+      },
+    })
+
+    if (!comment) {
+      throw new Error('Comment not found')
+    }
+
+    // Generate signed URLs for all attachments
+    const attachmentUrls = await Promise.all(
+      (comment.attachments || []).map(async (path) => {
+        try {
+          if (path.startsWith('http')) {
+            return { path, url: path }
+          }
+          const url = await createDownloadUrl(path)
+          return { path, url }
+        } catch {
+          return null
+        }
+      })
+    )
+
+    return {
+      attachments: attachmentUrls.filter(Boolean) as { path: string; url: string }[],
+    }
+  })

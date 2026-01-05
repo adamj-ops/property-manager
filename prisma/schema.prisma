@@ -723,6 +723,9 @@ model MaintenanceComment {
   authorType String // "staff", "tenant", "vendor"
   createdAt  DateTime @default(now())
 
+  // Attachments (file paths stored in Supabase Storage)
+  attachments String[] @default([])
+
   requestId String             @db.Uuid
   request   MaintenanceRequest @relation(fields: [requestId], references: [id], onDelete: Cascade)
 

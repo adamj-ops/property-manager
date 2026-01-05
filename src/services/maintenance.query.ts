@@ -29,6 +29,14 @@ import {
   updateMaintenanceTemplate,
   deleteMaintenanceTemplate,
   incrementTemplateUsage,
+  // Team/Staff
+  getTeamMembers,
+  // Export
+  exportWorkOrders,
+  // Comment attachments
+  createCommentAttachmentUploadUrl,
+  addMaintenanceCommentWithAttachments,
+  getCommentAttachmentUrls,
 } from '~/services/maintenance.api'
 import type {
   CreateMaintenanceInput,
@@ -41,6 +49,8 @@ import type {
   CreateTemplateInput,
   UpdateTemplateInput,
   TemplateFilters,
+  ExportFilters,
+  CommentAttachmentUpload,
 } from '~/services/maintenance.schema'
 
 // Query keys
@@ -351,4 +361,101 @@ export const useIncrementTemplateUsage = () => {
       queryClient.invalidateQueries({ queryKey: maintenanceKeys.templates() })
     },
   })
+}
+
+// =============================================================================
+// TEAM/STAFF MEMBERS
+// =============================================================================
+
+export const teamMembersKeys = {
+  all: ['team-members'] as const,
+  list: () => [...teamMembersKeys.all, 'list'] as const,
+}
+
+export const teamMembersQueryOptions = () =>
+  queryOptions({
+    queryKey: teamMembersKeys.list(),
+    queryFn: () => getTeamMembers(),
+  })
+
+export const useTeamMembersQuery = () => {
+  return useSuspenseQuery(teamMembersQueryOptions())
+}
+
+// =============================================================================
+// EXPORT
+// =============================================================================
+
+export const useExportWorkOrders = () => {
+  return useMutation({
+    mutationFn: (filters: ExportFilters) => exportWorkOrders({ data: filters }),
+  })
+}
+
+// =============================================================================
+// COMMENT ATTACHMENTS
+// =============================================================================
+
+export const useCreateCommentAttachmentUploadUrl = () => {
+  return useMutation({
+    mutationFn: (data: CommentAttachmentUpload) => createCommentAttachmentUploadUrl({ data }),
+  })
+}
+
+export const useAddMaintenanceCommentWithAttachments = () => {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: (data: { requestId: string; content: string; isInternal?: boolean; attachments?: string[] }) =>
+      addMaintenanceCommentWithAttachments({ data }),
+    onSuccess: (_, variables) => {
+      queryClient.invalidateQueries({ queryKey: maintenanceKeys.detail(variables.requestId) })
+    },
+  })
+}
+
+export const useGetCommentAttachmentUrls = () => {
+  return useMutation({
+    mutationFn: (commentId: string) => getCommentAttachmentUrls({ data: { commentId } }),
+  })
+}
+
+// Combined hook for uploading comment attachments
+export const useCommentAttachmentUpload = () => {
+  const createUploadUrl = useCreateCommentAttachmentUploadUrl()
+
+  const uploadAttachment = async (
+    file: File,
+    requestId: string
+  ): Promise<string> => {
+    // Step 1: Get signed upload URL
+    const { signedUrl, path } = await createUploadUrl.mutateAsync({
+      requestId,
+      fileName: file.name,
+      fileSize: file.size,
+      mimeType: file.type,
+    })
+
+    // Step 2: Upload file directly to Supabase Storage
+    const uploadResponse = await fetch(signedUrl, {
+      method: 'PUT',
+      headers: {
+        'Content-Type': file.type,
+      },
+      body: file,
+    })
+
+    if (!uploadResponse.ok) {
+      throw new Error('Failed to upload attachment to storage')
+    }
+
+    // Return the storage path
+    return path
+  }
+
+  return {
+    uploadAttachment,
+    isLoading: createUploadUrl.isPending,
+    error: createUploadUrl.error,
+  }
 }

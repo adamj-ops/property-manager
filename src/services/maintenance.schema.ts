@@ -98,6 +98,7 @@ export const addCommentSchema = z.object({
   requestId: z.string().uuid(),
   content: z.string().min(1),
   isInternal: z.boolean().default(false),
+  attachments: z.array(z.string()).optional(),
 })
 
 export type MaintenanceStatus = z.infer<typeof maintenanceStatusEnum>
@@ -180,3 +181,36 @@ export const templateFiltersSchema = z.object({
 export type CreateTemplateInput = z.infer<typeof createTemplateSchema>
 export type UpdateTemplateInput = z.infer<typeof updateTemplateSchema>
 export type TemplateFilters = z.infer<typeof templateFiltersSchema>
+
+// =============================================================================
+// EXPORT
+// =============================================================================
+
+export const exportFiltersSchema = z.object({
+  propertyId: z.string().uuid().optional(),
+  status: maintenanceStatusEnum.optional(),
+  priority: maintenancePriorityEnum.optional(),
+  category: maintenanceCategoryEnum.optional(),
+  dateFrom: z.string().optional(),
+  dateTo: z.string().optional(),
+  format: z.enum(['csv', 'json']).default('csv'),
+})
+
+export type ExportFilters = z.infer<typeof exportFiltersSchema>
+
+// =============================================================================
+// COMMENT ATTACHMENTS
+// =============================================================================
+
+export const commentAttachmentUploadSchema = z.object({
+  requestId: z.string().uuid(),
+  fileName: z.string().min(1),
+  fileSize: z.number().int().positive(),
+  mimeType: z.string().min(1),
+})
+
+export const commentIdSchema = z.object({
+  commentId: z.string().uuid(),
+})
+
+export type CommentAttachmentUpload = z.infer<typeof commentAttachmentUploadSchema>

@@ -10,11 +10,15 @@ import {
   LuDollarSign,
   LuLoaderCircle,
   LuMessageSquare,
+  LuPaperclip,
   LuPhone,
   LuSend,
   LuTriangleAlert,
   LuUser,
+  LuUserCog,
   LuWrench,
+  LuX,
+  LuFile,
 } from 'react-icons/lu'
 
 import { Badge } from '~/components/ui/badge'
@@ -35,9 +39,12 @@ import { MaintenancePhotoUpload } from '~/components/maintenance/photo-upload'
 import {
   useMaintenanceRequestQuery,
   useUpdateMaintenanceRequest,
-  useAddMaintenanceComment,
+  useAddMaintenanceCommentWithAttachments,
   maintenanceRequestQueryOptions,
   useAcknowledgeEscalation,
+  useTeamMembersQuery,
+  teamMembersQueryOptions,
+  useCommentAttachmentUpload,
 } from '~/services/maintenance.query'
 import { useVendorsQuery, vendorsQueryOptions } from '~/services/vendors.query'
 import type { MaintenanceStatus } from '~/services/maintenance.schema'
@@ -47,6 +54,7 @@ export const Route = createFileRoute('/app/maintenance/$workOrderId')({
     await Promise.all([
       context.queryClient.ensureQueryData(maintenanceRequestQueryOptions(params.workOrderId)),
       context.queryClient.ensureQueryData(vendorsQueryOptions({ status: 'ACTIVE' })),
+      context.queryClient.ensureQueryData(teamMembersQueryOptions()),
     ])
   },
   component: WorkOrderDetailPage,
@@ -118,9 +126,11 @@ function WorkOrderDetail() {
 
   const { data: workOrder } = useMaintenanceRequestQuery(workOrderId)
   const { data: vendorsData } = useVendorsQuery({ status: 'ACTIVE' })
+  const { data: teamData } = useTeamMembersQuery()
   const updateMutation = useUpdateMaintenanceRequest()
-  const commentMutation = useAddMaintenanceComment()
+  const commentMutation = useAddMaintenanceCommentWithAttachments()
   const acknowledgeMutation = useAcknowledgeEscalation()
+  const attachmentUpload = useCommentAttachmentUpload()
 
   const [newStatus, setNewStatus] = useState<MaintenanceStatus | ''>(workOrder.status as MaintenanceStatus)
   const [statusNote, setStatusNote] = useState('')
@@ -128,6 +138,9 @@ function WorkOrderDetail() {
   const [isInternalComment, setIsInternalComment] = useState(false)
   const [actualCost, setActualCost] = useState<string>(workOrder.actualCost?.toString() || '')
   const [selectedVendorId, setSelectedVendorId] = useState<string>(workOrder.vendorId || '')
+  const [selectedStaffId, setSelectedStaffId] = useState<string>(workOrder.assignedToId || '')
+  const [commentAttachments, setCommentAttachments] = useState<File[]>([])
+  const [isUploadingAttachments, setIsUploadingAttachments] = useState(false)
 
   const priority = priorityConfig[workOrder.priority] || priorityConfig.MEDIUM
   const status = statusConfig[workOrder.status] || statusConfig.SUBMITTED
@@ -232,29 +245,55 @@ function WorkOrderDetail() {
   }
 
   const handleAddComment = async () => {
-    if (!newComment.trim()) {
+    if (!newComment.trim() && commentAttachments.length === 0) {
       toast.error('Empty Comment', {
-        description: 'Please enter a comment',
+        description: 'Please enter a comment or attach files',
       })
       return
     }
 
     try {
+      setIsUploadingAttachments(true)
+
+      // Upload attachments first if any
+      let attachmentPaths: string[] = []
+      if (commentAttachments.length > 0) {
+        attachmentPaths = await Promise.all(
+          commentAttachments.map(file => attachmentUpload.uploadAttachment(file, workOrderId))
+        )
+      }
+
       await commentMutation.mutateAsync({
         requestId: workOrderId,
-        content: newComment,
+        content: newComment || 'Attached files',
         isInternal: isInternalComment,
+        attachments: attachmentPaths.length > 0 ? attachmentPaths : undefined,
       })
 
       setNewComment('')
+      setCommentAttachments([])
       toast.success('Comment Added', {
-        description: 'Your comment has been added',
+        description: attachmentPaths.length > 0
+          ? `Your comment with ${attachmentPaths.length} attachment(s) has been added`
+          : 'Your comment has been added',
       })
     } catch {
       toast.error('Error', {
         description: 'Failed to add comment',
       })
+    } finally {
+      setIsUploadingAttachments(false)
     }
+  }
+
+  const handleAttachmentSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = Array.from(e.target.files || [])
+    setCommentAttachments(prev => [...prev, ...files])
+    e.target.value = '' // Reset input
+  }
+
+  const removeAttachment = (index: number) => {
+    setCommentAttachments(prev => prev.filter((_, i) => i !== index))
   }
 
   const handleAssignVendor = async () => {
@@ -296,6 +335,49 @@ function WorkOrderDetail() {
     } catch {
       toast.error('Error', {
         description: 'Failed to assign vendor',
+      })
+    }
+  }
+
+  const handleAssignStaff = async () => {
+    if (!selectedStaffId) {
+      // Clear staff assignment
+      try {
+        await updateMutation.mutateAsync({
+          id: workOrderId,
+          assignedToId: undefined,
+        })
+        toast.success('Staff Removed', {
+          description: 'Staff assignment has been cleared',
+        })
+      } catch {
+        toast.error('Error', {
+          description: 'Failed to remove staff assignment',
+        })
+      }
+      return
+    }
+
+    if (selectedStaffId === workOrder.assignedToId) {
+      toast('No changes', {
+        description: 'This staff member is already assigned',
+      })
+      return
+    }
+
+    try {
+      await updateMutation.mutateAsync({
+        id: workOrderId,
+        assignedToId: selectedStaffId,
+      })
+
+      const staff = teamData?.staff.find(s => s.id === selectedStaffId)
+      toast.success('Staff Assigned', {
+        description: `${staff?.name || 'Staff member'} has been assigned to this work order`,
+      })
+    } catch {
+      toast.error('Error', {
+        description: 'Failed to assign staff',
       })
     }
   }
@@ -530,6 +612,29 @@ function WorkOrderDetail() {
                         </p>
                       </div>
                       <p className='mt-1 text-sm'>{comment.content}</p>
+                      {/* Display attachments */}
+                      {comment.attachments && comment.attachments.length > 0 && (
+                        <div className='mt-2 flex flex-wrap gap-2'>
+                          {comment.attachments.map((attachment, idx) => {
+                            const fileName = attachment.split('/').pop() || 'Attachment'
+                            return (
+                              <a
+                                key={idx}
+                                href='#'
+                                className='flex items-center gap-1 rounded-md bg-background px-2 py-1 text-xs text-muted-foreground hover:text-foreground border'
+                                onClick={(e) => {
+                                  e.preventDefault()
+                                  // In a full implementation, this would fetch the signed URL
+                                  toast.info('Opening attachment...', { description: fileName })
+                                }}
+                              >
+                                <LuPaperclip className='size-3' />
+                                <span className='max-w-24 truncate'>{fileName}</span>
+                              </a>
+                            )
+                          })}
+                        </div>
+                      )}
                     </div>
                   ))}
                 </div>
@@ -543,27 +648,63 @@ function WorkOrderDetail() {
                   onChange={(e) => setNewComment(e.target.value)}
                   className='min-h-20'
                 />
+
+                {/* Attachment Preview */}
+                {commentAttachments.length > 0 && (
+                  <div className='flex flex-wrap gap-2'>
+                    {commentAttachments.map((file, index) => (
+                      <div
+                        key={index}
+                        className='flex items-center gap-2 rounded-md bg-muted px-2 py-1 text-sm'
+                      >
+                        <LuFile className='size-4 text-muted-foreground' />
+                        <span className='max-w-32 truncate'>{file.name}</span>
+                        <button
+                          type='button'
+                          onClick={() => removeAttachment(index)}
+                          className='text-muted-foreground hover:text-destructive'
+                        >
+                          <LuX className='size-4' />
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+
                 <div className='flex items-center justify-between'>
-                  <label className='flex items-center gap-2 text-sm'>
-                    <input
-                      type='checkbox'
-                      checked={isInternalComment}
-                      onChange={(e) => setIsInternalComment(e.target.checked)}
-                      className='rounded'
-                    />
-                    Internal note (not visible to tenant)
-                  </label>
+                  <div className='flex items-center gap-4'>
+                    <label className='flex items-center gap-2 text-sm'>
+                      <input
+                        type='checkbox'
+                        checked={isInternalComment}
+                        onChange={(e) => setIsInternalComment(e.target.checked)}
+                        className='rounded'
+                      />
+                      Internal note (not visible to tenant)
+                    </label>
+                    <label className='flex cursor-pointer items-center gap-1 text-sm text-muted-foreground hover:text-foreground'>
+                      <LuPaperclip className='size-4' />
+                      <span>Attach</span>
+                      <input
+                        type='file'
+                        multiple
+                        accept='image/*,.pdf,.doc,.docx,.txt'
+                        onChange={handleAttachmentSelect}
+                        className='hidden'
+                      />
+                    </label>
+                  </div>
                   <Button
                     size='sm'
                     onClick={handleAddComment}
-                    disabled={commentMutation.isPending || !newComment.trim()}
+                    disabled={commentMutation.isPending || isUploadingAttachments || (!newComment.trim() && commentAttachments.length === 0)}
                   >
-                    {commentMutation.isPending ? (
+                    {(commentMutation.isPending || isUploadingAttachments) ? (
                       <LuLoaderCircle className='mr-2 size-4 animate-spin' />
                     ) : (
                       <LuSend className='mr-2 size-4' />
                     )}
-                    Add Comment
+                    {isUploadingAttachments ? 'Uploading...' : 'Add Comment'}
                   </Button>
                 </div>
               </div>
@@ -661,6 +802,54 @@ function WorkOrderDetail() {
                 {updateMutation.isPending && <LuLoaderCircle className='mr-2 size-4 animate-spin' />}
                 <LuWrench className='mr-2 size-4' />
                 {selectedVendorId ? 'Update Assignment' : 'Remove Vendor'}
+              </Button>
+            </CardContent>
+          </Card>
+
+          {/* Assign Staff */}
+          <Card>
+            <CardHeader>
+              <CardTitle>Assign Staff</CardTitle>
+              <CardDescription>Assign a team member to manage this work order</CardDescription>
+            </CardHeader>
+            <CardContent className='space-y-4'>
+              <div className='space-y-2'>
+                <Label>Staff Member</Label>
+                <Select
+                  value={selectedStaffId}
+                  onValueChange={setSelectedStaffId}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder='Select a staff member' />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value=''>Unassigned</SelectItem>
+                    {teamData?.staff.map((staff) => (
+                      <SelectItem key={staff.id} value={staff.id}>
+                        <div className='flex items-center gap-2'>
+                          <span>{staff.name}</span>
+                          <span className='text-xs text-muted-foreground'>({staff.role})</span>
+                        </div>
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              {workOrder.assignedTo && (
+                <div className='rounded-lg bg-muted p-3 text-sm'>
+                  <p className='font-medium'>{workOrder.assignedTo.name}</p>
+                  <p className='text-muted-foreground'>Currently assigned</p>
+                </div>
+              )}
+              <Button
+                className='w-full'
+                variant='outline'
+                onClick={handleAssignStaff}
+                disabled={updateMutation.isPending || selectedStaffId === (workOrder.assignedToId || '')}
+              >
+                {updateMutation.isPending && <LuLoaderCircle className='mr-2 size-4 animate-spin' />}
+                <LuUserCog className='mr-2 size-4' />
+                {selectedStaffId ? 'Update Assignment' : 'Remove Staff'}
               </Button>
             </CardContent>
           </Card>
