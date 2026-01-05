@@ -60,6 +60,8 @@ model User {
   tenantProfile      Tenant?              @relation("TenantUser") // Tenant portal access
   maintenanceTemplates MaintenanceTemplate[] @relation("MaintenanceTemplateCreator")
   createdCostLineItems MaintenanceCostLineItem[] @relation("CostLineItemCreator")
+  submittedInvoices    MaintenanceInvoice[]  @relation("InvoiceSubmitter")
+  reviewedInvoices     MaintenanceInvoice[]  @relation("InvoiceReviewer")
 
   @@map("users")
 }
@@ -714,6 +716,7 @@ model MaintenanceRequest {
   statusHistory WorkOrderStatusHistory[]
   expenses      Expense[]
   costLineItems MaintenanceCostLineItem[]
+  invoices      MaintenanceInvoice[]
 
   @@index([unitId])
   @@index([scheduleId])
@@ -815,6 +818,10 @@ model MaintenanceCostLineItem {
   chargeToTenant      Boolean  @default(false)
   tenantChargeAmount  Decimal? @db.Decimal(10, 2)
 
+  // Link to invoice (if created from invoice)
+  invoiceId   String?          @db.Uuid
+  invoice     MaintenanceInvoice? @relation("InvoiceCostLineItems", fields: [invoiceId], references: [id], onDelete: SetNull)
+
   // Audit
   createdAt   DateTime         @default(now())
   updatedAt   DateTime         @updatedAt
@@ -823,7 +830,83 @@ model MaintenanceCostLineItem {
 
   @@index([requestId])
   @@index([type])
+  @@index([invoiceId])
   @@map("maintenance_cost_line_items")
+}
+
+// =============================================================================
+// MAINTENANCE INVOICES (EPM-76 Sprint 2)
+// =============================================================================
+
+enum InvoiceStatus {
+  DRAFT
+  SUBMITTED
+  UNDER_REVIEW
+  APPROVED
+  REJECTED
+  PAID
+  CANCELLED
+}
+
+model MaintenanceInvoice {
+  id            String        @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  invoiceNumber String        @unique @default(dbgenerated("'INV-' || to_char(now(), 'YYYYMMDD') || '-' || substr(gen_random_uuid()::text, 1, 8)"))
+  status        InvoiceStatus @default(DRAFT)
+
+  // Invoice Details
+  vendorInvoiceNumber String?   // External vendor invoice number
+  invoiceDate         DateTime  // Date on the invoice
+  dueDate             DateTime? // Payment due date
+  description         String?
+
+  // Amount
+  subtotal      Decimal  @db.Decimal(10, 2)
+  taxAmount     Decimal  @default(0) @db.Decimal(10, 2)
+  totalAmount   Decimal  @db.Decimal(10, 2)
+
+  // File Storage (Supabase Storage)
+  fileUrl     String   // URL to the uploaded invoice file
+  fileName    String   // Original file name
+  fileSize    Int      // File size in bytes
+  mimeType    String   // e.g., "application/pdf", "image/jpeg"
+
+  // Workflow Timestamps
+  submittedAt   DateTime?
+  reviewStartedAt DateTime?
+  approvedAt    DateTime?
+  rejectedAt    DateTime?
+  paidAt        DateTime?
+
+  // Approval Details
+  reviewNotes    String? // Notes from reviewer
+  rejectionReason String?
+
+  // Payment Details (after approval)
+  paymentMethod    String?  // "CHECK", "ACH", "CREDIT_CARD"
+  paymentReference String?  // Check number, transaction ID
+
+  // Metadata
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  requestId   String             @db.Uuid
+  request     MaintenanceRequest @relation(fields: [requestId], references: [id], onDelete: Cascade)
+  vendorId    String?            @db.Uuid
+  vendor      Vendor?            @relation(fields: [vendorId], references: [id])
+  submittedById String?          @db.Uuid
+  submittedBy   User?            @relation("InvoiceSubmitter", fields: [submittedById], references: [id])
+  reviewedById  String?          @db.Uuid
+  reviewedBy    User?            @relation("InvoiceReviewer", fields: [reviewedById], references: [id])
+
+  // Link to cost line items created from this invoice
+  costLineItems MaintenanceCostLineItem[] @relation("InvoiceCostLineItems")
+
+  @@index([requestId])
+  @@index([vendorId])
+  @@index([status])
+  @@index([invoiceDate])
+  @@map("maintenance_invoices")
 }
 
 // =============================================================================
@@ -954,6 +1037,7 @@ model Vendor {
   maintenanceRequests  MaintenanceRequest[]
   maintenanceSchedules MaintenanceSchedule[]
   expenses             Expense[]
+  invoices             MaintenanceInvoice[]
 
   @@index([status])
   @@map("pm_vendors")

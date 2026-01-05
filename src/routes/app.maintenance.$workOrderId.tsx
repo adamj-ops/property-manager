@@ -37,6 +37,8 @@ import { toast } from 'sonner'
 import { MaintenancePhotoUpload } from '~/components/maintenance/photo-upload'
 import { CostBreakdownCard } from '~/components/maintenance/cost-breakdown-card'
 import { CostLineItemsTable } from '~/components/maintenance/cost-line-items-table'
+import { InvoiceListTable } from '~/components/maintenance/invoice-list-table'
+import { InvoiceApprovalCard } from '~/components/maintenance/invoice-approval-card'
 
 import {
   useMaintenanceRequestQuery,
@@ -898,6 +900,25 @@ function WorkOrderDetail() {
           <CostLineItemsTable requestId={workOrderId} />
         </CardContent>
       </Card>
+
+      {/* Invoices */}
+      <Card>
+        <CardHeader>
+          <CardTitle className='flex items-center gap-2'>
+            <LuFile className='size-5' />
+            Vendor Invoices
+          </CardTitle>
+          <CardDescription>
+            Upload and manage vendor invoices for this work order
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <InvoiceListTable requestId={workOrderId} />
+        </CardContent>
+      </Card>
+
+      {/* Invoice Approvals (if any pending) */}
+      <InvoiceApprovalCard requestId={workOrderId} />
 
       {/* Status History */}
       {workOrder.statusHistory && workOrder.statusHistory.length > 0 && (
