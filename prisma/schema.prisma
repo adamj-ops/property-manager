@@ -59,6 +59,7 @@ model User {
   createdTemplates   LeaseTemplate[]      @relation("TemplateCreator")
   tenantProfile      Tenant?              @relation("TenantUser") // Tenant portal access
   maintenanceTemplates MaintenanceTemplate[] @relation("MaintenanceTemplateCreator")
+  createdCostLineItems MaintenanceCostLineItem[] @relation("CostLineItemCreator")
 
   @@map("users")
 }
@@ -712,6 +713,7 @@ model MaintenanceRequest {
   comments      MaintenanceComment[]
   statusHistory WorkOrderStatusHistory[]
   expenses      Expense[]
+  costLineItems MaintenanceCostLineItem[]
 
   @@index([unitId])
   @@index([scheduleId])
@@ -765,6 +767,63 @@ model WorkOrderStatusHistory {
   @@index([requestId])
   @@index([createdAt])
   @@map("work_order_status_history")
+}
+
+// =============================================================================
+// MAINTENANCE COST LINE ITEMS (EPM-76)
+// =============================================================================
+
+enum CostLineItemType {
+  LABOR
+  PARTS
+  MATERIALS
+  PERMITS
+  TRAVEL
+  EMERGENCY_FEE
+  DISPOSAL
+  SUBCONTRACTOR
+  OTHER
+}
+
+model MaintenanceCostLineItem {
+  id          String           @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  requestId   String           @db.Uuid
+  request     MaintenanceRequest @relation(fields: [requestId], references: [id], onDelete: Cascade)
+
+  // Item details
+  type        CostLineItemType
+  description String
+  quantity    Decimal          @db.Decimal(10, 2) @default(1)
+  unitCost    Decimal          @db.Decimal(10, 2)
+  totalCost   Decimal          @db.Decimal(10, 2) // quantity * unitCost
+
+  // Parts tracking
+  partNumber      String?
+  supplier        String?
+  warranty        Boolean      @default(false)
+  warrantyExpiry  DateTime?
+
+  // Labor tracking
+  laborHours  Decimal?         @db.Decimal(5, 2)
+  laborRate   Decimal?         @db.Decimal(10, 2)
+  workerId    String?          // Vendor employee name or ID
+
+  // Documentation
+  receiptUrl  String?
+
+  // Tenant billing
+  chargeToTenant      Boolean  @default(false)
+  tenantChargeAmount  Decimal? @db.Decimal(10, 2)
+
+  // Audit
+  createdAt   DateTime         @default(now())
+  updatedAt   DateTime         @updatedAt
+  createdById String           @db.Uuid
+  createdBy   User             @relation("CostLineItemCreator", fields: [createdById], references: [id])
+
+  @@index([requestId])
+  @@index([type])
+  @@map("maintenance_cost_line_items")
 }
 
 // =============================================================================
