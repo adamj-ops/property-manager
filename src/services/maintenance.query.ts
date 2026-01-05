@@ -18,12 +18,29 @@ import {
   acknowledgeEmergencyEscalation,
   getUnacknowledgedEmergencies,
   getEmergencyDashboardStats,
+  // Bulk actions
+  bulkUpdateStatus,
+  bulkAssignVendor,
+  bulkDeleteWorkOrders,
+  // Templates
+  getMaintenanceTemplates,
+  getMaintenanceTemplate,
+  createMaintenanceTemplate,
+  updateMaintenanceTemplate,
+  deleteMaintenanceTemplate,
+  incrementTemplateUsage,
 } from '~/services/maintenance.api'
 import type {
   CreateMaintenanceInput,
   UpdateMaintenanceInput,
   MaintenanceFilters,
   PhotoUploadRequest,
+  BulkUpdateStatusInput,
+  BulkAssignVendorInput,
+  BulkDeleteInput,
+  CreateTemplateInput,
+  UpdateTemplateInput,
+  TemplateFilters,
 } from '~/services/maintenance.schema'
 
 // Query keys
@@ -36,6 +53,10 @@ export const maintenanceKeys = {
   stats: () => [...maintenanceKeys.all, 'stats'] as const,
   emergencies: () => [...maintenanceKeys.all, 'emergencies'] as const,
   emergencyStats: () => [...maintenanceKeys.all, 'emergency-stats'] as const,
+  // Templates
+  templates: () => [...maintenanceKeys.all, 'templates'] as const,
+  templateList: (filters: TemplateFilters) => [...maintenanceKeys.templates(), 'list', filters] as const,
+  templateDetail: (id: string) => [...maintenanceKeys.templates(), 'detail', id] as const,
 }
 
 // Default filters
@@ -224,6 +245,110 @@ export const useAcknowledgeEscalation = () => {
       queryClient.invalidateQueries({ queryKey: maintenanceKeys.emergencyStats() })
       queryClient.invalidateQueries({ queryKey: maintenanceKeys.detail(id) })
       queryClient.invalidateQueries({ queryKey: maintenanceKeys.lists() })
+    },
+  })
+}
+
+// =============================================================================
+// BULK ACTIONS
+// =============================================================================
+
+export const useBulkUpdateStatus = () => {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (data: BulkUpdateStatusInput) => bulkUpdateStatus({ data }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: maintenanceKeys.all })
+    },
+  })
+}
+
+export const useBulkAssignVendor = () => {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (data: BulkAssignVendorInput) => bulkAssignVendor({ data }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: maintenanceKeys.all })
+    },
+  })
+}
+
+export const useBulkDeleteWorkOrders = () => {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (data: BulkDeleteInput) => bulkDeleteWorkOrders({ data }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: maintenanceKeys.all })
+    },
+  })
+}
+
+// =============================================================================
+// WORK ORDER TEMPLATES
+// =============================================================================
+
+const defaultTemplateFilters: Pick<TemplateFilters, 'offset' | 'limit'> = { offset: 0, limit: 50 }
+
+export const maintenanceTemplatesQueryOptions = (filters: Partial<TemplateFilters> = {}) => {
+  const mergedFilters: TemplateFilters = { ...defaultTemplateFilters, ...filters }
+  return queryOptions({
+    queryKey: maintenanceKeys.templateList(mergedFilters),
+    queryFn: () => getMaintenanceTemplates({ data: mergedFilters }),
+  })
+}
+
+export const maintenanceTemplateQueryOptions = (id: string) =>
+  queryOptions({
+    queryKey: maintenanceKeys.templateDetail(id),
+    queryFn: () => getMaintenanceTemplate({ data: { id } }),
+  })
+
+export const useMaintenanceTemplatesQuery = (filters: Partial<TemplateFilters> = {}) => {
+  return useSuspenseQuery(maintenanceTemplatesQueryOptions(filters))
+}
+
+export const useMaintenanceTemplateQuery = (id: string) => {
+  return useSuspenseQuery(maintenanceTemplateQueryOptions(id))
+}
+
+export const useCreateMaintenanceTemplate = () => {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (data: CreateTemplateInput) => createMaintenanceTemplate({ data }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: maintenanceKeys.templates() })
+    },
+  })
+}
+
+export const useUpdateMaintenanceTemplate = () => {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: ({ id, ...data }: UpdateTemplateInput & { id: string }) =>
+      updateMaintenanceTemplate({ data: { id, ...data } }),
+    onSuccess: (_, variables) => {
+      queryClient.invalidateQueries({ queryKey: maintenanceKeys.templateDetail(variables.id) })
+      queryClient.invalidateQueries({ queryKey: maintenanceKeys.templates() })
+    },
+  })
+}
+
+export const useDeleteMaintenanceTemplate = () => {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (id: string) => deleteMaintenanceTemplate({ data: { id } }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: maintenanceKeys.templates() })
+    },
+  })
+}
+
+export const useIncrementTemplateUsage = () => {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (id: string) => incrementTemplateUsage({ data: { id } }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: maintenanceKeys.templates() })
     },
   })
 }

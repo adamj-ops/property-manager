@@ -10,6 +10,13 @@ import {
   maintenanceIdSchema,
   addCommentSchema,
   photoUploadRequestSchema,
+  bulkUpdateStatusSchema,
+  bulkAssignVendorSchema,
+  bulkDeleteSchema,
+  createTemplateSchema,
+  updateTemplateSchema,
+  templateIdSchema,
+  templateFiltersSchema,
 } from '~/services/maintenance.schema'
 import {
   createUploadUrl,
@@ -151,12 +158,23 @@ export const createMaintenanceRequest = createServerFn({ method: 'POST' })
       throw new Error('Unit not found')
     }
 
+    // Calculate SLA due dates
+    const now = new Date()
+    const slaResponseDueAt = data.slaResponseHours
+      ? new Date(now.getTime() + data.slaResponseHours * 60 * 60 * 1000)
+      : null
+    const slaResolutionDueAt = data.slaResolutionHours
+      ? new Date(now.getTime() + data.slaResolutionHours * 60 * 60 * 1000)
+      : null
+
     // Create request with initial status history in a transaction
     const request = await prisma.$transaction(async (tx) => {
       const newRequest = await tx.maintenanceRequest.create({
         data: {
           ...data,
           createdById: context.auth.user.id,
+          slaResponseDueAt,
+          slaResolutionDueAt,
         },
         include: {
           unit: { include: { property: true } },
@@ -217,6 +235,13 @@ export const updateMaintenanceRequest = createServerFn({ method: 'POST' })
     // Check if status is changing
     const statusChanged = updateData.status && updateData.status !== existing.status
 
+    // Auto-set firstRespondedAt when status changes to ACKNOWLEDGED (for SLA tracking)
+    const isFirstResponse =
+      statusChanged &&
+      updateData.status === 'ACKNOWLEDGED' &&
+      existing.status === 'SUBMITTED' &&
+      !existing.firstRespondedAt
+
     // Use transaction to update request and record status history
     const request = await prisma.$transaction(async (tx) => {
       // Record status history if status changed
@@ -235,7 +260,10 @@ export const updateMaintenanceRequest = createServerFn({ method: 'POST' })
       // Update the maintenance request
       return tx.maintenanceRequest.update({
         where: { id },
-        data: updateData,
+        data: {
+          ...updateData,
+          ...(isFirstResponse ? { firstRespondedAt: new Date() } : {}),
+        },
         include: {
           unit: { include: { property: true } },
           tenant: true,
@@ -611,4 +639,282 @@ export const getUnacknowledgedEmergencies = createServerFn({ method: 'GET' })
     })
 
     return emergencies
+  })
+
+// =============================================================================
+// BULK ACTIONS
+// =============================================================================
+
+// Bulk update status
+export const bulkUpdateStatus = createServerFn({ method: 'POST' })
+  .middleware([authedMiddleware])
+  .validator(zodValidator(bulkUpdateStatusSchema))
+  .handler(async ({ context, data }) => {
+    const { ids, status } = data
+
+    // Verify all requests belong to user
+    const requests = await prisma.maintenanceRequest.findMany({
+      where: {
+        id: { in: ids },
+        unit: { property: { managerId: context.auth.user.id } },
+      },
+      select: { id: true, status: true },
+    })
+
+    if (requests.length !== ids.length) {
+      throw new Error('One or more work orders not found or not accessible')
+    }
+
+    // Update all requests in a transaction
+    await prisma.$transaction(async (tx) => {
+      // Update the requests
+      await tx.maintenanceRequest.updateMany({
+        where: { id: { in: ids } },
+        data: {
+          status,
+          ...(status === 'COMPLETED' ? { completedAt: new Date() } : {}),
+          ...(status === 'ACKNOWLEDGED' ? { firstRespondedAt: new Date() } : {}),
+        },
+      })
+
+      // Create status history entries
+      await Promise.all(
+        requests.map((req) =>
+          tx.workOrderStatusHistory.create({
+            data: {
+              requestId: req.id,
+              fromStatus: req.status,
+              toStatus: status,
+              changedByName: context.auth.user.name,
+              changedByType: 'staff',
+              notes: 'Bulk status update',
+            },
+          })
+        )
+      )
+    })
+
+    return { updated: ids.length }
+  })
+
+// Bulk assign vendor
+export const bulkAssignVendor = createServerFn({ method: 'POST' })
+  .middleware([authedMiddleware])
+  .validator(zodValidator(bulkAssignVendorSchema))
+  .handler(async ({ context, data }) => {
+    const { ids, vendorId } = data
+
+    // Verify all requests belong to user
+    const count = await prisma.maintenanceRequest.count({
+      where: {
+        id: { in: ids },
+        unit: { property: { managerId: context.auth.user.id } },
+      },
+    })
+
+    if (count !== ids.length) {
+      throw new Error('One or more work orders not found or not accessible')
+    }
+
+    // Verify vendor exists
+    const vendor = await prisma.vendor.findUnique({
+      where: { id: vendorId },
+      select: { id: true },
+    })
+
+    if (!vendor) {
+      throw new Error('Vendor not found')
+    }
+
+    await prisma.maintenanceRequest.updateMany({
+      where: { id: { in: ids } },
+      data: { vendorId },
+    })
+
+    return { updated: ids.length }
+  })
+
+// Bulk delete (cancel) work orders
+export const bulkDeleteWorkOrders = createServerFn({ method: 'POST' })
+  .middleware([authedMiddleware])
+  .validator(zodValidator(bulkDeleteSchema))
+  .handler(async ({ context, data }) => {
+    const { ids } = data
+
+    // Verify all requests belong to user and get their current status
+    const requests = await prisma.maintenanceRequest.findMany({
+      where: {
+        id: { in: ids },
+        unit: { property: { managerId: context.auth.user.id } },
+      },
+      select: { id: true, status: true },
+    })
+
+    if (requests.length !== ids.length) {
+      throw new Error('One or more work orders not found or not accessible')
+    }
+
+    // Cancel (soft delete) by setting status to CANCELLED
+    await prisma.$transaction(async (tx) => {
+      await tx.maintenanceRequest.updateMany({
+        where: { id: { in: ids } },
+        data: { status: 'CANCELLED' },
+      })
+
+      // Create status history entries
+      await Promise.all(
+        requests.map((req) =>
+          tx.workOrderStatusHistory.create({
+            data: {
+              requestId: req.id,
+              fromStatus: req.status,
+              toStatus: 'CANCELLED',
+              changedByName: context.auth.user.name,
+              changedByType: 'staff',
+              notes: 'Bulk cancellation',
+            },
+          })
+        )
+      )
+    })
+
+    return { deleted: ids.length }
+  })
+
+// =============================================================================
+// WORK ORDER TEMPLATES
+// =============================================================================
+
+// Get all templates
+export const getMaintenanceTemplates = createServerFn({ method: 'GET' })
+  .middleware([authedMiddleware])
+  .validator(zodValidator(templateFiltersSchema))
+  .handler(async ({ context, data }) => {
+    const { category, isActive, search, limit, offset } = data
+
+    const where = {
+      createdById: context.auth.user.id,
+      ...(category && { category }),
+      ...(isActive !== undefined && { isActive }),
+      ...(search && {
+        OR: [
+          { name: { contains: search, mode: 'insensitive' as const } },
+          { title: { contains: search, mode: 'insensitive' as const } },
+          { description: { contains: search, mode: 'insensitive' as const } },
+        ],
+      }),
+    }
+
+    const [templates, total] = await Promise.all([
+      prisma.maintenanceTemplate.findMany({
+        where,
+        orderBy: [{ usageCount: 'desc' }, { name: 'asc' }],
+        take: limit,
+        skip: offset,
+      }),
+      prisma.maintenanceTemplate.count({ where }),
+    ])
+
+    return { templates, total, limit, offset }
+  })
+
+// Get single template
+export const getMaintenanceTemplate = createServerFn({ method: 'GET' })
+  .middleware([authedMiddleware])
+  .validator(zodValidator(templateIdSchema))
+  .handler(async ({ context, data }) => {
+    const template = await prisma.maintenanceTemplate.findFirst({
+      where: {
+        id: data.id,
+        createdById: context.auth.user.id,
+      },
+    })
+
+    if (!template) {
+      throw new Error('Template not found')
+    }
+
+    return template
+  })
+
+// Create template
+export const createMaintenanceTemplate = createServerFn({ method: 'POST' })
+  .middleware([authedMiddleware])
+  .validator(zodValidator(createTemplateSchema))
+  .handler(async ({ context, data }) => {
+    const template = await prisma.maintenanceTemplate.create({
+      data: {
+        ...data,
+        createdById: context.auth.user.id,
+      },
+    })
+
+    return template
+  })
+
+// Update template
+export const updateMaintenanceTemplate = createServerFn({ method: 'POST' })
+  .middleware([authedMiddleware])
+  .validator(zodValidator(templateIdSchema.merge(updateTemplateSchema)))
+  .handler(async ({ context, data }) => {
+    const { id, ...updateData } = data
+
+    const existing = await prisma.maintenanceTemplate.findFirst({
+      where: {
+        id,
+        createdById: context.auth.user.id,
+      },
+    })
+
+    if (!existing) {
+      throw new Error('Template not found')
+    }
+
+    const template = await prisma.maintenanceTemplate.update({
+      where: { id },
+      data: updateData,
+    })
+
+    return template
+  })
+
+// Delete template
+export const deleteMaintenanceTemplate = createServerFn({ method: 'POST' })
+  .middleware([authedMiddleware])
+  .validator(zodValidator(templateIdSchema))
+  .handler(async ({ context, data }) => {
+    const existing = await prisma.maintenanceTemplate.findFirst({
+      where: {
+        id: data.id,
+        createdById: context.auth.user.id,
+      },
+    })
+
+    if (!existing) {
+      throw new Error('Template not found')
+    }
+
+    await prisma.maintenanceTemplate.delete({
+      where: { id: data.id },
+    })
+
+    return { success: true }
+  })
+
+// Increment template usage count
+export const incrementTemplateUsage = createServerFn({ method: 'POST' })
+  .middleware([authedMiddleware])
+  .validator(zodValidator(templateIdSchema))
+  .handler(async ({ context, data }) => {
+    await prisma.maintenanceTemplate.updateMany({
+      where: {
+        id: data.id,
+        createdById: context.auth.user.id,
+      },
+      data: {
+        usageCount: { increment: 1 },
+      },
+    })
+
+    return { success: true }
   })

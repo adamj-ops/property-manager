@@ -58,6 +58,7 @@ model User {
   ownedTeams         Team[]               @relation("TeamOwner")
   createdTemplates   LeaseTemplate[]      @relation("TemplateCreator")
   tenantProfile      Tenant?              @relation("TenantUser") // Tenant portal access
+  maintenanceTemplates MaintenanceTemplate[] @relation("MaintenanceTemplateCreator")
 
   @@map("users")
 }
@@ -670,6 +671,16 @@ model MaintenanceRequest {
   lastEscalatedAt          DateTime? // When the last escalation notification was sent
   escalationAcknowledgedAt DateTime? // When someone acknowledged the escalation
   escalationAcknowledgedById String? @db.Uuid // Who acknowledged the escalation
+
+  // SLA Tracking
+  slaResponseHours   Int?      // Target hours to first response (acknowledgement)
+  slaResolutionHours Int?      // Target hours to resolution (completion)
+  firstRespondedAt   DateTime? // When work order was first acknowledged
+  slaResponseDueAt   DateTime? // Calculated: createdAt + slaResponseHours
+  slaResolutionDueAt DateTime? // Calculated: createdAt + slaResolutionHours
+
+  // Template reference
+  templateId String? @db.Uuid
 
   // Metadata
   createdAt DateTime @default(now())
@@ -1390,4 +1401,49 @@ model LeaseTemplate {
   @@index([parentTemplateId])
   @@index([createdById])
   @@map("lease_templates")
+}
+
+// =============================================================================
+// WORK ORDER TEMPLATES (EPM-XX)
+// =============================================================================
+
+model MaintenanceTemplate {
+  id   String @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  name String // e.g., "Leaky Faucet", "HVAC Not Cooling"
+
+  // Template fields
+  category    MaintenanceCategory
+  priority    MaintenancePriority @default(MEDIUM)
+  title       String // Pre-filled title for work orders
+  description String // Pre-filled description
+
+  // SLA defaults
+  slaResponseHours   Int? // Default response SLA for this type
+  slaResolutionHours Int? // Default resolution SLA for this type
+
+  // Cost estimates
+  estimatedCost     Decimal? @db.Decimal(10, 2)
+  estimatedDuration Int?     // in minutes
+
+  // Suggested vendor category matching
+  suggestVendorByCategory Boolean @default(true)
+
+  // Status
+  isActive Boolean @default(true)
+
+  // Usage tracking
+  usageCount Int @default(0)
+
+  // Metadata
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  createdById String @db.Uuid
+  createdBy   User   @relation("MaintenanceTemplateCreator", fields: [createdById], references: [id])
+
+  @@index([category])
+  @@index([isActive])
+  @@index([createdById])
+  @@map("maintenance_templates")
 }

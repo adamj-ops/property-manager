@@ -54,6 +54,7 @@ import {
   useMaintenanceRequestsQuery,
   useMaintenanceStatsQuery,
   useCreateMaintenanceRequest,
+  useIncrementTemplateUsage,
   maintenanceRequestsQueryOptions,
   maintenanceStatsQueryOptions,
   unacknowledgedEmergenciesQueryOptions,
@@ -62,6 +63,8 @@ import { usePropertiesQuery } from '~/services/properties.query'
 import { useUnitsQuery } from '~/services/units.query'
 import { EmergencyAlertBanner } from '~/components/maintenance/emergency-alert-banner'
 import { WorkOrderCalendar } from '~/components/maintenance/work-order-calendar'
+import { BulkActionsToolbar } from '~/components/maintenance/bulk-actions-toolbar'
+import { TemplateSelector } from '~/components/maintenance/template-selector'
 import type { MaintenanceFilters, MaintenanceCategory, MaintenancePriority } from '~/services/maintenance.schema'
 
 export const Route = createFileRoute('/app/maintenance/')({
@@ -491,19 +494,25 @@ function MaintenanceDataTable({
           columns={columns}
           data={requests}
           toolbar={(table) => (
-            <DataTableToolbar
-              table={table}
-              searchKey='title'
-              searchPlaceholder='Search work orders...'
-              actionComponent={
-                <ViewToolbar
-                  filters={filters}
-                  setFilters={setFilters}
-                  viewMode={viewMode}
-                  setViewMode={setViewMode}
-                />
-              }
-            />
+            <div className='space-y-3'>
+              <DataTableToolbar
+                table={table}
+                searchKey='title'
+                searchPlaceholder='Search work orders...'
+                actionComponent={
+                  <ViewToolbar
+                    filters={filters}
+                    setFilters={setFilters}
+                    viewMode={viewMode}
+                    setViewMode={setViewMode}
+                  />
+                }
+              />
+              <BulkActionsToolbar
+                table={table}
+                getRowId={(row) => row.id}
+              />
+            </div>
           )}
         />
         {data.total > 0 && (
@@ -560,8 +569,10 @@ function MaintenanceCalendarView({
 function CreateWorkOrderDrawer({ open, onOpenChange }: { open: boolean; onOpenChange: (open: boolean) => void }) {
   const navigate = useNavigate()
   const createMutation = useCreateMaintenanceRequest()
+  const incrementTemplateUsage = useIncrementTemplateUsage()
 
   const [selectedPropertyId, setSelectedPropertyId] = useState<string>('')
+  const [selectedTemplateId, setSelectedTemplateId] = useState<string | null>(null)
   const [formData, setFormData] = useState({
     title: '',
     description: '',
@@ -570,6 +581,8 @@ function CreateWorkOrderDrawer({ open, onOpenChange }: { open: boolean; onOpenCh
     priority: 'MEDIUM' as MaintenancePriority,
     permissionToEnter: true,
     preferredTimes: '',
+    slaResponseHours: undefined as number | undefined,
+    slaResolutionHours: undefined as number | undefined,
   })
 
   // Fetch properties for the dropdown
@@ -579,6 +592,32 @@ function CreateWorkOrderDrawer({ open, onOpenChange }: { open: boolean; onOpenCh
   const { data: unitsData } = useUnitsQuery(
     selectedPropertyId ? { propertyId: selectedPropertyId } : {}
   )
+
+  // Handle template selection
+  const handleTemplateSelect = (template: {
+    id: string
+    name: string
+    category: MaintenanceCategory
+    priority: MaintenancePriority
+    title: string
+    description: string
+    slaResponseHours: number | null
+    slaResolutionHours: number | null
+  }) => {
+    setSelectedTemplateId(template.id)
+    setFormData({
+      ...formData,
+      title: template.title,
+      description: template.description,
+      category: template.category,
+      priority: template.priority,
+      slaResponseHours: template.slaResponseHours ?? undefined,
+      slaResolutionHours: template.slaResolutionHours ?? undefined,
+    })
+    toast.success('Template Applied', {
+      description: `"${template.name}" template has been applied`,
+    })
+  }
 
   const handleSubmit = async () => {
     if (!formData.unitId || !formData.title || !formData.description || !formData.category) {
@@ -597,6 +636,9 @@ function CreateWorkOrderDrawer({ open, onOpenChange }: { open: boolean; onOpenCh
         priority: formData.priority,
         permissionToEnter: formData.permissionToEnter,
         preferredTimes: formData.preferredTimes || undefined,
+        slaResponseHours: formData.slaResponseHours,
+        slaResolutionHours: formData.slaResolutionHours,
+        templateId: selectedTemplateId || undefined,
       })
 
       toast.success('Work Order Created', {
@@ -613,8 +655,11 @@ function CreateWorkOrderDrawer({ open, onOpenChange }: { open: boolean; onOpenCh
         priority: 'MEDIUM',
         permissionToEnter: true,
         preferredTimes: '',
+        slaResponseHours: undefined,
+        slaResolutionHours: undefined,
       })
       setSelectedPropertyId('')
+      setSelectedTemplateId(null)
 
       // Navigate to the new work order
       navigate({ to: '/app/maintenance/$workOrderId', params: { workOrderId: result.id } })
@@ -630,10 +675,42 @@ function CreateWorkOrderDrawer({ open, onOpenChange }: { open: boolean; onOpenCh
       <DrawerContent>
         <div className='mx-auto w-full max-w-lg'>
           <DrawerHeader>
-            <DrawerTitle>Create Work Order</DrawerTitle>
-            <DrawerDescription>
-              Submit a new maintenance request. Fill in the details below.
-            </DrawerDescription>
+            <div className='flex items-center justify-between'>
+              <div>
+                <DrawerTitle>Create Work Order</DrawerTitle>
+                <DrawerDescription>
+                  Submit a new maintenance request. Fill in the details below.
+                </DrawerDescription>
+              </div>
+              <TemplateSelector onSelect={handleTemplateSelect} />
+            </div>
+            {selectedTemplateId && (
+              <div className='mt-2 flex items-center gap-2 text-xs text-muted-foreground'>
+                <LuCheck className='size-3 text-green-600' />
+                Template applied
+                <Button
+                  variant='ghost'
+                  size='sm'
+                  className='h-auto p-0 text-xs'
+                  onClick={() => {
+                    setSelectedTemplateId(null)
+                    setFormData({
+                      title: '',
+                      description: '',
+                      unitId: formData.unitId,
+                      category: '',
+                      priority: 'MEDIUM',
+                      permissionToEnter: true,
+                      preferredTimes: '',
+                      slaResponseHours: undefined,
+                      slaResolutionHours: undefined,
+                    })
+                  }}
+                >
+                  Clear
+                </Button>
+              </div>
+            )}
           </DrawerHeader>
           <div className='grid gap-4 px-4 pb-4'>
             <div className='space-y-2'>
@@ -742,6 +819,36 @@ function CreateWorkOrderDrawer({ open, onOpenChange }: { open: boolean; onOpenCh
                 value={formData.preferredTimes}
                 onChange={(e) => setFormData({ ...formData, preferredTimes: e.target.value })}
               />
+            </div>
+            <div className='grid grid-cols-2 gap-4'>
+              <div className='space-y-2'>
+                <Label htmlFor='wo-sla-response'>Response SLA (hours)</Label>
+                <Input
+                  id='wo-sla-response'
+                  type='number'
+                  min='1'
+                  placeholder='e.g., 4'
+                  value={formData.slaResponseHours ?? ''}
+                  onChange={(e) => setFormData({
+                    ...formData,
+                    slaResponseHours: e.target.value ? parseInt(e.target.value) : undefined
+                  })}
+                />
+              </div>
+              <div className='space-y-2'>
+                <Label htmlFor='wo-sla-resolution'>Resolution SLA (hours)</Label>
+                <Input
+                  id='wo-sla-resolution'
+                  type='number'
+                  min='1'
+                  placeholder='e.g., 24'
+                  value={formData.slaResolutionHours ?? ''}
+                  onChange={(e) => setFormData({
+                    ...formData,
+                    slaResolutionHours: e.target.value ? parseInt(e.target.value) : undefined
+                  })}
+                />
+              </div>
             </div>
             <div className='flex items-center space-x-2'>
               <Checkbox
