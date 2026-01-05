@@ -50,6 +50,7 @@ model User {
   properties         Property[]           @relation("PropertyManager")
   assignedWorkOrders MaintenanceRequest[] @relation("AssignedTo")
   createdWorkOrders  MaintenanceRequest[] @relation("CreatedBy")
+  createdSchedules   MaintenanceSchedule[]
   sentMessages       Message[]            @relation("MessageSender")
   auditLogs          AuditLog[]
   createdDocuments   Document[]           @relation("DocumentUploader")
@@ -57,6 +58,7 @@ model User {
   ownedTeams         Team[]               @relation("TeamOwner")
   createdTemplates   LeaseTemplate[]      @relation("TemplateCreator")
   tenantProfile      Tenant?              @relation("TenantUser") // Tenant portal access
+  maintenanceTemplates MaintenanceTemplate[] @relation("MaintenanceTemplateCreator")
 
   @@map("users")
 }
@@ -258,10 +260,11 @@ model Property {
   manager     User         @relation("PropertyManager", fields: [managerId], references: [id])
   teamId      String?      @db.Uuid
   team        Team?        @relation("TeamProperties", fields: [teamId], references: [id])
-  units       Unit[]
-  expenses    Expense[]
-  documents   Document[]
-  inspections Inspection[]
+  units                Unit[]
+  expenses             Expense[]
+  documents            Document[]
+  inspections          Inspection[]
+  maintenanceSchedules MaintenanceSchedule[]
 
   @@index([managerId])
   @@index([teamId])
@@ -320,6 +323,7 @@ model Unit {
   property            Property             @relation(fields: [propertyId], references: [id], onDelete: Cascade)
   leases              Lease[]
   maintenanceRequests MaintenanceRequest[]
+  maintenanceSchedules MaintenanceSchedule[]
 
   @@unique([propertyId, unitNumber])
   @@index([propertyId])
@@ -669,6 +673,22 @@ model MaintenanceRequest {
   completionNotes  String?
   completionPhotos String[] @default([])
 
+  // Emergency Escalation
+  escalationLevel          Int       @default(0) // 0=none, 1=initial alert, 2=escalated, 3=critical
+  lastEscalatedAt          DateTime? // When the last escalation notification was sent
+  escalationAcknowledgedAt DateTime? // When someone acknowledged the escalation
+  escalationAcknowledgedById String? @db.Uuid // Who acknowledged the escalation
+
+  // SLA Tracking
+  slaResponseHours   Int?      // Target hours to first response (acknowledgement)
+  slaResolutionHours Int?      // Target hours to resolution (completion)
+  firstRespondedAt   DateTime? // When work order was first acknowledged
+  slaResponseDueAt   DateTime? // Calculated: createdAt + slaResponseHours
+  slaResolutionDueAt DateTime? // Calculated: createdAt + slaResolutionHours
+
+  // Template reference
+  templateId String? @db.Uuid
+
   // Metadata
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -685,11 +705,16 @@ model MaintenanceRequest {
   vendorId     String? @db.Uuid
   vendor       Vendor? @relation(fields: [vendorId], references: [id])
 
+  // If generated from a schedule
+  scheduleId   String?              @db.Uuid
+  schedule     MaintenanceSchedule? @relation("ScheduleGenerated", fields: [scheduleId], references: [id], onDelete: SetNull)
+
   comments      MaintenanceComment[]
   statusHistory WorkOrderStatusHistory[]
   expenses      Expense[]
 
   @@index([unitId])
+  @@index([scheduleId])
   @@index([status])
   @@index([priority])
   @@index([assignedToId])
@@ -704,6 +729,9 @@ model MaintenanceComment {
   authorName String
   authorType String // "staff", "tenant", "vendor"
   createdAt  DateTime @default(now())
+
+  // Attachments (file paths stored in Supabase Storage)
+  attachments String[] @default([])
 
   requestId String             @db.Uuid
   request   MaintenanceRequest @relation(fields: [requestId], references: [id], onDelete: Cascade)
@@ -737,6 +765,76 @@ model WorkOrderStatusHistory {
   @@index([requestId])
   @@index([createdAt])
   @@map("work_order_status_history")
+}
+
+// =============================================================================
+// RECURRING MAINTENANCE SCHEDULES
+// =============================================================================
+
+enum RecurrenceFrequency {
+  DAILY
+  WEEKLY
+  BIWEEKLY
+  MONTHLY
+  QUARTERLY
+  BIANNUALLY
+  ANNUALLY
+}
+
+model MaintenanceSchedule {
+  id     String  @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  name   String // e.g., "HVAC Filter Change", "Quarterly Inspection"
+  isActive Boolean @default(true)
+
+  // What to create
+  category    MaintenanceCategory
+  priority    MaintenancePriority @default(MEDIUM)
+  title       String // Title for generated work orders
+  description String // Description for generated work orders
+  location    String? // e.g., "All HVAC units"
+
+  // Recurrence settings
+  frequency      RecurrenceFrequency
+  intervalCount  Int                  @default(1) // e.g., every 2 weeks
+  dayOfWeek      Int?                 // 0-6 for weekly (Sunday = 0)
+  dayOfMonth     Int?                 // 1-31 for monthly
+  monthOfYear    Int?                 // 1-12 for annually
+
+  // Scheduling
+  startDate      DateTime             // When the schedule starts
+  endDate        DateTime?            // Optional end date
+  nextRunAt      DateTime             // Next scheduled execution
+  lastRunAt      DateTime?            // Last time a work order was created
+
+  // Cost estimate
+  estimatedCost  Decimal?             @db.Decimal(10, 2)
+  estimatedDuration Int?              // in minutes
+
+  // Assignment
+  autoAssignVendor Boolean @default(false)
+
+  // Metadata
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  propertyId String?  @db.Uuid
+  property   Property? @relation(fields: [propertyId], references: [id], onDelete: Cascade)
+  unitId     String?  @db.Uuid
+  unit       Unit?    @relation(fields: [unitId], references: [id], onDelete: Cascade)
+  vendorId   String?  @db.Uuid
+  vendor     Vendor?  @relation(fields: [vendorId], references: [id], onDelete: SetNull)
+  createdById String  @db.Uuid
+  createdBy   User    @relation(fields: [createdById], references: [id])
+
+  // Track generated work orders
+  generatedRequests MaintenanceRequest[] @relation("ScheduleGenerated")
+
+  @@index([nextRunAt])
+  @@index([isActive])
+  @@index([propertyId])
+  @@index([unitId])
+  @@map("pm_maintenance_schedules")
 }
 
 // =============================================================================
@@ -794,8 +892,9 @@ model Vendor {
   updatedAt DateTime @updatedAt
 
   // Relations
-  maintenanceRequests MaintenanceRequest[]
-  expenses            Expense[]
+  maintenanceRequests  MaintenanceRequest[]
+  maintenanceSchedules MaintenanceSchedule[]
+  expenses             Expense[]
 
   @@index([status])
   @@map("pm_vendors")
@@ -1415,4 +1514,49 @@ model LeaseTemplate {
   @@index([parentTemplateId])
   @@index([createdById])
   @@map("lease_templates")
+}
+
+// =============================================================================
+// WORK ORDER TEMPLATES (EPM-XX)
+// =============================================================================
+
+model MaintenanceTemplate {
+  id   String @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  name String // e.g., "Leaky Faucet", "HVAC Not Cooling"
+
+  // Template fields
+  category    MaintenanceCategory
+  priority    MaintenancePriority @default(MEDIUM)
+  title       String // Pre-filled title for work orders
+  description String // Pre-filled description
+
+  // SLA defaults
+  slaResponseHours   Int? // Default response SLA for this type
+  slaResolutionHours Int? // Default resolution SLA for this type
+
+  // Cost estimates
+  estimatedCost     Decimal? @db.Decimal(10, 2)
+  estimatedDuration Int?     // in minutes
+
+  // Suggested vendor category matching
+  suggestVendorByCategory Boolean @default(true)
+
+  // Status
+  isActive Boolean @default(true)
+
+  // Usage tracking
+  usageCount Int @default(0)
+
+  // Metadata
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  createdById String @db.Uuid
+  createdBy   User   @relation("MaintenanceTemplateCreator", fields: [createdById], references: [id])
+
+  @@index([category])
+  @@index([isActive])
+  @@index([createdById])
+  @@map("maintenance_templates")
 }

@@ -1,6 +1,8 @@
 # Epic 3 — Maintenance & Work Orders (EPM-29 → EPM-33, EPM-74 → EPM-76)
 
-**Updated:** 2026-01-02
+**Updated:** 2026-01-05
+
+> **Status: ✅ COMPLETE** — All Epic 3 issues implemented plus 7 additional features beyond original scope.
 
 ## Shared domain spec (Epic 3)
 
@@ -334,4 +336,204 @@ Dependencies: reporting layer (EPM-72) or dedicated analytics queries.
 - **Existing (base)**: `supabase/migrations/001_initial_schema.sql`
   - `maintenance_requests` includes `estimated_cost`, `actual_cost`, `tenant_charge` (line ~549 block)
 - **No new migrations required** for cost capture (reporting is query work).
+
+---
+
+## Additional Features Implemented (Beyond Original Scope)
+
+The following features were implemented as enhancements to Epic 3, extending beyond the original issue scope:
+
+---
+
+### Calendar View for Work Orders
+
+**Goal**: Visualize scheduled work orders in a calendar format for better planning.
+
+**Implementation**:
+- Month and week view toggle
+- Color-coded by priority (emergency=red, high=orange, medium=blue, low=gray)
+- Click to view work order details
+- Shows scheduled date and status
+
+**Files**:
+- `src/components/maintenance/work-order-calendar.tsx` — Calendar component
+- `src/routes/app.maintenance.index.tsx` — Calendar/List view toggle
+
+---
+
+### Bulk Actions
+
+**Goal**: Allow batch operations on multiple work orders for efficiency.
+
+**Implementation**:
+- Multi-select work orders via checkboxes
+- Bulk status change (any valid status)
+- Bulk vendor assignment
+- Bulk cancellation with confirmation
+
+**API endpoints** (`src/services/maintenance.api.ts`):
+- `bulkUpdateStatus` — Update status for multiple work orders
+- `bulkAssignVendor` — Assign vendor to multiple work orders
+- `bulkDeleteWorkOrders` — Cancel multiple work orders
+
+**Zod schemas** (`src/services/maintenance.schema.ts`):
+- `bulkUpdateStatusSchema`
+- `bulkAssignVendorSchema`
+- `bulkDeleteSchema`
+
+**Files**:
+- `src/components/maintenance/bulk-actions-toolbar.tsx` — Bulk actions UI
+
+---
+
+### Work Order Templates
+
+**Goal**: Create reusable templates for common maintenance scenarios.
+
+**Data model** (Prisma):
+```prisma
+model MaintenanceTemplate {
+  id                     String              @id @db.Uuid
+  name                   String
+  category               MaintenanceCategory
+  priority               MaintenancePriority @default(MEDIUM)
+  title                  String
+  description            String
+  slaResponseHours       Int?
+  slaResolutionHours     Int?
+  estimatedCost          Decimal?
+  estimatedDuration      Int?
+  suggestVendorByCategory Boolean            @default(true)
+  isActive               Boolean             @default(true)
+  usageCount             Int                 @default(0)
+  createdById            String              @db.Uuid
+}
+```
+
+**API endpoints** (`src/services/maintenance.api.ts`):
+- `getMaintenanceTemplates` — List templates with filters
+- `getMaintenanceTemplate` — Get single template
+- `createMaintenanceTemplate` — Create template
+- `updateMaintenanceTemplate` — Update template
+- `deleteMaintenanceTemplate` — Delete template
+- `incrementTemplateUsage` — Track usage count
+
+**Zod schemas** (`src/services/maintenance.schema.ts`):
+- `createTemplateSchema`
+- `updateTemplateSchema`
+- `templateFiltersSchema`
+- `templateIdSchema`
+
+**Files**:
+- `src/components/maintenance/template-selector.tsx` — Template picker for create form
+
+---
+
+### SLA Tracking
+
+**Goal**: Track response and resolution times with visual indicators.
+
+**Data model additions** (Prisma):
+```prisma
+// Added to MaintenanceRequest
+slaResponseHours    Int?
+slaResolutionHours  Int?
+firstRespondedAt    DateTime?
+slaResponseDueAt    DateTime?
+slaResolutionDueAt  DateTime?
+```
+
+**Implementation**:
+- Auto-calculate due dates when work order created with SLA
+- Auto-set `firstRespondedAt` when status changes to ACKNOWLEDGED
+- Visual badges showing time remaining or overdue status
+
+**Files**:
+- `src/components/maintenance/sla-indicator.tsx` — SLA status badges
+
+---
+
+### Staff Assignment
+
+**Goal**: Allow assigning team members (staff) to work orders in addition to vendors.
+
+**Implementation**:
+- Team members dropdown on work order detail page
+- Leverages existing `assignedToId` field on MaintenanceRequest
+- Shows assigned staff in work order list
+
+**API endpoints** (`src/services/maintenance.api.ts`):
+- `getTeamMembers` — Fetch team members for assignment dropdown
+
+**Files**:
+- `src/routes/app.maintenance.$workOrderId.tsx` — Staff Assignment card
+
+---
+
+### Export Functionality
+
+**Goal**: Export work orders to CSV or JSON for reporting and analysis.
+
+**Implementation**:
+- Export dialog with filters (property, status, priority, category, date range)
+- CSV format (Excel compatible) or JSON
+- Downloads file to browser
+
+**API endpoints** (`src/services/maintenance.api.ts`):
+- `exportWorkOrders` — Export with filters, returns CSV or JSON data
+
+**Zod schemas** (`src/services/maintenance.schema.ts`):
+- `exportFiltersSchema`
+
+**Files**:
+- `src/components/maintenance/export-dialog.tsx` — Export dialog component
+
+**Export fields**:
+- Request Number, Title, Description, Status, Priority, Category
+- Property, Property Address, Unit Number
+- Tenant Name, Email, Phone
+- Vendor, Vendor Phone
+- Assigned To (staff)
+- Estimated Cost, Actual Cost
+- Created Date, Scheduled Date, Completed Date
+
+---
+
+### Comment Attachments
+
+**Goal**: Allow attaching files (images, documents) to work order comments.
+
+**Data model additions** (Prisma):
+```prisma
+// Added to MaintenanceComment
+attachments String[] @default([])
+```
+
+**Supported file types**:
+- Images: JPEG, PNG, GIF, WebP
+- Documents: PDF, DOC, DOCX, TXT
+- Max size: 25MB per file
+
+**API endpoints** (`src/services/maintenance.api.ts`):
+- `createCommentAttachmentUploadUrl` — Get signed upload URL
+- `addMaintenanceCommentWithAttachments` — Create comment with attachments
+- `getCommentAttachmentUrls` — Get signed download URLs for attachments
+
+**Zod schemas** (`src/services/maintenance.schema.ts`):
+- `commentAttachmentUploadSchema`
+- `commentIdSchema`
+
+**Files**:
+- `src/routes/app.maintenance.$workOrderId.tsx` — Updated comment form with attachment UI
+
+---
+
+## Implementation Commits
+
+| Date | Commit | Description |
+|------|--------|-------------|
+| 2026-01-05 | d3d9f17 | Staff assignment, export, and comment attachments |
+| 2026-01-05 | 80cddbc | Bulk actions, work order templates, and SLA tracking |
+| 2026-01-04 | 29d6368 | Calendar view for work orders |
+| 2026-01-04 | b1793a9 | Emergency escalation system (EPM-75) |
 

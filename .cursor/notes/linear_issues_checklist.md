@@ -1,6 +1,6 @@
 # Linear Issues Checklist - Property Management
 
-**Last Updated:** January 4, 2026
+**Last Updated:** January 5, 2026
 **Project:** Property Management
 **Team:** Property Management (EPM)
 **Total Issues:** 77
@@ -110,16 +110,28 @@
 
 | ID | Title | Status | Priority | Labels | Story Points | Dependencies |
 |----|-------|--------|----------|--------|--------------|--------------|
-| EPM-29 | Epic 3.1: Tenant Submit Maintenance Request | Backlog | High | MVP | 5 | EPM-21 |
-| EPM-30 | Epic 3.2: Property Manager View Work Orders | Backlog | High | MVP | 5 | EPM-29 |
-| EPM-31 | Epic 3.3: Assign Work Order to Vendor | Backlog | High | MVP | 5 | EPM-30 |
-| EPM-32 | Epic 3.4: Update Work Order Status | Backlog | High | MVP | 5 | EPM-31 |
-| EPM-33 | Epic 3.5: Vendor Management | Backlog | High | MVP | 5 | None |
-| EPM-74 | Epic 3.6: Recurring Maintenance Schedules | Backlog | Medium | Phase 2 | 8 | EPM-30, EPM-33 |
-| EPM-75 | Epic 3.7: Emergency Work Order Handling | Backlog | Medium | Phase 2 | 8 | EPM-29, EPM-30 |
-| EPM-76 | Epic 3.8: Maintenance Cost Tracking | Backlog | Medium | Phase 2 | 5 | EPM-32 |
+| EPM-29 | Epic 3.1: Tenant Submit Maintenance Request | ✅ Done | High | MVP | 5 | EPM-21 |
+| EPM-30 | Epic 3.2: Property Manager View Work Orders | ✅ Done | High | MVP | 5 | EPM-29 |
+| EPM-31 | Epic 3.3: Assign Work Order to Vendor | ✅ Done | High | MVP | 5 | EPM-30 |
+| EPM-32 | Epic 3.4: Update Work Order Status | ✅ Done | High | MVP | 5 | EPM-31 |
+| EPM-33 | Epic 3.5: Vendor Management | ✅ Done | High | MVP | 5 | None |
+| EPM-74 | Epic 3.6: Recurring Maintenance Schedules | ✅ Done | Medium | Phase 2 | 8 | EPM-30, EPM-33 |
+| EPM-75 | Epic 3.7: Emergency Work Order Handling | ✅ Done | Medium | Phase 2 | 8 | EPM-29, EPM-30 |
+| EPM-76 | Epic 3.8: Maintenance Cost Tracking | ✅ Done | Medium | Phase 2 | 5 | EPM-32 |
 
-**Epic 3 Total:** 46 story points (25 MVP + 21 Phase 2)
+**Epic 3 Total:** 46 story points (25 MVP + 21 Phase 2) - **ALL DONE**
+
+### Additional Epic 3 Features Implemented (Beyond Original Scope)
+
+| Feature | Status | Description |
+|---------|--------|-------------|
+| Calendar View | ✅ Done | Visual calendar display for scheduled work orders with month/week views |
+| Bulk Actions | ✅ Done | Bulk status updates, vendor assignment, and cancellation for multiple work orders |
+| Work Order Templates | ✅ Done | Reusable templates with predefined title, description, category, priority, and SLA settings |
+| SLA Tracking | ✅ Done | Response and resolution time tracking with visual indicators for SLA compliance |
+| Staff Assignment | ✅ Done | Assign team members to work orders with team member dropdown |
+| Export Functionality | ✅ Done | Export work orders to CSV/JSON with filters (property, status, priority, date range) |
+| Comment Attachments | ✅ Done | Attach files (images, PDFs, documents) to work order comments |
 
 ---
 
@@ -240,30 +252,28 @@
 ### By Status
 - **Backlog:** 67 issues
 - **In Progress:** 0 issues
-- **Done:** 10 issues (EPM-77, EPM-20 through EPM-28)
+- **Done:** 9 issues (EPM-77, EPM-29 → EPM-33, EPM-74 → EPM-76)
 
 ### By Priority
 - **Urgent (P0):** 4 infrastructure issues
-- **High (P1):** ~31 MVP feature issues remaining
-- **Medium (P2):** ~32 Phase 2 feature issues
+- **High (P1):** ~40 MVP feature issues (~5 done in Epic 3)
+- **Medium (P2):** ~32 Phase 2 feature issues (~3 done in Epic 3)
 
 ### By Phase
-- **MVP (Phase 1):** ~31 issues remaining
-- **Phase 2:** ~32 issues
+- **MVP (Phase 1):** ~40 issues (~5 done)
+- **Phase 2:** ~32 issues (~3 done)
 - **Infrastructure:** 14 issues (including EPM-77)
 - **Documentation:** 3 issues
 
 ### Total Story Points
-- **MVP Features:** ~256 story points (79 delivered via Epic 2)
-- **Phase 2 Features:** ~155 story points
+- **MVP Features:** ~256 story points (~25 completed in Epic 3)
+- **Phase 2 Features:** ~155 story points (~21 completed in Epic 3)
 - **Infrastructure:** Not estimated (foundational work)
 
-### Recently Completed (January 4, 2026)
-- **Epic 2:** 79 story points across 9 issues
-  - Sprint 1: EPM-21, EPM-24, EPM-20
-  - Sprint 2: EPM-22, EPM-23, EPM-25
-  - Sprint 3: EPM-26, EPM-27
-  - Sprint 4: EPM-28
+### Epic 3 Completion (January 2026)
+- **All 8 Epic 3 issues completed** (EPM-29 → EPM-33, EPM-74 → EPM-76)
+- **7 additional features implemented** beyond original scope
+- **Total: 46 story points completed**
 
 ---
 

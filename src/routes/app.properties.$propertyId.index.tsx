@@ -247,7 +247,7 @@ function PropertyContent({ propertyId }: { propertyId: string }) {
               </Link>
             </Button>
             <Button variant='outline' className='justify-start' asChild>
-              <Link to='/app/maintenance/new'>
+              <Link to='/app/maintenance'>
                 <LuWrench className='mr-2 size-4' />
                 New Work Order
               </Link>

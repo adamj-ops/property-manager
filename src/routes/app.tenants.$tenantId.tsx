@@ -309,7 +309,7 @@ function TenantDetailPage() {
               </Link>
             </Button>
             <Button variant='outline' className='justify-start' asChild>
-              <Link to='/app/maintenance/new'>
+              <Link to='/app/maintenance'>
                 <LuWrench className='mr-2 size-4' />
                 Create Work Order
               </Link>
