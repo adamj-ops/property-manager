@@ -53,6 +53,8 @@ const en = {
     'my-lease': 'My Lease',
     'lease-details': 'Lease Details',
     'maintenance-requests': 'Maintenance Requests',
+    'pets': 'Pets',
+    'inspections': 'Inspections',
   },
   auth: {
     'name': 'Name',

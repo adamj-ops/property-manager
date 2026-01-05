@@ -1,5 +1,6 @@
 import {
   LuBuilding2,
+  LuClipboardCheck,
   LuDollarSign,
   LuFileText,
   LuHouse,
@@ -8,6 +9,7 @@ import {
   LuLayoutDashboard,
   LuMessageSquare,
   LuMoon,
+  LuPawPrint,
   LuShapes,
   LuShieldCheck,
   LuSun,
@@ -96,6 +98,18 @@ export const navigation: readonly NavItem[] = [
         name: 'navigation.documents',
         icon: LuFileText,
         link: '/app/documents',
+      },
+      {
+        type: 'link',
+        name: 'navigation.pets',
+        icon: LuPawPrint,
+        link: '/app/pets',
+      },
+      {
+        type: 'link',
+        name: 'navigation.inspections',
+        icon: LuClipboardCheck,
+        link: '/app/inspections',
       },
     ],
   },

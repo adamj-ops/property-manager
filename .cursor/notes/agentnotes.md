@@ -1,6 +1,6 @@
 # Agent Notes - Everyday Property Manager
 
-**Last Updated:** January 3, 2026
+**Last Updated:** January 4, 2026
 
 ---
 
@@ -291,6 +291,62 @@ pnpm dev
 
 ## 📝 Session History
 
+### January 4, 2026 (Session 6 - Epic 2 Planning Review)
+
+**Completed Epic 2 Full Implementation Review:**
+
+Conducted a comprehensive analysis of Epic 2: Tenant Management & Leasing (EPM-20 through EPM-28) to identify all remaining work needed for end-to-end implementation.
+
+**Key Findings:**
+
+1. **Backend Services (Mostly Complete):**
+   - `tenants.api.ts`, `tenants.schema.ts`, `tenants.query.ts` - ✅ Fully implemented
+   - `leases.api.ts`, `leases.schema.ts`, `leases.query.ts` - ✅ Mostly complete
+   - Missing: `pets.*.ts`, `inspections.*.ts`, `lease-renewals.*.ts`, `move-out.*.ts`
+
+2. **Frontend (UI Shells Only):**
+   - All existing routes (`app.tenants.*`, `app.leases.*`) use **mock data**
+   - Forms exist but are not connected to APIs
+   - Multi-step lease wizard has template selection but no form submission
+
+3. **Database Gaps:**
+   - Missing `renewed_from_lease_id` column on leases table
+   - Missing `move_out_damage_items` table
+   - Missing `deposit_disposition_letters` table
+
+**Documentation Created:**
+- `.cursor/docs/epm/EPIC2_IMPLEMENTATION_PLAN.md` - Comprehensive plan with:
+  - Current state assessment
+  - Detailed task breakdown for all 9 EPM issues
+  - Database migrations needed
+  - API endpoints to create
+  - Frontend components to build
+  - Acceptance criteria per issue
+  - MN compliance requirements
+  - Estimated effort (79 story points, ~6-8 weeks)
+
+- `.cursor/docs/epm/EPIC2_IMPLEMENTATION_CHECKLIST.md` - Task checklist with:
+  - Backend/Frontend/Test status per issue
+  - Files to create/modify
+  - Sprint planning (4 sprints over 8 weeks)
+  - Quick reference for implementation
+
+**Implementation Priority:**
+1. Sprint 1 (Week 1-2): EPM-21, EPM-24, EPM-20 (Foundation - wire existing UI to APIs)
+2. Sprint 2 (Week 3-4): EPM-22, EPM-23, EPM-25 (Lease lifecycle)
+3. Sprint 3 (Week 5-6): EPM-26, EPM-27 (Pets & Inspections - new service layers)
+4. Sprint 4 (Week 7-8): EPM-28 (Move-out process with MN compliance)
+
+**Critical Path Items:**
+- EPM-21 (Tenant Profile) → All other Epic 2 issues depend on tenants
+- EPM-20 (Create Lease) → Unblocks inspections, renewal, move-out
+- EPM-23 (Lease Renewal) → Requires database migration
+- EPM-28 (Move-Out) → Requires 2 new tables + MN compliance logic
+
+**Files Created:**
+- `.cursor/docs/epm/EPIC2_IMPLEMENTATION_PLAN.md`
+- `.cursor/docs/epm/EPIC2_IMPLEMENTATION_CHECKLIST.md`
+
 ### January 3, 2026 (Session 5 - EPM-43 Lease Document Generation)
 
 **Completed EPM-43 (Lease Document Generation):**
@@ -442,19 +498,36 @@ pnpm dev
 
 ## ⚠️ Development Notes
 
-### Current State (Jan 2, 2026)
+### Current State (Jan 4, 2026)
 - **Auth**: Better Auth working (email/password, sessions)
 - **Storage**: Supabase Storage working (documents + media buckets)
 - **Documents**: Full CRUD with upload/download/delete
 - **Database**: Prisma schema has all core tables + teams + status history
 - **API Layer**: Authorization, error handling, pagination, audit logging utilities ready
+- **Epic 1**: Properties & Units - ✅ Complete
+- **Epic 2**: Tenant & Leasing - Backend ready, Frontend uses mock data (planning complete)
 
-### Linear Status (Jan 2, 2026)
-- EPM-1: Database Schema - **95% complete** (security_deposits deferred)
-- EPM-2: Supabase Storage - **In Review**
-- EPM-7: API Service Layer - **95% complete** (docs pending)
-- EPM-44: Document Upload - **In Review**
-- EPM-46: User Registration & Auth - **In Progress**
+### Epic 2 Status (Jan 4, 2026)
+| Issue | Backend | Frontend | Status |
+|-------|---------|----------|--------|
+| EPM-21: Tenant Profile | ✅ | 🔶 Shell | Needs wiring |
+| EPM-24: Tenant List | ✅ | 🔶 Mock data | Needs wiring |
+| EPM-20: Create Lease | ✅ | 🔶 Shell | Needs wiring |
+| EPM-22: Expiration Tracking | ✅ | ⬜ | Not started |
+| EPM-23: Lease Renewal | ⬜ | ⬜ | Needs migration |
+| EPM-25: Tenant Detail | ✅ | ⬜ | Not started |
+| EPM-26: Pet Application | ⬜ | ⬜ | New service layer |
+| EPM-27: Move-In Inspection | ⬜ | ⬜ | New service layer |
+| EPM-28: Move-Out Process | ⬜ | ⬜ | Needs 2 migrations |
+
+### Linear Status (Jan 4, 2026)
+- EPM-1: Database Schema - **Done** ✅
+- EPM-2: Supabase Storage - **Done** ✅
+- EPM-7: API Service Layer - **Done** ✅
+- EPM-9: Testing Framework - **Done** ✅
+- EPM-43: Lease Document Generation - **Done** ✅
+- EPM-77: Stripe Integration - **Done** ✅
+- EPM-20 to EPM-28 (Epic 2): **Backlog** - Planning complete, ready for implementation
 
 ### Architecture Decisions
 - **Storage Paths**: User-scoped (`{userId}/{folder}/{type}/{filename}`)
@@ -473,5 +546,5 @@ pnpm dev
 
 ---
 
-**Maintained by:** Development Team  
-**Last Review:** January 2, 2026
+**Maintained by:** Development Team
+**Last Review:** January 4, 2026

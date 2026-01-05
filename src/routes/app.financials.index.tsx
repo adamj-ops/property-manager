@@ -1,48 +1,379 @@
+import { Suspense } from 'react'
 import { createFileRoute } from '@tanstack/react-router'
-import { LuCircleAlert, LuArrowDownLeft, LuArrowUpRight, LuDollarSign, LuDownload, LuTrendingUp } from 'react-icons/lu'
+import { LuCircleAlert, LuArrowDownLeft, LuArrowUpRight, LuDownload, LuTrendingUp, LuTrendingDown, LuLoaderCircle } from 'react-icons/lu'
 
 import { Badge } from '~/components/ui/badge'
 import { Button } from '~/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '~/components/ui/card'
 import { Link } from '~/components/ui/link'
 import { Separator } from '~/components/ui/separator'
+import { Skeleton } from '~/components/ui/skeleton'
 import { Typography } from '~/components/ui/typography'
+import { usePaymentStatsQuery, useRentRollQuery, usePaymentsQuery } from '~/services/payments.query'
+import { useExpenseSummaryQuery, useExpenseStatsQuery } from '~/services/expenses.query'
+import { useDepositStatsQuery } from '~/services/security-deposits.query'
 
 export const Route = createFileRoute('/app/financials/')({
   component: FinancialsDashboardPage,
 })
 
-// Mock data
-const monthlyData = {
-  expectedRevenue: 45000,
-  collectedRevenue: 42350,
-  outstanding: 2650,
-  expenses: 12340,
-  netOperatingIncome: 30010,
+// Loading skeleton for stats cards
+function StatsCardSkeleton() {
+  return (
+    <Card>
+      <CardHeader className='pb-2'>
+        <Skeleton className='h-4 w-24' />
+      </CardHeader>
+      <CardContent>
+        <Skeleton className='h-8 w-32' />
+        <Skeleton className='mt-1 h-3 w-20' />
+      </CardContent>
+    </Card>
+  )
 }
 
-const pastDueTenants = [
-  { name: 'Emily Rodriguez', unit: '204', amount: 1410, daysPastDue: 5 },
-]
+// Payment Stats Section
+function PaymentStatsSection() {
+  const { data: stats } = usePaymentStatsQuery()
 
-const expenseCategories = [
-  { name: 'Maintenance', amount: 2840, percentOfRevenue: 6.3, vsBudget: -12 },
-  { name: 'Property Management', amount: 3600, percentOfRevenue: 8.0, vsBudget: 0 },
-  { name: 'Utilities', amount: 1250, percentOfRevenue: 2.8, vsBudget: 5 },
-  { name: 'Taxes & Insurance', amount: 4200, percentOfRevenue: 9.3, vsBudget: 0 },
-  { name: 'Legal & Admin', amount: 450, percentOfRevenue: 1.0, vsBudget: -25 },
-]
+  const outstanding = stats.expectedRent - stats.collectedThisMonth
 
-const recentTransactions = [
-  { type: 'income', description: 'Rent - Unit 305 James Parker', amount: 1425, date: '2024-12-31' },
-  { type: 'income', description: 'Rent - Unit 402 David Kim', amount: 1500, date: '2024-12-30' },
-  { type: 'expense', description: 'Plumbing repair - Unit 210', amount: 285, date: '2024-12-29' },
-  { type: 'income', description: 'Rent - Unit 101 Sarah Johnson', amount: 1300, date: '2024-12-28' },
-  { type: 'expense', description: 'HVAC service call', amount: 150, date: '2024-12-27' },
-]
+  return (
+    <div className='grid gap-4 md:grid-cols-3'>
+      <Card>
+        <CardHeader className='pb-2'>
+          <CardTitle className='text-sm font-medium'>Expected Revenue</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className='text-2xl font-bold'>${stats.expectedRent.toLocaleString()}</div>
+          <p className='text-xs text-muted-foreground'>From active leases</p>
+        </CardContent>
+      </Card>
+      <Card>
+        <CardHeader className='pb-2'>
+          <CardTitle className='text-sm font-medium'>Collected</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className='text-2xl font-bold text-green-600'>
+            ${stats.collectedThisMonth.toLocaleString()}
+          </div>
+          <p className='text-xs text-muted-foreground'>{stats.collectionRate}% collection rate</p>
+        </CardContent>
+      </Card>
+      <Card>
+        <CardHeader className='pb-2'>
+          <CardTitle className='text-sm font-medium'>Outstanding</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className='text-2xl font-bold text-destructive'>
+            ${outstanding.toLocaleString()}
+          </div>
+          <p className='text-xs text-muted-foreground'>
+            {stats.latePayments} {stats.latePayments === 1 ? 'tenant' : 'tenants'} past due
+          </p>
+        </CardContent>
+      </Card>
+    </div>
+  )
+}
 
-function FinancialsDashboardPage() {
-  const collectionRate = Math.round((monthlyData.collectedRevenue / monthlyData.expectedRevenue) * 100)
+// Delinquent Tenants Section
+function DelinquentTenantsSection() {
+  const { data: rentRoll } = useRentRollQuery()
+
+  // Filter to only unpaid/partial tenants
+  const delinquentTenants = rentRoll
+    .filter((item) => item.status !== 'PAID' && item.balance > 0)
+    .map((item) => ({
+      tenantId: item.lease.tenant.id,
+      name: `${item.lease.tenant.firstName} ${item.lease.tenant.lastName}`,
+      unit: item.lease.unit.unitNumber,
+      property: item.lease.unit.property.name,
+      amount: item.balance,
+      // Calculate days past due (simplified - assumes rent due on 1st)
+      daysPastDue: Math.max(0, new Date().getDate() - 1),
+    }))
+
+  if (delinquentTenants.length === 0) {
+    return null
+  }
+
+  return (
+    <Card className='border-destructive/50'>
+      <CardHeader>
+        <div className='flex items-center gap-2'>
+          <LuCircleAlert className='size-5 text-destructive' />
+          <CardTitle>Action Required</CardTitle>
+        </div>
+      </CardHeader>
+      <CardContent className='space-y-4'>
+        {delinquentTenants.map((tenant) => (
+          <div key={tenant.tenantId} className='flex items-center justify-between'>
+            <div>
+              <p className='font-medium'>
+                Unit {tenant.unit} - {tenant.name}
+              </p>
+              <p className='text-sm text-muted-foreground'>
+                ${tenant.amount.toLocaleString()} past due
+                {tenant.daysPastDue > 0 && ` (${tenant.daysPastDue} days)`}
+              </p>
+            </div>
+            <div className='flex gap-2'>
+              <Button variant='outline' size='sm' asChild>
+                <Link to='/app/communications'>Send Reminder</Link>
+              </Button>
+              <Button size='sm' asChild>
+                <Link to='/app/financials/payments'>Record Payment</Link>
+              </Button>
+            </div>
+          </div>
+        ))}
+      </CardContent>
+    </Card>
+  )
+}
+
+// Expense Summary Section
+function ExpenseSummarySection() {
+  const { data: summary } = useExpenseSummaryQuery({})
+  const { data: stats } = useExpenseStatsQuery()
+
+  // Map category names to display names
+  const categoryDisplayNames: Record<string, string> = {
+    MAINTENANCE: 'Maintenance',
+    REPAIRS: 'Repairs',
+    UTILITIES: 'Utilities',
+    INSURANCE: 'Insurance',
+    PROPERTY_TAX: 'Property Tax',
+    MORTGAGE: 'Mortgage',
+    HOA_FEES: 'HOA Fees',
+    MANAGEMENT_FEE: 'Management',
+    LEGAL: 'Legal & Admin',
+    ADVERTISING: 'Advertising',
+    SUPPLIES: 'Supplies',
+    LANDSCAPING: 'Landscaping',
+    CLEANING: 'Cleaning',
+    PEST_CONTROL: 'Pest Control',
+    CAPITAL_IMPROVEMENT: 'Capital Improvement',
+    OTHER: 'Other',
+  }
+
+  return (
+    <Card>
+      <CardHeader>
+        <div className='flex items-center justify-between'>
+          <div>
+            <CardTitle>Expense Summary</CardTitle>
+            <CardDescription>
+              {new Date().toLocaleDateString('en-US', { month: 'long', year: 'numeric' })} breakdown
+            </CardDescription>
+          </div>
+          <Button variant='ghost' size='sm' asChild>
+            <Link to='/app/financials/expenses'>View All</Link>
+          </Button>
+        </div>
+      </CardHeader>
+      <CardContent>
+        <div className='space-y-4'>
+          {summary.byCategory.length === 0 ? (
+            <p className='text-sm text-muted-foreground'>No expenses this month</p>
+          ) : (
+            summary.byCategory.slice(0, 5).map((category) => (
+              <div key={category.category} className='flex items-center justify-between'>
+                <div className='flex-1'>
+                  <div className='flex items-center justify-between'>
+                    <span className='text-sm font-medium'>
+                      {categoryDisplayNames[category.category] || category.category}
+                    </span>
+                    <span className='text-sm font-medium'>${category.total.toLocaleString()}</span>
+                  </div>
+                  <div className='mt-1 text-xs text-muted-foreground'>
+                    {category.count} {category.count === 1 ? 'transaction' : 'transactions'}
+                  </div>
+                </div>
+              </div>
+            ))
+          )}
+          <Separator />
+          <div className='flex items-center justify-between font-medium'>
+            <span>Total Expenses</span>
+            <span>${summary.totalExpenses.toLocaleString()}</span>
+          </div>
+          {stats.monthOverMonthChange !== 0 && (
+            <div className='flex items-center gap-1 text-xs text-muted-foreground'>
+              {stats.monthOverMonthChange > 0 ? (
+                <LuTrendingUp className='size-3 text-red-500' />
+              ) : (
+                <LuTrendingDown className='size-3 text-green-500' />
+              )}
+              {stats.monthOverMonthChange > 0 ? '+' : ''}
+              {stats.monthOverMonthChange}% vs last month
+            </div>
+          )}
+        </div>
+      </CardContent>
+    </Card>
+  )
+}
+
+// Recent Transactions Section
+function RecentTransactionsSection() {
+  const { data: paymentsData } = usePaymentsQuery({ limit: 5 })
+
+  return (
+    <Card>
+      <CardHeader>
+        <div className='flex items-center justify-between'>
+          <CardTitle>Recent Payments</CardTitle>
+          <Button variant='ghost' size='sm' asChild>
+            <Link to='/app/financials/payments'>View All</Link>
+          </Button>
+        </div>
+      </CardHeader>
+      <CardContent>
+        <div className='space-y-4'>
+          {paymentsData.payments.length === 0 ? (
+            <p className='text-sm text-muted-foreground'>No recent payments</p>
+          ) : (
+            paymentsData.payments.map((payment) => (
+              <div key={payment.id} className='flex items-center justify-between'>
+                <div className='flex items-center gap-3'>
+                  <div className='flex size-8 items-center justify-center rounded-full bg-green-100'>
+                    <LuArrowDownLeft className='size-4 text-green-600' />
+                  </div>
+                  <div>
+                    <p className='text-sm font-medium'>
+                      {payment.type === 'RENT' ? 'Rent' : payment.type} - Unit{' '}
+                      {payment.lease?.unit.unitNumber || 'N/A'} {payment.tenant.firstName}{' '}
+                      {payment.tenant.lastName}
+                    </p>
+                    <p className='text-xs text-muted-foreground'>
+                      {new Date(payment.paymentDate).toLocaleDateString()}
+                    </p>
+                  </div>
+                </div>
+                <div className='text-right'>
+                  <span className='font-medium text-green-600'>
+                    +${Number(payment.amount).toLocaleString()}
+                  </span>
+                  <p className='text-xs text-muted-foreground'>
+                    <Badge variant='outline' className='text-xs'>
+                      {payment.status}
+                    </Badge>
+                  </p>
+                </div>
+              </div>
+            ))
+          )}
+        </div>
+      </CardContent>
+    </Card>
+  )
+}
+
+// Security Deposits Section
+function SecurityDepositsSection() {
+  const { data: stats } = useDepositStatsQuery()
+
+  return (
+    <Card>
+      <CardHeader>
+        <div className='flex items-center justify-between'>
+          <div>
+            <CardTitle>Security Deposits</CardTitle>
+            <CardDescription>
+              Total: ${stats.totalDepositsHeld.toLocaleString()} held in escrow
+            </CardDescription>
+          </div>
+          <Button variant='outline' size='sm' asChild>
+            <Link to='/app/financials/deposits'>View Deposit Ledger</Link>
+          </Button>
+        </div>
+      </CardHeader>
+      <CardContent>
+        <div className='grid gap-4 md:grid-cols-3'>
+          <div className='rounded-lg bg-muted p-4'>
+            <p className='text-sm text-muted-foreground'>Interest Accrued</p>
+            <p className='text-xl font-bold'>${stats.totalInterestAccrued.toLocaleString()}</p>
+            <p className='text-xs text-muted-foreground'>@ 1.0% annually (MN)</p>
+          </div>
+          <div className='rounded-lg bg-muted p-4'>
+            <p className='text-sm text-muted-foreground'>Active Deposits</p>
+            <p className='text-xl font-bold'>{stats.activeDepositsCount}</p>
+            <p className='text-xs text-muted-foreground'>Current tenants</p>
+          </div>
+          {(stats.pendingDispositions > 0 || stats.interestDueSoon > 0) ? (
+            <div className='rounded-lg bg-yellow-50 p-4'>
+              <p className='text-sm text-yellow-800'>Action Required</p>
+              <p className='text-xl font-bold text-yellow-800'>
+                {stats.pendingDispositions + stats.interestDueSoon}
+              </p>
+              <p className='text-xs text-yellow-700'>
+                {stats.pendingDispositions > 0 && `${stats.pendingDispositions} disposition(s) pending`}
+                {stats.pendingDispositions > 0 && stats.interestDueSoon > 0 && ', '}
+                {stats.interestDueSoon > 0 && `${stats.interestDueSoon} interest payment(s) due`}
+              </p>
+            </div>
+          ) : (
+            <div className='rounded-lg bg-green-50 p-4'>
+              <p className='text-sm text-green-800'>All Current</p>
+              <p className='text-xl font-bold text-green-800'>No action needed</p>
+              <p className='text-xs text-green-700'>MN Statute 504B.178 compliant</p>
+            </div>
+          )}
+        </div>
+      </CardContent>
+    </Card>
+  )
+}
+
+// Loading fallback
+function DashboardLoading() {
+  return (
+    <div className='w-full max-w-7xl space-y-6 py-6'>
+      <div className='flex items-center justify-between'>
+        <div>
+          <Skeleton className='h-8 w-48' />
+          <Skeleton className='mt-1 h-4 w-32' />
+        </div>
+        <div className='flex gap-2'>
+          <Skeleton className='h-10 w-32' />
+          <Skeleton className='h-10 w-36' />
+        </div>
+      </div>
+      <div className='grid gap-4 md:grid-cols-3'>
+        <StatsCardSkeleton />
+        <StatsCardSkeleton />
+        <StatsCardSkeleton />
+      </div>
+      <div className='grid gap-6 lg:grid-cols-2'>
+        <Card>
+          <CardHeader>
+            <Skeleton className='h-6 w-32' />
+          </CardHeader>
+          <CardContent className='space-y-4'>
+            {[...Array(5)].map((_, i) => (
+              <Skeleton key={i} className='h-12 w-full' />
+            ))}
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader>
+            <Skeleton className='h-6 w-32' />
+          </CardHeader>
+          <CardContent className='space-y-4'>
+            {[...Array(5)].map((_, i) => (
+              <Skeleton key={i} className='h-12 w-full' />
+            ))}
+          </CardContent>
+        </Card>
+      </div>
+    </div>
+  )
+}
+
+function FinancialsDashboardContent() {
+  const currentMonth = new Date().toLocaleDateString('en-US', { month: 'long', year: 'numeric' })
 
   return (
     <div className='w-full max-w-7xl space-y-6 py-6'>
@@ -50,7 +381,7 @@ function FinancialsDashboardPage() {
       <div className='flex items-center justify-between'>
         <div>
           <Typography.H2>Financial Dashboard</Typography.H2>
-          <Typography.Muted>December 2024 Overview</Typography.Muted>
+          <Typography.Muted>{currentMonth} Overview</Typography.Muted>
         </div>
         <div className='flex gap-2'>
           <Button variant='outline'>
@@ -64,214 +395,46 @@ function FinancialsDashboardPage() {
       </div>
 
       {/* Revenue Stats */}
-      <div className='grid gap-4 md:grid-cols-3'>
-        <Card>
-          <CardHeader className='pb-2'>
-            <CardTitle className='text-sm font-medium'>Expected Revenue</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className='text-2xl font-bold'>${monthlyData.expectedRevenue.toLocaleString()}</div>
-            <p className='text-xs text-muted-foreground flex items-center gap-1'>
-              <LuTrendingUp className='size-3 text-green-500' />
-              +12% vs last month
-            </p>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader className='pb-2'>
-            <CardTitle className='text-sm font-medium'>Collected</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className='text-2xl font-bold text-green-600'>
-              ${monthlyData.collectedRevenue.toLocaleString()}
-            </div>
-            <p className='text-xs text-muted-foreground'>{collectionRate}% collection rate</p>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader className='pb-2'>
-            <CardTitle className='text-sm font-medium'>Outstanding</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className='text-2xl font-bold text-destructive'>
-              ${monthlyData.outstanding.toLocaleString()}
-            </div>
-            <p className='text-xs text-muted-foreground'>1 tenant past due</p>
-          </CardContent>
-        </Card>
-      </div>
+      <Suspense fallback={
+        <div className='grid gap-4 md:grid-cols-3'>
+          <StatsCardSkeleton />
+          <StatsCardSkeleton />
+          <StatsCardSkeleton />
+        </div>
+      }>
+        <PaymentStatsSection />
+      </Suspense>
 
       {/* Past Due Alert */}
-      {pastDueTenants.length > 0 && (
-        <Card className='border-destructive/50'>
-          <CardHeader>
-            <div className='flex items-center gap-2'>
-              <LuCircleAlert className='size-5 text-destructive' />
-              <CardTitle>Action Required</CardTitle>
-            </div>
-          </CardHeader>
-          <CardContent>
-            {pastDueTenants.map(tenant => (
-              <div key={tenant.unit} className='flex items-center justify-between'>
-                <div>
-                  <p className='font-medium'>
-                    Unit {tenant.unit} - {tenant.name}
-                  </p>
-                  <p className='text-sm text-muted-foreground'>
-                    ${tenant.amount.toLocaleString()} past due ({tenant.daysPastDue} days)
-                  </p>
-                </div>
-                <div className='flex gap-2'>
-                  <Button variant='outline' size='sm' asChild>
-                    <Link to='/app/communications'>Send Reminder</Link>
-                  </Button>
-                  <Button variant='outline' size='sm'>
-                    Late Notice
-                  </Button>
-                  <Button size='sm' asChild>
-                    <Link to='/app/financials/payments'>Record Payment</Link>
-                  </Button>
-                </div>
-              </div>
-            ))}
-          </CardContent>
-        </Card>
-      )}
+      <Suspense fallback={null}>
+        <DelinquentTenantsSection />
+      </Suspense>
 
       {/* Main Content Grid */}
       <div className='grid gap-6 lg:grid-cols-2'>
         {/* Expense Summary */}
-        <Card>
-          <CardHeader>
-            <div className='flex items-center justify-between'>
-              <div>
-                <CardTitle>Expense Summary</CardTitle>
-                <CardDescription>December 2024 breakdown</CardDescription>
-              </div>
-              <Button variant='ghost' size='sm' asChild>
-                <Link to='/app/financials/expenses'>View All</Link>
-              </Button>
-            </div>
-          </CardHeader>
-          <CardContent>
-            <div className='space-y-4'>
-              {expenseCategories.map(category => (
-                <div key={category.name} className='flex items-center justify-between'>
-                  <div className='flex-1'>
-                    <div className='flex items-center justify-between'>
-                      <span className='text-sm font-medium'>{category.name}</span>
-                      <span className='text-sm font-medium'>${category.amount.toLocaleString()}</span>
-                    </div>
-                    <div className='mt-1 flex items-center gap-2 text-xs text-muted-foreground'>
-                      <span>{category.percentOfRevenue}% of revenue</span>
-                      {category.vsBudget !== 0 && (
-                        <Badge
-                          variant='outline'
-                          className={
-                            category.vsBudget < 0
-                              ? 'border-green-500 text-green-700'
-                              : 'border-orange-500 text-orange-700'
-                          }
-                        >
-                          {category.vsBudget > 0 ? '+' : ''}
-                          {category.vsBudget}% vs budget
-                        </Badge>
-                      )}
-                    </div>
-                  </div>
-                </div>
-              ))}
-              <Separator />
-              <div className='flex items-center justify-between font-medium'>
-                <span>Total Expenses</span>
-                <span>${monthlyData.expenses.toLocaleString()}</span>
-              </div>
-              <div className='flex items-center justify-between font-medium text-green-600'>
-                <span>Net Operating Income</span>
-                <span>${monthlyData.netOperatingIncome.toLocaleString()}</span>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
+        <Suspense fallback={<Card><CardContent className='py-10 text-center'><LuLoaderCircle className='mx-auto size-6 animate-spin' /></CardContent></Card>}>
+          <ExpenseSummarySection />
+        </Suspense>
 
         {/* Recent Transactions */}
-        <Card>
-          <CardHeader>
-            <div className='flex items-center justify-between'>
-              <CardTitle>Recent Transactions</CardTitle>
-              <Button variant='ghost' size='sm' asChild>
-                <Link to='/app/financials/payments'>View All</Link>
-              </Button>
-            </div>
-          </CardHeader>
-          <CardContent>
-            <div className='space-y-4'>
-              {recentTransactions.map((transaction, i) => (
-                <div key={i} className='flex items-center justify-between'>
-                  <div className='flex items-center gap-3'>
-                    <div
-                      className={`flex size-8 items-center justify-center rounded-full ${
-                        transaction.type === 'income' ? 'bg-green-100' : 'bg-red-100'
-                      }`}
-                    >
-                      {transaction.type === 'income' ? (
-                        <LuArrowDownLeft className='size-4 text-green-600' />
-                      ) : (
-                        <LuArrowUpRight className='size-4 text-red-600' />
-                      )}
-                    </div>
-                    <div>
-                      <p className='text-sm font-medium'>{transaction.description}</p>
-                      <p className='text-xs text-muted-foreground'>
-                        {new Date(transaction.date).toLocaleDateString()}
-                      </p>
-                    </div>
-                  </div>
-                  <span
-                    className={`font-medium ${transaction.type === 'income' ? 'text-green-600' : 'text-red-600'}`}
-                  >
-                    {transaction.type === 'income' ? '+' : '-'}${transaction.amount.toLocaleString()}
-                  </span>
-                </div>
-              ))}
-            </div>
-          </CardContent>
-        </Card>
+        <Suspense fallback={<Card><CardContent className='py-10 text-center'><LuLoaderCircle className='mx-auto size-6 animate-spin' /></CardContent></Card>}>
+          <RecentTransactionsSection />
+        </Suspense>
       </div>
 
       {/* Security Deposits */}
-      <Card>
-        <CardHeader>
-          <div className='flex items-center justify-between'>
-            <div>
-              <CardTitle>Security Deposits</CardTitle>
-              <CardDescription>Total: $52,500 held in escrow</CardDescription>
-            </div>
-            <Button variant='outline' size='sm'>
-              View Deposit Ledger
-            </Button>
-          </div>
-        </CardHeader>
-        <CardContent>
-          <div className='grid gap-4 md:grid-cols-3'>
-            <div className='rounded-lg bg-muted p-4'>
-              <p className='text-sm text-muted-foreground'>Interest Accrued (2024)</p>
-              <p className='text-xl font-bold'>$525.00</p>
-              <p className='text-xs text-muted-foreground'>@ 1.0% annually</p>
-            </div>
-            <div className='rounded-lg bg-muted p-4'>
-              <p className='text-sm text-muted-foreground'>Next Interest Payment Due</p>
-              <p className='text-xl font-bold'>Jan 31, 2025</p>
-              <p className='text-xs text-muted-foreground'>MN Statute 504B.178</p>
-            </div>
-            <div className='rounded-lg bg-yellow-50 p-4'>
-              <p className='text-sm text-yellow-800'>Action Required</p>
-              <p className='text-xl font-bold text-yellow-800'>3 deposits</p>
-              <p className='text-xs text-yellow-700'>Interest payment due soon</p>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
+      <Suspense fallback={<Card><CardContent className='py-10 text-center'><LuLoaderCircle className='mx-auto size-6 animate-spin' /></CardContent></Card>}>
+        <SecurityDepositsSection />
+      </Suspense>
     </div>
+  )
+}
+
+function FinancialsDashboardPage() {
+  return (
+    <Suspense fallback={<DashboardLoading />}>
+      <FinancialsDashboardContent />
+    </Suspense>
   )
 }

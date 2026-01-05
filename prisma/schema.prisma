@@ -499,15 +499,22 @@ model Lease {
   tenantId String @db.Uuid
   tenant   Tenant @relation(fields: [tenantId], references: [id])
 
-  coTenants   LeaseTenant[]
-  addenda     LeaseAddendum[]
-  payments    Payment[]
-  inspections Inspection[]
+  // Renewal Tracking
+  renewedFromLeaseId String? @unique @db.Uuid @map("renewed_from_lease_id")
+  renewedFromLease   Lease?  @relation("LeaseRenewal", fields: [renewedFromLeaseId], references: [id])
+  renewedToLease     Lease?  @relation("LeaseRenewal")
+
+  coTenants           LeaseTenant[]
+  addenda             LeaseAddendum[]
+  payments            Payment[]
+  inspections         Inspection[]
+  depositDisposition  DepositDisposition?
 
   @@index([unitId])
   @@index([tenantId])
   @@index([status])
   @@index([endDate])
+  @@index([renewedFromLeaseId])
   @@map("pm_leases")
 }
 
@@ -1271,7 +1278,8 @@ model Inspection {
   leaseId    String?  @db.Uuid
   lease      Lease?   @relation(fields: [leaseId], references: [id])
 
-  items InspectionItem[]
+  items       InspectionItem[]
+  damageItems DamageItem[]
 
   @@index([propertyId])
   @@index([type])
@@ -1308,6 +1316,108 @@ model InspectionItem {
 
   @@index([inspectionId])
   @@map("inspection_items")
+}
+
+// =============================================================================
+// MOVE-OUT & DEPOSIT DISPOSITION (MN Compliance: 504B.178)
+// =============================================================================
+
+enum DepositDispositionStatus {
+  DRAFT
+  PENDING_REVIEW
+  SENT
+  ACKNOWLEDGED
+  DISPUTED
+}
+
+enum SendMethod {
+  CERTIFIED_MAIL
+  REGULAR_MAIL
+  EMAIL
+  HAND_DELIVERED
+}
+
+model DamageItem {
+  id String @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+
+  // Damage Details
+  description String
+  location    String? // Room or area
+
+  // Cost Assessment
+  repairCost     Decimal @db.Decimal(10, 2)
+  isNormalWear   Boolean @default(false)
+  isPreExisting  Boolean @default(false)
+
+  // Documentation
+  photoUrls String[] @default([])
+  notes     String?
+
+  // Comparison to Move-In (optional link to move-in item)
+  moveInItemId String? @db.Uuid @map("move_in_item_id")
+
+  // Metadata
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  // Relations
+  inspectionId String     @db.Uuid @map("inspection_id")
+  inspection   Inspection @relation(fields: [inspectionId], references: [id], onDelete: Cascade)
+
+  @@index([inspectionId])
+  @@map("pm_damage_items")
+}
+
+model DepositDisposition {
+  id String @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+
+  // Deposit Details
+  originalDeposit  Decimal @db.Decimal(10, 2) @map("original_deposit")
+  interestAccrued  Decimal @db.Decimal(10, 2) @map("interest_accrued")
+  totalDeductions  Decimal @default(0) @db.Decimal(10, 2) @map("total_deductions")
+  refundAmount     Decimal @db.Decimal(10, 2) @map("refund_amount")
+
+  // MN Compliance: Dates (21-day deadline)
+  moveOutDate  DateTime @map("move_out_date")
+  deadlineDate DateTime @map("deadline_date") // move_out + 21 days
+
+  // Sending Details
+  sentDate       DateTime?  @map("sent_date")
+  sentMethod     SendMethod? @map("sent_method")
+  trackingNumber String?    @map("tracking_number")
+
+  // Letter Content
+  letterPdfUrl        String? @map("letter_pdf_url")
+  itemizedDeductions  Json?   @map("itemized_deductions") // Array of {description, amount, isNormalWear}
+
+  // Bank Disclosure (MN Requirement)
+  bankName     String? @map("bank_name")
+  accountLast4 String? @map("account_last_4")
+
+  // Refund Processing
+  refundProcessedDate DateTime? @map("refund_processed_date")
+  refundMethod        String?   @map("refund_method") // "CHECK", "ACH", "CASH"
+  refundCheckNumber   String?   @map("refund_check_number")
+
+  // Status
+  status DepositDispositionStatus @default(DRAFT)
+
+  // Metadata
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  // Relations
+  leaseId String @unique @db.Uuid @map("lease_id")
+  lease   Lease  @relation(fields: [leaseId], references: [id])
+
+  // Link to inspections
+  moveInInspectionId  String? @db.Uuid @map("move_in_inspection_id")
+  moveOutInspectionId String? @db.Uuid @map("move_out_inspection_id")
+
+  @@index([leaseId])
+  @@index([status])
+  @@index([deadlineDate])
+  @@map("pm_deposit_dispositions")
 }
 
 // =============================================================================
