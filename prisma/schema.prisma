@@ -265,6 +265,7 @@ model Property {
   documents            Document[]
   inspections          Inspection[]
   maintenanceSchedules MaintenanceSchedule[]
+  maintenanceBudgets   MaintenanceBudget[]
 
   @@index([managerId])
   @@index([teamId])
@@ -1514,6 +1515,86 @@ model LeaseTemplate {
   @@index([parentTemplateId])
   @@index([createdById])
   @@map("lease_templates")
+}
+
+// =============================================================================
+// MAINTENANCE BUDGETS
+// =============================================================================
+
+enum BudgetPeriod {
+  MONTHLY
+  QUARTERLY
+  ANNUAL
+}
+
+model MaintenanceBudget {
+  id String @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+
+  // Scope - Link to property
+  propertyId String   @db.Uuid
+  property   Property @relation(fields: [propertyId], references: [id], onDelete: Cascade)
+
+  // Category - uses existing MaintenanceCategory enum
+  category MaintenanceCategory
+
+  // Budget Configuration
+  budgetAmount Decimal      @db.Decimal(12, 2)
+  period       BudgetPeriod @default(ANNUAL)
+
+  // Time Range
+  fiscalYear Int      // e.g., 2026
+  startDate  DateTime
+  endDate    DateTime
+
+  // Tracking (denormalized for performance)
+  spentAmount     Decimal @default(0) @db.Decimal(12, 2)
+  committedAmount Decimal @default(0) @db.Decimal(12, 2) // In-progress work orders
+
+  // Alerts
+  warningThreshold  Int @default(80) // Percentage
+  criticalThreshold Int @default(95) // Percentage
+
+  // Status
+  isActive Boolean @default(true)
+  notes    String?
+
+  // Metadata
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  createdById String   @db.Uuid
+
+  // Relations
+  alerts BudgetAlert[]
+
+  // Unique constraint: one budget per property/category/period/year
+  @@unique([propertyId, category, period, fiscalYear])
+  @@index([propertyId])
+  @@index([fiscalYear])
+  @@index([isActive])
+  @@map("maintenance_budgets")
+}
+
+model BudgetAlert {
+  id String @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+
+  budgetId String            @db.Uuid
+  budget   MaintenanceBudget @relation(fields: [budgetId], references: [id], onDelete: Cascade)
+
+  alertType        String  // "WARNING" | "CRITICAL" | "EXCEEDED"
+  thresholdPercent Int
+  spentAmount      Decimal @db.Decimal(12, 2)
+  budgetAmount     Decimal @db.Decimal(12, 2)
+
+  message String
+
+  acknowledgedAt   DateTime?
+  acknowledgedById String?   @db.Uuid
+
+  createdAt DateTime @default(now())
+
+  @@index([budgetId])
+  @@index([createdAt])
+  @@map("budget_alerts")
 }
 
 // =============================================================================
