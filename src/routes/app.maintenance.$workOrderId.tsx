@@ -35,6 +35,10 @@ import { Textarea } from '~/components/ui/textarea'
 import { Typography } from '~/components/ui/typography'
 import { toast } from 'sonner'
 import { MaintenancePhotoUpload } from '~/components/maintenance/photo-upload'
+import { CostBreakdownCard } from '~/components/maintenance/cost-breakdown-card'
+import { CostLineItemsTable } from '~/components/maintenance/cost-line-items-table'
+import { InvoiceListTable } from '~/components/maintenance/invoice-list-table'
+import { InvoiceApprovalCard } from '~/components/maintenance/invoice-approval-card'
 
 import {
   useMaintenanceRequestQuery,
@@ -136,7 +140,6 @@ function WorkOrderDetail() {
   const [statusNote, setStatusNote] = useState('')
   const [newComment, setNewComment] = useState('')
   const [isInternalComment, setIsInternalComment] = useState(false)
-  const [actualCost, setActualCost] = useState<string>(workOrder.actualCost?.toString() || '')
   const [selectedVendorId, setSelectedVendorId] = useState<string>(workOrder.vendorId || '')
   const [selectedStaffId, setSelectedStaffId] = useState<string>(workOrder.assignedToId || '')
   const [commentAttachments, setCommentAttachments] = useState<File[]>([])
@@ -201,11 +204,9 @@ function WorkOrderDetail() {
 
   const handleMarkComplete = async () => {
     try {
-      const cost = actualCost ? parseFloat(actualCost) : undefined
       await updateMutation.mutateAsync({
         id: workOrderId,
         status: 'COMPLETED',
-        actualCost: cost,
         completedAt: new Date(),
       })
 
@@ -215,31 +216,6 @@ function WorkOrderDetail() {
     } catch {
       toast.error('Error', {
         description: 'Failed to complete work order',
-      })
-    }
-  }
-
-  const handleSaveCost = async () => {
-    const cost = parseFloat(actualCost)
-    if (isNaN(cost) || cost < 0) {
-      toast.error('Invalid Cost', {
-        description: 'Please enter a valid cost amount',
-      })
-      return
-    }
-
-    try {
-      await updateMutation.mutateAsync({
-        id: workOrderId,
-        actualCost: cost,
-      })
-
-      toast.success('Cost Saved', {
-        description: `Actual cost updated to $${cost.toFixed(2)}`,
-      })
-    } catch {
-      toast.error('Error', {
-        description: 'Failed to save cost',
       })
     }
   }
@@ -904,54 +880,45 @@ function WorkOrderDetail() {
             </CardContent>
           </Card>
 
-          {/* Record Cost */}
-          <Card>
-            <CardHeader>
-              <CardTitle>Record Cost</CardTitle>
-            </CardHeader>
-            <CardContent className='space-y-4'>
-              <div className='grid gap-4 text-sm'>
-                <div className='flex justify-between'>
-                  <span className='text-muted-foreground'>Estimated</span>
-                  <span>
-                    {workOrder.estimatedCost ? `$${Number(workOrder.estimatedCost).toFixed(2)}` : '-'}
-                  </span>
-                </div>
-                {workOrder.actualCost && (
-                  <div className='flex justify-between'>
-                    <span className='text-muted-foreground'>Current Actual</span>
-                    <span className='font-medium'>${Number(workOrder.actualCost).toFixed(2)}</span>
-                  </div>
-                )}
-                <Separator />
-                <div className='space-y-2'>
-                  <Label>Actual Cost</Label>
-                  <div className='flex items-center gap-2'>
-                    <LuDollarSign className='size-4 text-muted-foreground' />
-                    <Input
-                      type='number'
-                      placeholder='0.00'
-                      value={actualCost}
-                      onChange={(e) => setActualCost(e.target.value)}
-                      step='0.01'
-                      min='0'
-                    />
-                  </div>
-                </div>
-              </div>
-              <Button
-                variant='outline'
-                className='w-full'
-                onClick={handleSaveCost}
-                disabled={updateMutation.isPending || !actualCost}
-              >
-                {updateMutation.isPending && <LuLoaderCircle className='mr-2 size-4 animate-spin' />}
-                Save Cost
-              </Button>
-            </CardContent>
-          </Card>
+          {/* Cost Summary */}
+          <CostBreakdownCard requestId={workOrderId} />
         </div>
       </div>
+
+      {/* Cost Details */}
+      <Card>
+        <CardHeader>
+          <CardTitle className='flex items-center gap-2'>
+            <LuDollarSign className='size-5' />
+            Cost Details
+          </CardTitle>
+          <CardDescription>
+            Manage labor, parts, materials, and other costs for this work order
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <CostLineItemsTable requestId={workOrderId} />
+        </CardContent>
+      </Card>
+
+      {/* Invoices */}
+      <Card>
+        <CardHeader>
+          <CardTitle className='flex items-center gap-2'>
+            <LuFile className='size-5' />
+            Vendor Invoices
+          </CardTitle>
+          <CardDescription>
+            Upload and manage vendor invoices for this work order
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <InvoiceListTable requestId={workOrderId} />
+        </CardContent>
+      </Card>
+
+      {/* Invoice Approvals (if any pending) */}
+      <InvoiceApprovalCard requestId={workOrderId} />
 
       {/* Status History */}
       {workOrder.statusHistory && workOrder.statusHistory.length > 0 && (
