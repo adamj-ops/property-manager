@@ -4,24 +4,24 @@ import { createFileRoute, Link } from '@tanstack/react-router'
 import { Suspense, useState } from 'react'
 import { format } from 'date-fns'
 import {
-  LuAlertCircle,
-  LuAlertTriangle,
+  LuCircleAlert,
+  LuTriangleAlert,
   LuArrowLeft,
-  LuCheckCircle,
+  LuCircleCheck,
   LuDollarSign,
-  LuEdit,
-  LuLoader2,
+  LuPencil,
+  LuLoaderCircle,
   LuRefreshCw,
   LuTrash2,
-  LuXCircle,
+  LuX,
 } from 'react-icons/lu'
+import { toast } from 'sonner'
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '~/components/ui/card'
 import { Button } from '~/components/ui/button'
 import { Badge } from '~/components/ui/badge'
 import { Skeleton } from '~/components/ui/skeleton'
 import { Typography } from '~/components/ui/typography'
-import { Progress } from '~/components/ui/progress'
 import {
   Table,
   TableBody,
@@ -39,16 +39,15 @@ import {
   SheetTrigger,
 } from '~/components/ui/sheet'
 import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-  AlertDialogTrigger,
-} from '~/components/ui/alert-dialog'
+  Dialog,
+  DialogClose,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from '~/components/ui/dialog'
 
 import {
   useBudgetQuery,
@@ -58,7 +57,6 @@ import {
   budgetQueryOptions,
 } from '~/services/maintenance-budget.query'
 import { BudgetForm } from '~/components/maintenance/BudgetForm'
-import { useToast } from '~/hooks/use-toast'
 import { useNavigate } from '@tanstack/react-router'
 
 export const Route = createFileRoute('/app/maintenance/budgets/$budgetId')({
@@ -128,13 +126,13 @@ function getProgressColor(status: string) {
 function StatusIcon({ status }: { status: string }) {
   switch (status) {
     case 'healthy':
-      return <LuCheckCircle className='size-5 text-green-600' />
+      return <LuCircleCheck className='size-5 text-green-600' />
     case 'warning':
-      return <LuAlertTriangle className='size-5 text-yellow-600' />
+      return <LuTriangleAlert className='size-5 text-yellow-600' />
     case 'critical':
-      return <LuAlertCircle className='size-5 text-orange-600' />
+      return <LuCircleAlert className='size-5 text-orange-600' />
     case 'exceeded':
-      return <LuXCircle className='size-5 text-red-600' />
+      return <LuX className='size-5 text-red-600' />
     default:
       return null
   }
@@ -146,7 +144,6 @@ function BudgetDetailContent() {
   const deleteBudget = useDeleteBudget()
   const recalculate = useRecalculateBudgetSpending()
   const acknowledgeAlert = useAcknowledgeBudgetAlert()
-  const { toast } = useToast()
   const navigate = useNavigate()
 
   const [isEditOpen, setIsEditOpen] = useState(false)
@@ -154,16 +151,13 @@ function BudgetDetailContent() {
   const handleDelete = async () => {
     try {
       await deleteBudget.mutateAsync(budgetId)
-      toast({
-        title: 'Budget deactivated',
+      toast.success('Budget deactivated', {
         description: 'The budget has been deactivated.',
       })
       navigate({ to: '/app/maintenance/budgets' })
     } catch (error) {
-      toast({
-        title: 'Error',
+      toast.error('Error', {
         description: 'Failed to deactivate budget',
-        variant: 'destructive',
       })
     }
   }
@@ -171,15 +165,12 @@ function BudgetDetailContent() {
   const handleRecalculate = async () => {
     try {
       await recalculate.mutateAsync(budgetId)
-      toast({
-        title: 'Budget recalculated',
+      toast.success('Budget recalculated', {
         description: 'Spending amounts have been updated.',
       })
     } catch (error) {
-      toast({
-        title: 'Error',
+      toast.error('Error', {
         description: 'Failed to recalculate budget',
-        variant: 'destructive',
       })
     }
   }
@@ -187,12 +178,10 @@ function BudgetDetailContent() {
   const handleAcknowledgeAlert = async (alertId: string) => {
     try {
       await acknowledgeAlert.mutateAsync(alertId)
-      toast({ title: 'Alert acknowledged' })
+      toast.success('Alert acknowledged')
     } catch (error) {
-      toast({
-        title: 'Error',
+      toast.error('Error', {
         description: 'Failed to acknowledge alert',
-        variant: 'destructive',
       })
     }
   }
@@ -223,7 +212,7 @@ function BudgetDetailContent() {
         <div className='flex flex-wrap items-center gap-2'>
           <Button variant='outline' onClick={handleRecalculate} disabled={recalculate.isPending}>
             {recalculate.isPending ? (
-              <LuLoader2 className='mr-2 size-4 animate-spin' />
+              <LuLoaderCircle className='mr-2 size-4 animate-spin' />
             ) : (
               <LuRefreshCw className='mr-2 size-4' />
             )}
@@ -232,7 +221,7 @@ function BudgetDetailContent() {
           <Sheet open={isEditOpen} onOpenChange={setIsEditOpen}>
             <SheetTrigger asChild>
               <Button variant='outline'>
-                <LuEdit className='mr-2 size-4' />
+                <LuPencil className='mr-2 size-4' />
                 Edit
               </Button>
             </SheetTrigger>
@@ -259,27 +248,31 @@ function BudgetDetailContent() {
               </div>
             </SheetContent>
           </Sheet>
-          <AlertDialog>
-            <AlertDialogTrigger asChild>
+          <Dialog>
+            <DialogTrigger asChild>
               <Button variant='destructive'>
                 <LuTrash2 className='mr-2 size-4' />
                 Deactivate
               </Button>
-            </AlertDialogTrigger>
-            <AlertDialogContent>
-              <AlertDialogHeader>
-                <AlertDialogTitle>Deactivate Budget?</AlertDialogTitle>
-                <AlertDialogDescription>
+            </DialogTrigger>
+            <DialogContent>
+              <DialogHeader>
+                <DialogTitle>Deactivate Budget?</DialogTitle>
+                <DialogDescription>
                   This will deactivate the budget. Historical data will be preserved. You can
                   reactivate it later if needed.
-                </AlertDialogDescription>
-              </AlertDialogHeader>
-              <AlertDialogFooter>
-                <AlertDialogCancel>Cancel</AlertDialogCancel>
-                <AlertDialogAction onClick={handleDelete}>Deactivate</AlertDialogAction>
-              </AlertDialogFooter>
-            </AlertDialogContent>
-          </AlertDialog>
+                </DialogDescription>
+              </DialogHeader>
+              <DialogFooter>
+                <DialogClose asChild>
+                  <Button variant='outline'>Cancel</Button>
+                </DialogClose>
+                <DialogClose asChild>
+                  <Button variant='destructive' onClick={handleDelete}>Deactivate</Button>
+                </DialogClose>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
         </div>
       </div>
 
@@ -357,7 +350,7 @@ function BudgetDetailContent() {
           <div className='flex flex-wrap gap-6'>
             <div className='flex items-center gap-3'>
               <div className='rounded-full bg-yellow-100 p-2'>
-                <LuAlertTriangle className='size-4 text-yellow-600' />
+                <LuTriangleAlert className='size-4 text-yellow-600' />
               </div>
               <div>
                 <p className='text-sm font-medium'>Warning</p>
@@ -366,7 +359,7 @@ function BudgetDetailContent() {
             </div>
             <div className='flex items-center gap-3'>
               <div className='rounded-full bg-orange-100 p-2'>
-                <LuAlertCircle className='size-4 text-orange-600' />
+                <LuCircleAlert className='size-4 text-orange-600' />
               </div>
               <div>
                 <p className='text-sm font-medium'>Critical</p>
@@ -393,13 +386,13 @@ function BudgetDetailContent() {
                 >
                   <div className='flex items-center gap-3'>
                     {alert.alertType === 'WARNING' && (
-                      <LuAlertTriangle className='size-5 text-yellow-600' />
+                      <LuTriangleAlert className='size-5 text-yellow-600' />
                     )}
                     {alert.alertType === 'CRITICAL' && (
-                      <LuAlertCircle className='size-5 text-orange-600' />
+                      <LuCircleAlert className='size-5 text-orange-600' />
                     )}
                     {alert.alertType === 'EXCEEDED' && (
-                      <LuXCircle className='size-5 text-red-600' />
+                      <LuX className='size-5 text-red-600' />
                     )}
                     <div>
                       <p className='text-sm font-medium'>{alert.message}</p>

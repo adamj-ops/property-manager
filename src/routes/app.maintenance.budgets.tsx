@@ -4,15 +4,15 @@ import { createFileRoute, Link } from '@tanstack/react-router'
 import { Suspense, useState, useMemo } from 'react'
 import { format } from 'date-fns'
 import {
-  LuAlertCircle,
-  LuAlertTriangle,
-  LuCheckCircle,
+  LuCircleAlert,
+  LuTriangleAlert,
+  LuCircleCheck,
   LuDollarSign,
   LuPlus,
-  LuPieChart,
+  LuChartPie,
   LuTrendingDown,
   LuTrendingUp,
-  LuXCircle,
+  LuX,
 } from 'react-icons/lu'
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '~/components/ui/card'
@@ -27,7 +27,6 @@ import {
 } from '~/components/ui/select'
 import { Skeleton } from '~/components/ui/skeleton'
 import { Typography } from '~/components/ui/typography'
-import { Progress } from '~/components/ui/progress'
 import {
   Table,
   TableBody,
@@ -131,13 +130,13 @@ function getProgressColor(status: string) {
 function StatusIcon({ status }: { status: string }) {
   switch (status) {
     case 'healthy':
-      return <LuCheckCircle className='size-4 text-green-600' />
+      return <LuCircleCheck className='size-4 text-green-600' />
     case 'warning':
-      return <LuAlertTriangle className='size-4 text-yellow-600' />
+      return <LuTriangleAlert className='size-4 text-yellow-600' />
     case 'critical':
-      return <LuAlertCircle className='size-4 text-orange-600' />
+      return <LuCircleAlert className='size-4 text-orange-600' />
     case 'exceeded':
-      return <LuXCircle className='size-4 text-red-600' />
+      return <LuX className='size-4 text-red-600' />
     default:
       return null
   }
@@ -253,10 +252,12 @@ function BudgetsContent() {
           <CardContent>
             <div className='text-2xl font-bold'>{formatCurrency(health.totalSpent)}</div>
             <div className='mt-2'>
-              <Progress
-                value={Math.min(health.overallSpentPercent, 100)}
-                className='h-2'
-              />
+              <div className='h-2 w-full overflow-hidden rounded-full bg-muted'>
+                <div
+                  className={`h-full transition-all ${health.overallSpentPercent > 80 ? 'bg-orange-500' : 'bg-green-500'}`}
+                  style={{ width: `${Math.min(health.overallSpentPercent, 100)}%` }}
+                />
+              </div>
               <p className='mt-1 text-xs text-muted-foreground'>
                 {health.overallSpentPercent.toFixed(1)}% of budget used
               </p>
@@ -267,7 +268,7 @@ function BudgetsContent() {
         <Card>
           <CardHeader className='flex flex-row items-center justify-between space-y-0 pb-2'>
             <CardTitle className='text-sm font-medium'>Remaining</CardTitle>
-            <LuPieChart className='size-4 text-muted-foreground' />
+            <LuChartPie className='size-4 text-muted-foreground' />
           </CardHeader>
           <CardContent>
             <div className={`text-2xl font-bold ${health.totalRemaining >= 0 ? 'text-green-600' : 'text-red-600'}`}>
@@ -284,7 +285,7 @@ function BudgetsContent() {
         <Card>
           <CardHeader className='flex flex-row items-center justify-between space-y-0 pb-2'>
             <CardTitle className='text-sm font-medium'>Budget Status</CardTitle>
-            <LuAlertCircle className='size-4 text-muted-foreground' />
+            <LuCircleAlert className='size-4 text-muted-foreground' />
           </CardHeader>
           <CardContent>
             <div className='flex flex-wrap gap-2'>
@@ -316,7 +317,7 @@ function BudgetsContent() {
         <Card className='border-orange-200 bg-orange-50'>
           <CardHeader className='pb-2'>
             <div className='flex items-center gap-2'>
-              <LuAlertTriangle className='size-5 text-orange-600' />
+              <LuTriangleAlert className='size-5 text-orange-600' />
               <CardTitle className='text-base text-orange-800'>Categories Needing Attention</CardTitle>
             </div>
           </CardHeader>

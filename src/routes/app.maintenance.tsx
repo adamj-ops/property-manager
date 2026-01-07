@@ -1,7 +1,7 @@
 'use client'
 
 import { createFileRoute, Outlet, useRouterState } from '@tanstack/react-router'
-import { LuCalendarClock, LuDollarSign, LuPieChart, LuWrench } from 'react-icons/lu'
+import { LuCalendarClock, LuDollarSign, LuChartPie, LuWrench } from 'react-icons/lu'
 
 import { Link } from '~/components/ui/link'
 import { cx } from '~/libs/utils'
@@ -25,7 +25,7 @@ const navItems = [
   {
     label: 'Budgets',
     href: '/app/maintenance/budgets',
-    icon: LuPieChart,
+    icon: LuChartPie,
   },
   {
     label: 'Cost Reports',

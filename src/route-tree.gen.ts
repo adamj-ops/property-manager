@@ -52,9 +52,11 @@ import { Route as AppTenantsNewImport } from './routes/app.tenants.new'
 import { Route as AppTenantsTenantIdImport } from './routes/app.tenants.$tenantId'
 import { Route as AppPropertiesNewImport } from './routes/app.properties.new'
 import { Route as AppPropertiesPropertyIdImport } from './routes/app.properties.$propertyId'
+import { Route as AppMoveOutLeaseIdImport } from './routes/app.move-out.$leaseId'
 import { Route as AppMaintenanceVendorsImport } from './routes/app.maintenance.vendors'
 import { Route as AppMaintenanceSchedulesImport } from './routes/app.maintenance.schedules'
 import { Route as AppMaintenanceCostsImport } from './routes/app.maintenance.costs'
+import { Route as AppMaintenanceBudgetsImport } from './routes/app.maintenance.budgets'
 import { Route as AppMaintenanceWorkOrderIdImport } from './routes/app.maintenance.$workOrderId'
 import { Route as AppLeasesTemplatesImport } from './routes/app.leases.templates'
 import { Route as AppLeasesNewImport } from './routes/app.leases.new'
@@ -63,11 +65,14 @@ import { Route as AppInspectionsNewImport } from './routes/app.inspections.new'
 import { Route as AppInspectionsInspectionIdImport } from './routes/app.inspections.$inspectionId'
 import { Route as AppFinancialsPaymentsImport } from './routes/app.financials.payments'
 import { Route as AppFinancialsExpensesImport } from './routes/app.financials.expenses'
+import { Route as AppFinancialsDepositsImport } from './routes/app.financials.deposits'
 import { Route as AppPropertiesPropertyIdIndexImport } from './routes/app.properties.$propertyId.index'
 import { Route as AppPropertiesPropertyIdUnitsImport } from './routes/app.properties.$propertyId.units'
 import { Route as AppPropertiesPropertyIdEditImport } from './routes/app.properties.$propertyId.edit'
 import { Route as AppMaintenanceVendorsVendorIdImport } from './routes/app.maintenance.vendors.$vendorId'
 import { Route as AppMaintenanceSchedulesScheduleIdImport } from './routes/app.maintenance.schedules.$scheduleId'
+import { Route as AppMaintenanceBudgetsComparisonImport } from './routes/app.maintenance.budgets.comparison'
+import { Route as AppMaintenanceBudgetsBudgetIdImport } from './routes/app.maintenance.budgets.$budgetId'
 import { Route as AppPropertiesPropertyIdUnitsNewImport } from './routes/app.properties.$propertyId.units.new'
 import { Route as AppPropertiesPropertyIdUnitsUnitIdEditImport } from './routes/app.properties.$propertyId.units.$unitId.edit'
 
@@ -319,6 +324,12 @@ const AppPropertiesPropertyIdRoute = AppPropertiesPropertyIdImport.update({
   getParentRoute: () => AppPropertiesRoute,
 } as any)
 
+const AppMoveOutLeaseIdRoute = AppMoveOutLeaseIdImport.update({
+  id: '/move-out/$leaseId',
+  path: '/move-out/$leaseId',
+  getParentRoute: () => AppRoute,
+} as any)
+
 const AppMaintenanceVendorsRoute = AppMaintenanceVendorsImport.update({
   id: '/vendors',
   path: '/vendors',
@@ -334,6 +345,12 @@ const AppMaintenanceSchedulesRoute = AppMaintenanceSchedulesImport.update({
 const AppMaintenanceCostsRoute = AppMaintenanceCostsImport.update({
   id: '/costs',
   path: '/costs',
+  getParentRoute: () => AppMaintenanceRoute,
+} as any)
+
+const AppMaintenanceBudgetsRoute = AppMaintenanceBudgetsImport.update({
+  id: '/budgets',
+  path: '/budgets',
   getParentRoute: () => AppMaintenanceRoute,
 } as any)
 
@@ -387,6 +404,12 @@ const AppFinancialsExpensesRoute = AppFinancialsExpensesImport.update({
   getParentRoute: () => AppFinancialsRoute,
 } as any)
 
+const AppFinancialsDepositsRoute = AppFinancialsDepositsImport.update({
+  id: '/deposits',
+  path: '/deposits',
+  getParentRoute: () => AppFinancialsRoute,
+} as any)
+
 const AppPropertiesPropertyIdIndexRoute =
   AppPropertiesPropertyIdIndexImport.update({
     id: '/',
@@ -420,6 +443,20 @@ const AppMaintenanceSchedulesScheduleIdRoute =
     id: '/$scheduleId',
     path: '/$scheduleId',
     getParentRoute: () => AppMaintenanceSchedulesRoute,
+  } as any)
+
+const AppMaintenanceBudgetsComparisonRoute =
+  AppMaintenanceBudgetsComparisonImport.update({
+    id: '/comparison',
+    path: '/comparison',
+    getParentRoute: () => AppMaintenanceBudgetsRoute,
+  } as any)
+
+const AppMaintenanceBudgetsBudgetIdRoute =
+  AppMaintenanceBudgetsBudgetIdImport.update({
+    id: '/$budgetId',
+    path: '/$budgetId',
+    getParentRoute: () => AppMaintenanceBudgetsRoute,
   } as any)
 
 const AppPropertiesPropertyIdUnitsNewRoute =
@@ -622,6 +659,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof UserEmailVerificationImport
       parentRoute: typeof UserImport
     }
+    '/app/financials/deposits': {
+      id: '/app/financials/deposits'
+      path: '/deposits'
+      fullPath: '/app/financials/deposits'
+      preLoaderRoute: typeof AppFinancialsDepositsImport
+      parentRoute: typeof AppFinancialsImport
+    }
     '/app/financials/expenses': {
       id: '/app/financials/expenses'
       path: '/expenses'
@@ -676,6 +720,13 @@ declare module '@tanstack/react-router' {
       path: '/$workOrderId'
       fullPath: '/app/maintenance/$workOrderId'
       preLoaderRoute: typeof AppMaintenanceWorkOrderIdImport
+      parentRoute: typeof AppMaintenanceImport
+    }
+    '/app/maintenance/budgets': {
+      id: '/app/maintenance/budgets'
+      path: '/budgets'
+      fullPath: '/app/maintenance/budgets'
+      preLoaderRoute: typeof AppMaintenanceBudgetsImport
       parentRoute: typeof AppMaintenanceImport
     }
     '/app/maintenance/costs': {
@@ -811,6 +862,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppTenantsIndexImport
       parentRoute: typeof AppTenantsImport
     }
+    '/app/maintenance/budgets/$budgetId': {
+      id: '/app/maintenance/budgets/$budgetId'
+      path: '/$budgetId'
+      fullPath: '/app/maintenance/budgets/$budgetId'
+      preLoaderRoute: typeof AppMaintenanceBudgetsBudgetIdImport
+      parentRoute: typeof AppMaintenanceBudgetsImport
+    }
+    '/app/maintenance/budgets/comparison': {
+      id: '/app/maintenance/budgets/comparison'
+      path: '/comparison'
+      fullPath: '/app/maintenance/budgets/comparison'
+      preLoaderRoute: typeof AppMaintenanceBudgetsComparisonImport
+      parentRoute: typeof AppMaintenanceBudgetsImport
+    }
     '/app/maintenance/schedules/$scheduleId': {
       id: '/app/maintenance/schedules/$scheduleId'
       path: '/$scheduleId'
@@ -878,12 +943,14 @@ const AdminRouteChildren: AdminRouteChildren = {
 const AdminRouteWithChildren = AdminRoute._addFileChildren(AdminRouteChildren)
 
 interface AppFinancialsRouteChildren {
+  AppFinancialsDepositsRoute: typeof AppFinancialsDepositsRoute
   AppFinancialsExpensesRoute: typeof AppFinancialsExpensesRoute
   AppFinancialsPaymentsRoute: typeof AppFinancialsPaymentsRoute
   AppFinancialsIndexRoute: typeof AppFinancialsIndexRoute
 }
 
 const AppFinancialsRouteChildren: AppFinancialsRouteChildren = {
+  AppFinancialsDepositsRoute: AppFinancialsDepositsRoute,
   AppFinancialsExpensesRoute: AppFinancialsExpensesRoute,
   AppFinancialsPaymentsRoute: AppFinancialsPaymentsRoute,
   AppFinancialsIndexRoute: AppFinancialsIndexRoute,
@@ -910,6 +977,21 @@ const AppLeasesRouteChildren: AppLeasesRouteChildren = {
 const AppLeasesRouteWithChildren = AppLeasesRoute._addFileChildren(
   AppLeasesRouteChildren,
 )
+
+interface AppMaintenanceBudgetsRouteChildren {
+  AppMaintenanceBudgetsBudgetIdRoute: typeof AppMaintenanceBudgetsBudgetIdRoute
+  AppMaintenanceBudgetsComparisonRoute: typeof AppMaintenanceBudgetsComparisonRoute
+}
+
+const AppMaintenanceBudgetsRouteChildren: AppMaintenanceBudgetsRouteChildren = {
+  AppMaintenanceBudgetsBudgetIdRoute: AppMaintenanceBudgetsBudgetIdRoute,
+  AppMaintenanceBudgetsComparisonRoute: AppMaintenanceBudgetsComparisonRoute,
+}
+
+const AppMaintenanceBudgetsRouteWithChildren =
+  AppMaintenanceBudgetsRoute._addFileChildren(
+    AppMaintenanceBudgetsRouteChildren,
+  )
 
 interface AppMaintenanceSchedulesRouteChildren {
   AppMaintenanceSchedulesScheduleIdRoute: typeof AppMaintenanceSchedulesScheduleIdRoute
@@ -941,6 +1023,7 @@ const AppMaintenanceVendorsRouteWithChildren =
 
 interface AppMaintenanceRouteChildren {
   AppMaintenanceWorkOrderIdRoute: typeof AppMaintenanceWorkOrderIdRoute
+  AppMaintenanceBudgetsRoute: typeof AppMaintenanceBudgetsRouteWithChildren
   AppMaintenanceCostsRoute: typeof AppMaintenanceCostsRoute
   AppMaintenanceSchedulesRoute: typeof AppMaintenanceSchedulesRouteWithChildren
   AppMaintenanceVendorsRoute: typeof AppMaintenanceVendorsRouteWithChildren
@@ -949,6 +1032,7 @@ interface AppMaintenanceRouteChildren {
 
 const AppMaintenanceRouteChildren: AppMaintenanceRouteChildren = {
   AppMaintenanceWorkOrderIdRoute: AppMaintenanceWorkOrderIdRoute,
+  AppMaintenanceBudgetsRoute: AppMaintenanceBudgetsRouteWithChildren,
   AppMaintenanceCostsRoute: AppMaintenanceCostsRoute,
   AppMaintenanceSchedulesRoute: AppMaintenanceSchedulesRouteWithChildren,
   AppMaintenanceVendorsRoute: AppMaintenanceVendorsRouteWithChildren,
@@ -1159,6 +1243,7 @@ export interface FileRoutesByFullPath {
   '/user/change-email': typeof UserChangeEmailRoute
   '/user/change-password': typeof UserChangePasswordRoute
   '/user/email-verification': typeof UserEmailVerificationRoute
+  '/app/financials/deposits': typeof AppFinancialsDepositsRoute
   '/app/financials/expenses': typeof AppFinancialsExpensesRoute
   '/app/financials/payments': typeof AppFinancialsPaymentsRoute
   '/app/inspections/$inspectionId': typeof AppInspectionsInspectionIdRoute
@@ -1167,9 +1252,11 @@ export interface FileRoutesByFullPath {
   '/app/leases/new': typeof AppLeasesNewRoute
   '/app/leases/templates': typeof AppLeasesTemplatesRoute
   '/app/maintenance/$workOrderId': typeof AppMaintenanceWorkOrderIdRoute
+  '/app/maintenance/budgets': typeof AppMaintenanceBudgetsRouteWithChildren
   '/app/maintenance/costs': typeof AppMaintenanceCostsRoute
   '/app/maintenance/schedules': typeof AppMaintenanceSchedulesRouteWithChildren
   '/app/maintenance/vendors': typeof AppMaintenanceVendorsRouteWithChildren
+  '/app/move-out/$leaseId': typeof AppMoveOutLeaseIdRoute
   '/app/properties/$propertyId': typeof AppPropertiesPropertyIdRouteWithChildren
   '/app/properties/new': typeof AppPropertiesNewRoute
   '/app/tenants/$tenantId': typeof AppTenantsTenantIdRoute
@@ -1185,6 +1272,8 @@ export interface FileRoutesByFullPath {
   '/app/maintenance/': typeof AppMaintenanceIndexRoute
   '/app/properties/': typeof AppPropertiesIndexRoute
   '/app/tenants/': typeof AppTenantsIndexRoute
+  '/app/maintenance/budgets/$budgetId': typeof AppMaintenanceBudgetsBudgetIdRoute
+  '/app/maintenance/budgets/comparison': typeof AppMaintenanceBudgetsComparisonRoute
   '/app/maintenance/schedules/$scheduleId': typeof AppMaintenanceSchedulesScheduleIdRoute
   '/app/maintenance/vendors/$vendorId': typeof AppMaintenanceVendorsVendorIdRoute
   '/app/properties/$propertyId/edit': typeof AppPropertiesPropertyIdEditRoute
@@ -1216,6 +1305,7 @@ export interface FileRoutesByTo {
   '/user/change-email': typeof UserChangeEmailRoute
   '/user/change-password': typeof UserChangePasswordRoute
   '/user/email-verification': typeof UserEmailVerificationRoute
+  '/app/financials/deposits': typeof AppFinancialsDepositsRoute
   '/app/financials/expenses': typeof AppFinancialsExpensesRoute
   '/app/financials/payments': typeof AppFinancialsPaymentsRoute
   '/app/inspections/$inspectionId': typeof AppInspectionsInspectionIdRoute
@@ -1224,9 +1314,11 @@ export interface FileRoutesByTo {
   '/app/leases/new': typeof AppLeasesNewRoute
   '/app/leases/templates': typeof AppLeasesTemplatesRoute
   '/app/maintenance/$workOrderId': typeof AppMaintenanceWorkOrderIdRoute
+  '/app/maintenance/budgets': typeof AppMaintenanceBudgetsRouteWithChildren
   '/app/maintenance/costs': typeof AppMaintenanceCostsRoute
   '/app/maintenance/schedules': typeof AppMaintenanceSchedulesRouteWithChildren
   '/app/maintenance/vendors': typeof AppMaintenanceVendorsRouteWithChildren
+  '/app/move-out/$leaseId': typeof AppMoveOutLeaseIdRoute
   '/app/properties/new': typeof AppPropertiesNewRoute
   '/app/tenants/$tenantId': typeof AppTenantsTenantIdRoute
   '/app/tenants/new': typeof AppTenantsNewRoute
@@ -1241,6 +1333,8 @@ export interface FileRoutesByTo {
   '/app/maintenance': typeof AppMaintenanceIndexRoute
   '/app/properties': typeof AppPropertiesIndexRoute
   '/app/tenants': typeof AppTenantsIndexRoute
+  '/app/maintenance/budgets/$budgetId': typeof AppMaintenanceBudgetsBudgetIdRoute
+  '/app/maintenance/budgets/comparison': typeof AppMaintenanceBudgetsComparisonRoute
   '/app/maintenance/schedules/$scheduleId': typeof AppMaintenanceSchedulesScheduleIdRoute
   '/app/maintenance/vendors/$vendorId': typeof AppMaintenanceVendorsVendorIdRoute
   '/app/properties/$propertyId/edit': typeof AppPropertiesPropertyIdEditRoute
@@ -1278,6 +1372,7 @@ export interface FileRoutesById {
   '/user/change-email': typeof UserChangeEmailRoute
   '/user/change-password': typeof UserChangePasswordRoute
   '/user/email-verification': typeof UserEmailVerificationRoute
+  '/app/financials/deposits': typeof AppFinancialsDepositsRoute
   '/app/financials/expenses': typeof AppFinancialsExpensesRoute
   '/app/financials/payments': typeof AppFinancialsPaymentsRoute
   '/app/inspections/$inspectionId': typeof AppInspectionsInspectionIdRoute
@@ -1286,9 +1381,11 @@ export interface FileRoutesById {
   '/app/leases/new': typeof AppLeasesNewRoute
   '/app/leases/templates': typeof AppLeasesTemplatesRoute
   '/app/maintenance/$workOrderId': typeof AppMaintenanceWorkOrderIdRoute
+  '/app/maintenance/budgets': typeof AppMaintenanceBudgetsRouteWithChildren
   '/app/maintenance/costs': typeof AppMaintenanceCostsRoute
   '/app/maintenance/schedules': typeof AppMaintenanceSchedulesRouteWithChildren
   '/app/maintenance/vendors': typeof AppMaintenanceVendorsRouteWithChildren
+  '/app/move-out/$leaseId': typeof AppMoveOutLeaseIdRoute
   '/app/properties/$propertyId': typeof AppPropertiesPropertyIdRouteWithChildren
   '/app/properties/new': typeof AppPropertiesNewRoute
   '/app/tenants/$tenantId': typeof AppTenantsTenantIdRoute
@@ -1304,6 +1401,8 @@ export interface FileRoutesById {
   '/app/maintenance/': typeof AppMaintenanceIndexRoute
   '/app/properties/': typeof AppPropertiesIndexRoute
   '/app/tenants/': typeof AppTenantsIndexRoute
+  '/app/maintenance/budgets/$budgetId': typeof AppMaintenanceBudgetsBudgetIdRoute
+  '/app/maintenance/budgets/comparison': typeof AppMaintenanceBudgetsComparisonRoute
   '/app/maintenance/schedules/$scheduleId': typeof AppMaintenanceSchedulesScheduleIdRoute
   '/app/maintenance/vendors/$vendorId': typeof AppMaintenanceVendorsVendorIdRoute
   '/app/properties/$propertyId/edit': typeof AppPropertiesPropertyIdEditRoute
@@ -1342,6 +1441,7 @@ export interface FileRouteTypes {
     | '/user/change-email'
     | '/user/change-password'
     | '/user/email-verification'
+    | '/app/financials/deposits'
     | '/app/financials/expenses'
     | '/app/financials/payments'
     | '/app/inspections/$inspectionId'
@@ -1350,9 +1450,11 @@ export interface FileRouteTypes {
     | '/app/leases/new'
     | '/app/leases/templates'
     | '/app/maintenance/$workOrderId'
+    | '/app/maintenance/budgets'
     | '/app/maintenance/costs'
     | '/app/maintenance/schedules'
     | '/app/maintenance/vendors'
+    | '/app/move-out/$leaseId'
     | '/app/properties/$propertyId'
     | '/app/properties/new'
     | '/app/tenants/$tenantId'
@@ -1368,6 +1470,8 @@ export interface FileRouteTypes {
     | '/app/maintenance/'
     | '/app/properties/'
     | '/app/tenants/'
+    | '/app/maintenance/budgets/$budgetId'
+    | '/app/maintenance/budgets/comparison'
     | '/app/maintenance/schedules/$scheduleId'
     | '/app/maintenance/vendors/$vendorId'
     | '/app/properties/$propertyId/edit'
@@ -1398,6 +1502,7 @@ export interface FileRouteTypes {
     | '/user/change-email'
     | '/user/change-password'
     | '/user/email-verification'
+    | '/app/financials/deposits'
     | '/app/financials/expenses'
     | '/app/financials/payments'
     | '/app/inspections/$inspectionId'
@@ -1406,9 +1511,11 @@ export interface FileRouteTypes {
     | '/app/leases/new'
     | '/app/leases/templates'
     | '/app/maintenance/$workOrderId'
+    | '/app/maintenance/budgets'
     | '/app/maintenance/costs'
     | '/app/maintenance/schedules'
     | '/app/maintenance/vendors'
+    | '/app/move-out/$leaseId'
     | '/app/properties/new'
     | '/app/tenants/$tenantId'
     | '/app/tenants/new'
@@ -1423,6 +1530,8 @@ export interface FileRouteTypes {
     | '/app/maintenance'
     | '/app/properties'
     | '/app/tenants'
+    | '/app/maintenance/budgets/$budgetId'
+    | '/app/maintenance/budgets/comparison'
     | '/app/maintenance/schedules/$scheduleId'
     | '/app/maintenance/vendors/$vendorId'
     | '/app/properties/$propertyId/edit'
@@ -1458,6 +1567,7 @@ export interface FileRouteTypes {
     | '/user/change-email'
     | '/user/change-password'
     | '/user/email-verification'
+    | '/app/financials/deposits'
     | '/app/financials/expenses'
     | '/app/financials/payments'
     | '/app/inspections/$inspectionId'
@@ -1466,9 +1576,11 @@ export interface FileRouteTypes {
     | '/app/leases/new'
     | '/app/leases/templates'
     | '/app/maintenance/$workOrderId'
+    | '/app/maintenance/budgets'
     | '/app/maintenance/costs'
     | '/app/maintenance/schedules'
     | '/app/maintenance/vendors'
+    | '/app/move-out/$leaseId'
     | '/app/properties/$propertyId'
     | '/app/properties/new'
     | '/app/tenants/$tenantId'
@@ -1484,6 +1596,8 @@ export interface FileRouteTypes {
     | '/app/maintenance/'
     | '/app/properties/'
     | '/app/tenants/'
+    | '/app/maintenance/budgets/$budgetId'
+    | '/app/maintenance/budgets/comparison'
     | '/app/maintenance/schedules/$scheduleId'
     | '/app/maintenance/vendors/$vendorId'
     | '/app/properties/$propertyId/edit'
@@ -1611,6 +1725,7 @@ export const routeTree = rootRoute
       "filePath": "app.financials.tsx",
       "parent": "/app",
       "children": [
+        "/app/financials/deposits",
         "/app/financials/expenses",
         "/app/financials/payments",
         "/app/financials/"
@@ -1631,6 +1746,7 @@ export const routeTree = rootRoute
       "parent": "/app",
       "children": [
         "/app/maintenance/$workOrderId",
+        "/app/maintenance/budgets",
         "/app/maintenance/costs",
         "/app/maintenance/schedules",
         "/app/maintenance/vendors",
@@ -1700,6 +1816,10 @@ export const routeTree = rootRoute
       "filePath": "user.email-verification.tsx",
       "parent": "/user"
     },
+    "/app/financials/deposits": {
+      "filePath": "app.financials.deposits.tsx",
+      "parent": "/app/financials"
+    },
     "/app/financials/expenses": {
       "filePath": "app.financials.expenses.tsx",
       "parent": "/app/financials"
@@ -1732,6 +1852,14 @@ export const routeTree = rootRoute
       "filePath": "app.maintenance.$workOrderId.tsx",
       "parent": "/app/maintenance"
     },
+    "/app/maintenance/budgets": {
+      "filePath": "app.maintenance.budgets.tsx",
+      "parent": "/app/maintenance",
+      "children": [
+        "/app/maintenance/budgets/$budgetId",
+        "/app/maintenance/budgets/comparison"
+      ]
+    },
     "/app/maintenance/costs": {
       "filePath": "app.maintenance.costs.tsx",
       "parent": "/app/maintenance"
@@ -1749,6 +1877,10 @@ export const routeTree = rootRoute
       "children": [
         "/app/maintenance/vendors/$vendorId"
       ]
+    },
+    "/app/move-out/$leaseId": {
+      "filePath": "app.move-out.$leaseId.tsx",
+      "parent": "/app"
     },
     "/app/properties/$propertyId": {
       "filePath": "app.properties.$propertyId.tsx",
@@ -1814,6 +1946,14 @@ export const routeTree = rootRoute
     "/app/tenants/": {
       "filePath": "app.tenants.index.tsx",
       "parent": "/app/tenants"
+    },
+    "/app/maintenance/budgets/$budgetId": {
+      "filePath": "app.maintenance.budgets.$budgetId.tsx",
+      "parent": "/app/maintenance/budgets"
+    },
+    "/app/maintenance/budgets/comparison": {
+      "filePath": "app.maintenance.budgets.comparison.tsx",
+      "parent": "/app/maintenance/budgets"
     },
     "/app/maintenance/schedules/$scheduleId": {
       "filePath": "app.maintenance.schedules.$scheduleId.tsx",

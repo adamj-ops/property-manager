@@ -1,10 +1,10 @@
 'use client'
 
-import { useState, useMemo } from 'react'
+import { useState } from 'react'
 import { useForm } from '@tanstack/react-form'
-import { zodValidator } from '@tanstack/zod-adapter'
 import { startOfMonth, endOfMonth, startOfQuarter, endOfQuarter, startOfYear, endOfYear } from 'date-fns'
-import { LuLoader2 } from 'react-icons/lu'
+import { LuLoaderCircle } from 'react-icons/lu'
+import { toast } from 'sonner'
 
 import { Button } from '~/components/ui/button'
 import { Input } from '~/components/ui/input'
@@ -17,12 +17,10 @@ import {
   SelectTrigger,
   SelectValue,
 } from '~/components/ui/select'
-import { Slider } from '~/components/ui/slider'
-import { useToast } from '~/hooks/use-toast'
 
 import { useCreateBudget, useUpdateBudget } from '~/services/maintenance-budget.query'
 import { usePropertiesQuery } from '~/services/properties.query'
-import { createBudgetSchema, updateBudgetSchema, type BudgetPeriod } from '~/services/maintenance-budget.schema'
+import type { BudgetPeriod } from '~/services/maintenance-budget.schema'
 import type { MaintenanceCategory } from '~/services/maintenance.schema'
 
 const CATEGORIES: { value: MaintenanceCategory; label: string }[] = [
@@ -97,7 +95,6 @@ function calculatePeriodDates(period: BudgetPeriod, fiscalYear: number, quarterO
 }
 
 export function BudgetForm({ budget, defaultFiscalYear, onSuccess }: BudgetFormProps) {
-  const { toast } = useToast()
   const isEditing = !!budget
 
   const createBudget = useCreateBudget()
@@ -138,8 +135,7 @@ export function BudgetForm({ budget, defaultFiscalYear, onSuccess }: BudgetFormP
             criticalThreshold: value.criticalThreshold,
             notes: value.notes || undefined,
           })
-          toast({
-            title: 'Budget updated',
+          toast.success('Budget updated', {
             description: 'The budget has been updated successfully.',
           })
         } else {
@@ -155,17 +151,14 @@ export function BudgetForm({ budget, defaultFiscalYear, onSuccess }: BudgetFormP
             criticalThreshold: value.criticalThreshold,
             notes: value.notes || undefined,
           })
-          toast({
-            title: 'Budget created',
+          toast.success('Budget created', {
             description: 'The budget has been created successfully.',
           })
         }
         onSuccess?.()
       } catch (error) {
-        toast({
-          title: 'Error',
+        toast.error('Error', {
           description: error instanceof Error ? error.message : 'Failed to save budget',
-          variant: 'destructive',
         })
       }
     },
@@ -373,13 +366,14 @@ export function BudgetForm({ budget, defaultFiscalYear, onSuccess }: BudgetFormP
                 <span className='text-sm text-muted-foreground'>Warning at</span>
                 <span className='text-sm font-medium text-yellow-600'>{field.state.value}%</span>
               </div>
-              <Slider
-                value={[field.state.value]}
-                onValueChange={([v]) => field.handleChange(v)}
+              <Input
+                type='range'
                 min={50}
                 max={95}
                 step={5}
-                className='[&_[role=slider]]:bg-yellow-500'
+                value={field.state.value}
+                onChange={(e) => field.handleChange(Number(e.target.value))}
+                className='h-2 cursor-pointer accent-yellow-500'
               />
             </div>
           )}
@@ -392,13 +386,14 @@ export function BudgetForm({ budget, defaultFiscalYear, onSuccess }: BudgetFormP
                 <span className='text-sm text-muted-foreground'>Critical at</span>
                 <span className='text-sm font-medium text-orange-600'>{field.state.value}%</span>
               </div>
-              <Slider
-                value={[field.state.value]}
-                onValueChange={([v]) => field.handleChange(v)}
+              <Input
+                type='range'
                 min={60}
                 max={100}
                 step={5}
-                className='[&_[role=slider]]:bg-orange-500'
+                value={field.state.value}
+                onChange={(e) => field.handleChange(Number(e.target.value))}
+                className='h-2 cursor-pointer accent-orange-500'
               />
             </div>
           )}
@@ -424,7 +419,7 @@ export function BudgetForm({ budget, defaultFiscalYear, onSuccess }: BudgetFormP
       {/* Submit Button */}
       <div className='flex justify-end gap-3'>
         <Button type='submit' disabled={isSubmitting}>
-          {isSubmitting && <LuLoader2 className='mr-2 size-4 animate-spin' />}
+          {isSubmitting && <LuLoaderCircle className='mr-2 size-4 animate-spin' />}
           {isEditing ? 'Update Budget' : 'Create Budget'}
         </Button>
       </div>
